@@ -51,11 +51,10 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
                 _ => (),
             }
         }
-        let str = prop_name.unwrap().to_string();
 
         let source = str::from_utf8(data.as_slice()).unwrap();
         let report = &[Level::ERROR
-            .with_name(str)
+            .with_name(prop_name.unwrap().to_string())
             .primary_title("title")
             .id(id)
             .id_url(id_url)
