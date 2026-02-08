@@ -9,7 +9,16 @@ strip = true
 opt-level = 3
 codegen-units = 1
 
+[profile.profiling]
+inherits = "release"
+lto = false
+strip = false
+opt-level = 1
+codegen-units = 16
+
 [dependencies]
+annotate-snippets = "0.12.11"
+anstream = "0.6.21"
 blake3 = "1.8.3"
 ignore = "0.4.25"
 tree-sitter = "0.26.5"
