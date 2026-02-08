@@ -1,0 +1,16 @@
+[package]
+name = "pegon"
+version = "0.1.0"
+edition = "2024"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = 3
+codegen-units = 1
+
+[dependencies]
+blake3 = "1.8.3"
+ignore = "0.4.25"
+tree-sitter = "0.26.5"
+tree-sitter-java = "0.23.5"
