@@ -1,4 +1,4 @@
-pub mod formatting;
+pub mod lint;
 
 use std::{fs, process::ExitCode};
 
@@ -33,7 +33,7 @@ fn main() -> ExitCode {
                         }
                         parser.reset();
                         let tree = parser.parse(&data, None).unwrap();
-                        formatting::format(&tree, entry.path(), data);
+                        lint::lint_document(&tree, entry.path(), data);
                     }
                 }
                 Err(err) => println!("error: {}", err),
