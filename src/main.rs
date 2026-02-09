@@ -2,7 +2,7 @@ pub mod lint;
 
 use std::{fs, process::ExitCode};
 
-use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
+use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 
 fn main() -> ExitCode {
     let mut typesbuilder = TypesBuilder::new();
@@ -11,8 +11,16 @@ fn main() -> ExitCode {
     typesbuilder.add("java", "*.java").unwrap();
     typesbuilder.select("java");
     let matcher = typesbuilder.build().unwrap();
+    let mut overrides = OverrideBuilder::new("/home/rmuir/workspace/lucene");
+    // jflex-generated code with escaped DFA
+    overrides.add("!**/ClassicTokenizerImpl.java").unwrap();
+    overrides.add("!**/HTMLStripCharFilter.java").unwrap();
+    overrides.add("!**/StandardTokenizerImpl.java").unwrap();
+    overrides.add("!**/UAX29URLEmailTokenizerImpl.java").unwrap();
+    overrides.add("!**/WikipediaTokenizerImpl.java").unwrap();
     let mut builder = WalkBuilder::new("/home/rmuir/workspace/lucene");
     builder.types(matcher);
+    builder.overrides(overrides.build().unwrap());
     builder.build_parallel().run(|| {
         let mut parser = tree_sitter::Parser::new();
         parser

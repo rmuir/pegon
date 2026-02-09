@@ -1,0 +1,147 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ribru17/ts_query_ls/refs/heads/master/schemas/config.json",
+  "parser_install_directories": [
+    "${HOME}/.local/share/nvim/site/parser"
+  ],
+  "supported_abi_versions": {
+    "start": 13,
+    "end": 15
+  },
+  "parser_aliases": {
+    "html_tags": "html",
+    "ecma": "javascript",
+    "jsx": "javascript"
+  },
+  "valid_captures": {
+    "injections": {
+      "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
+      "injection.language": "indicates that the captured node’s text may contain the name of a language that should be used to re-parse the `@injection.content`",
+      "injection.filename": "indicates that the captured node’s text may contain a filename; the corresponding filetype is then looked-up up via `vim.filetype.match()` and treated as the name of a language that should be used to re-parse the `@injection.content`"
+    },
+    "lint": {
+      "error": "indicates the captured node is the source of the error",
+      "name": "diagnostic name such as `no-crappy-code`",
+      "title": "diagnostic headline such as `Do not write code like this`",
+      "label": "label applied to the captured error such as `problem here`"
+    }
+  },
+  "valid_predicates": {
+    "eq": {
+      "any": true,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        },
+        {
+          "type": "any",
+          "arity": "required"
+        }
+      ],
+      "description": "checks for equality between two nodes, or a node and a string"
+    },
+    "any-of": {
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        },
+        {
+          "type": "string",
+          "arity": "required"
+        },
+        {
+          "type": "string",
+          "arity": "required"
+        },
+        {
+          "type": "string",
+          "arity": "variadic"
+        }
+      ],
+      "description": "match any of the given strings against the text corresponding to a node"
+    },
+    "match": {
+      "any": true,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        },
+        {
+          "type": "string",
+          "arity": "required"
+        }
+      ],
+      "description": "Match a regexp against the text corresponding to a node"
+    }
+  },
+  "valid_directives": {
+    "set": {
+      "parameters": [
+        {
+          "type": "any",
+          "arity": "required"
+        },
+        {
+          "type": "any",
+          "arity": "optional"
+        },
+        {
+          "type": "any",
+          "arity": "optional"
+        }
+      ],
+      "description": "sets key/value metadata for a specific match or capture"
+    },
+    "trim": {
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        },
+        {
+          "type": "string",
+          "arity": "optional",
+          "constraint": {
+            "enum": [
+              "0",
+              "1"
+            ]
+          }
+        },
+        {
+          "type": "string",
+          "arity": "optional",
+          "constraint": {
+            "enum": [
+              "0",
+              "1"
+            ]
+          }
+        },
+        {
+          "type": "string",
+          "arity": "optional",
+          "constraint": {
+            "enum": [
+              "0",
+              "1"
+            ]
+          }
+        },
+        {
+          "type": "string",
+          "arity": "optional",
+          "constraint": {
+            "enum": [
+              "0",
+              "1"
+            ]
+          }
+        }
+      ],
+      "description": "Trims whitespace from the node. Sets a new `metadata[capture_id].range`. Takes a capture ID and, optionally, four integers to customize trimming behavior (`1` meaning trim, `0` meaning don't trim). When only given a capture ID, trims blank lines (lines that contain only whitespace, or are empty) from the end of the node (for backwards compatibility). Can trim all whitespace from both sides of the node if parameters are given."
+    }
+  }
+}
