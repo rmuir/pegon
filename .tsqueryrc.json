@@ -22,7 +22,8 @@
       "error": "indicates the captured node is the source of the error",
       "name": "diagnostic name such as `no-crappy-code`",
       "title": "diagnostic headline such as `Do not write code like this`",
-      "label": "label applied to the captured error such as `problem here`"
+      "label": "label applied to the captured error such as `problem here`",
+      "severity": "diagnostic severity level"
     }
   },
   "valid_predicates": {

@@ -28,6 +28,7 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
         let mut prop_name: Option<Box<str>> = None;
         let mut prop_title: Option<Box<str>> = None;
         let mut prop_label: Option<Box<str>> = None;
+        let mut prop_severity: Option<Box<str>> = None;
         for prop in props {
             let name = &*prop.key;
             if name == "name" {
@@ -36,6 +37,8 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
                 prop_title = prop.value.clone();
             } else if name == "label" {
                 prop_label = prop.value.clone();
+            } else if name == "severity" {
+                prop_severity = prop.value.clone();
             }
         }
 
@@ -56,7 +59,15 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
         }
 
         let source = str::from_utf8(data.as_slice()).unwrap();
-        let report = &[Level::ERROR
+        let severity = prop_severity.unwrap().to_string();
+        let level = match severity.as_str() {
+            "error" => Level::ERROR,
+            "warning" => Level::WARNING,
+            "info" => Level::INFO,
+            "hint" => Level::NOTE,
+            _ => Level::ERROR
+        };
+        let report = &[level
             .with_name(prop_name.unwrap().to_string())
             .primary_title(prop_title.unwrap().to_string())
             .id(id)
