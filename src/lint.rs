@@ -44,11 +44,18 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
 
         let error_capture = JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap();
         let node = hit.nodes_for_capture_index(error_capture).next().unwrap();
+
+        let label = if node.is_missing() {
+            format!("missing {} here", node.kind())
+        } else {
+            prop_label.unwrap().to_string()
+        };
+
         let mut annotations: Vec<Annotation> = Vec::new();
         annotations.push(
             AnnotationKind::Primary
                 .span(node.byte_range())
-                .label(prop_label.unwrap().to_string())
+                .label(label)
                 .highlight_source(true),
         );
 
