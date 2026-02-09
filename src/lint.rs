@@ -21,8 +21,6 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
     while let Some(hit) = matches.next() {
-        let id = format!("P{:04}", hit.pattern_index);
-        let id_url = format!("https://github.com/rmuir/pegon/wiki/lints#{}", id);
 
         let props = JAVA_ERROR_QUERY.property_settings(hit.pattern_index);
         let mut prop_name: Option<Box<str>> = None;
@@ -41,6 +39,8 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
                 prop_severity = prop.value.clone();
             }
         }
+        let name = prop_name.unwrap().to_string();
+        let prop_url = format!("https://github.com/rmuir/pegon/wiki/lints#{}", name);
 
         let error_capture = JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap();
         let node = hit.nodes_for_capture_index(error_capture).next().unwrap();
@@ -52,6 +52,7 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
                 .highlight_source(true),
         );
 
+        // TODO: use "real" context
         if let Some(parent) = node.parent() {
             let range = parent.byte_range();
             let end = min(range.end, node.byte_range().end);
@@ -68,13 +69,12 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
             _ => Level::ERROR
         };
         let report = &[level
-            .with_name(prop_name.unwrap().to_string())
             .primary_title(prop_title.unwrap().to_string())
-            .id(id)
-            .id_url(id_url)
+            .id(name)
+            .id_url(prop_url)
             .element(
                 Snippet::source(source)
-                    .line_start(node.range().start_point.row)
+                    //.line_start(node.range().start_point.row)
                     .path(path.to_str())
                     .annotations(annotations),
             )];
