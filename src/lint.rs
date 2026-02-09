@@ -1,5 +1,5 @@
 use annotate_snippets::{
-    Annotation, AnnotationKind, Level, Renderer, Snippet, renderer::DecorStyle
+    Annotation, AnnotationKind, Group, Level, Renderer, Snippet, renderer::DecorStyle
 };
 use std::{cmp::min, path::Path, sync::LazyLock};
 use tree_sitter::{Query, QueryCursor, StreamingIterator, Tree};
@@ -27,6 +27,7 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
         let mut prop_title: Option<Box<str>> = None;
         let mut prop_label: Option<Box<str>> = None;
         let mut prop_severity: Option<Box<str>> = None;
+        let mut prop_help: Option<Box<str>> = None;
         for prop in props {
             let name = &*prop.key;
             if name == "name" {
@@ -37,6 +38,8 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
                 prop_label = prop.value.clone();
             } else if name == "severity" {
                 prop_severity = prop.value.clone();
+            } else if name == "help" {
+                prop_help = prop.value.clone();
             }
         }
         let name = prop_name.unwrap().to_string();
@@ -81,10 +84,13 @@ pub fn lint_document(tree: &Tree, path: &Path, data: Vec<u8>) {
             .id_url(prop_url)
             .element(
                 Snippet::source(source)
-                    //.line_start(node.range().start_point.row)
                     .path(path.to_str())
                     .annotations(annotations),
-            )];
+            ),
+            Group::with_title(Level::HELP.secondary_title(
+                    prop_help.unwrap().to_string()
+            )),
+        ];
         anstream::println!("{}", RENDERER.render(report))
     }
 }

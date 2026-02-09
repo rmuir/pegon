@@ -23,7 +23,8 @@
       "name": "diagnostic name such as `no-crappy-code`",
       "title": "diagnostic headline such as `Do not write code like this`",
       "label": "label applied to the captured error such as `problem here`",
-      "severity": "diagnostic severity level"
+      "severity": "diagnostic severity level",
+      "help": "instructions to address issue"
     }
   },
   "valid_predicates": {
