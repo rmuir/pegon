@@ -72,6 +72,18 @@
   (#set! help "Replace the raw escape with \\\"")
   (#set! fix "\\\""))
 
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\u0027" "\\047" "\\47")
+  (#set! severity "error")
+  (#set! name "raw-special-escape")
+  (#set! title "Special escape sequence in octal/hex form")
+  (#set! label "Raw escape used here")
+  (#set! help "Replace the raw escape with \\'")
+  (#set! fix "\\'"))
+
+
 ; wildcard imports
 ; https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
 ((import_declaration

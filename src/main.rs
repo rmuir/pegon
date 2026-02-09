@@ -15,9 +15,11 @@ fn main() -> ExitCode {
     // jflex-generated code with escaped DFA
     overrides.add("!**/ClassicTokenizerImpl.java").unwrap();
     overrides.add("!**/HTMLStripCharFilter.java").unwrap();
+    overrides.add("!**/TestJapaneseAnalyzer.java").unwrap();
     overrides.add("!**/StandardTokenizerImpl.java").unwrap();
     overrides.add("!**/UAX29URLEmailTokenizerImpl.java").unwrap();
     overrides.add("!**/WikipediaTokenizerImpl.java").unwrap();
+    overrides.add("!**/WordBreakTestUnicode_12_1_0.java").unwrap();
     let mut builder = WalkBuilder::new("/home/rmuir/workspace/lucene");
     builder.types(matcher);
     builder.overrides(overrides.build().unwrap());
