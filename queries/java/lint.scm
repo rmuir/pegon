@@ -145,7 +145,7 @@
 (program
   (class_declaration)
   (class_declaration
-    name: (_) @error)
+    name: (identifier) @error)
   (#set! name "multiple-classes")
   (#set! severity "error")
   (#set! title "Multiple top-level classes in this file")
@@ -162,11 +162,32 @@
   (#set! label "literal used here")
   (#set! help "Change to an uppercase L suffix"))
 
+; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
+((formal_parameter
+  name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#set! severity "error")
+  (#set! name "invalid-param-name")
+  (#set! title "Uppercase parameter name")
+  (#set! label "parameter declared here")
+  (#set! help "Fix name to use lowerCamelcase"))
+
+; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
+(spread_parameter
+  (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#set! severity "error")
+  (#set! name "invalid-param-name")
+  (#set! title "Uppercase parameter name")
+  (#set! label "parameter declared here")
+  (#set! help "Fix name to use lowerCamelcase"))
+
 ; local variables should be lower/camel case
 ; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   declarator: (variable_declarator
-    name: (_) @error)
+    name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! severity "error")
   (#set! name "invalid-local-name")
