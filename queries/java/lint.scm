@@ -110,6 +110,16 @@
   (#set! help "Replace the raw escape with \\\\")
   (#set! fix "\\\\"))
 
+; line-wrapped package declaration
+; https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
+((package_declaration) @error
+  (#match? @error "\n")
+  (#set! severity "error")
+  (#set! name "wrapped-package")
+  (#set! title "Do not line-wrap package declarations")
+  (#set! label "package declared here")
+  (#set! help "Remove newlines from the package statement"))
+
 ; wildcard imports
 ; https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
 ((import_declaration
@@ -127,7 +137,7 @@
   (#set! severity "error")
   (#set! name "wrapped-import")
   (#set! title "Do not line-wrap imports")
-  (#set! label "Line-wrapped import here")
+  (#set! label "import declared here")
   (#set! help "Remove newlines from the import statement"))
 
 ; multiple top-level classes in the same file
