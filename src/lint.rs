@@ -104,7 +104,7 @@ impl Linter {
                     ),
                 Group::with_title(Level::HELP.secondary_title(prop_help.unwrap().to_string())),
             ];
-            anstream::println!("{}", RENDERER.render(report))
+            anstream::println!("{}\n", RENDERER.render(report))
         }
     }
 }
