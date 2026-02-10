@@ -161,3 +161,15 @@
   (#set! title "Lowercase suffix used for long literal")
   (#set! label "literal used here")
   (#set! help "Change to an uppercase L suffix"))
+
+; local variables should be lower/camel case
+; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
+(local_variable_declaration
+  declarator: (variable_declarator
+    name: (_) @error)
+  (#match? @error "^[A-Z]")
+  (#set! severity "error")
+  (#set! name "invalid-local-name")
+  (#set! title "Uppercase local variable name")
+  (#set! label "variable declared here")
+  (#set! help "Fix name to use lowerCamelcase"))
