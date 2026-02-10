@@ -20,7 +20,7 @@
   (#set! name "illegal-whitespace")
   (#set! title "Illegal whitespace character")
   (#set! label "Whitespace used here")
-  (#set! help "Escape the whitespace"))
+  (#set! help "Escape the character: only 0x20 may appear in literals"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -151,3 +151,13 @@
   (#set! title "Multiple top-level classes in this file")
   (#set! label "Additional top-level class defined here")
   (#set! help "Move classes into their own files"))
+
+; integer literal with lowercase 'l'
+; https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
+((decimal_integer_literal) @error
+  (#match? @error "l$")
+  (#set! name "lower-long-literal")
+  (#set! severity "error")
+  (#set! title "Lowercase suffix used for long literal")
+  (#set! label "literal used here")
+  (#set! help "Change to an uppercase L suffix"))
