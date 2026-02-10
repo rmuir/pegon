@@ -9,6 +9,19 @@
   (#set! label "Parse error here")
   (#set! help "Correct the invalid Java syntax"))
 
+; https://google.github.io/styleguide/javaguide.html#s2.3.1-whitespace-characters
+([
+  (character_literal)
+  (string_fragment)
+  (multiline_string_fragment)
+] @error
+  (#match? @error "[\\s&&[^\\u0020\n]]")
+  (#set! severity "error")
+  (#set! name "illegal-whitespace")
+  (#set! title "Illegal whitespace character")
+  (#set! label "Whitespace used here")
+  (#set! help "Escape the whitespace"))
+
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
