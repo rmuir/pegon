@@ -4,6 +4,8 @@ use std::{fs, process::ExitCode};
 
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 
+use crate::lint::Linter;
+
 fn main() -> ExitCode {
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include jsp and properties
@@ -24,10 +26,7 @@ fn main() -> ExitCode {
     builder.types(matcher);
     builder.overrides(overrides.build().unwrap());
     builder.build_parallel().run(|| {
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&tree_sitter_java::LANGUAGE.into())
-            .unwrap();
+        let mut linter = Linter::new();
 
         Box::new(move |result| {
             match result {
@@ -41,9 +40,7 @@ fn main() -> ExitCode {
                         if res == "foobar" {
                             println!("bogus: {}", res);
                         }
-                        parser.reset();
-                        let tree = parser.parse(&data, None).unwrap();
-                        lint::lint_document(&tree, entry.path(), data);
+                        linter.lint(entry.path(), data);
                     }
                 }
                 Err(err) => println!("error: {}", err),
