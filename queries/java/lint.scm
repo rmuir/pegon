@@ -1,5 +1,8 @@
 ; TS parsing error
-([(ERROR)(MISSING)] @error
+([
+  (ERROR)
+  (MISSING)
+] @error
   (#set! name "parse-error")
   (#set! severity "warning")
   (#set! title "Parse Error")
@@ -103,3 +106,25 @@
   (#set! title "Do not use wildcard imports")
   (#set! label "Wildcard used here")
   (#set! help "Replace the wildcard import with standard import(s)"))
+
+; line-wrapped imports
+; https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
+((import_declaration) @error
+  (#match? @error "\n")
+  (#set! severity "error")
+  (#set! name "wrapped-import")
+  (#set! title "Do not line-wrap imports")
+  (#set! label "Line-wrapped import here")
+  (#set! help "Remove newlines from the import statement"))
+
+; multiple top-level classes in the same file
+; https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
+(program
+  (class_declaration)
+  (class_declaration
+    name: (_) @error)
+  (#set! name "multiple-classes")
+  (#set! severity "error")
+  (#set! title "Multiple top-level classes in this file")
+  (#set! label "Additional top-level class defined here")
+  (#set! help "Move classes into their own files"))
