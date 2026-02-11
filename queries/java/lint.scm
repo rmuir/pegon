@@ -154,6 +154,17 @@
   (#set! label "literal used here")
   (#set! help "Change to an uppercase L suffix to improve legibility"))
 
+; identifier containing illegal character
+; https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
+((identifier) @error
+  (#match? @error "[^a-zA-Z0-9_]")
+  (#set! severity "error")
+  (#set! name "invalid-identifier-name")
+  (#set! title "Illegal characters used in identifier")
+  (#set! label "identifier here")
+  (#set! help "Change to use only ASCII letters, digits, and underscores"))
+
+; parameters should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 ((formal_parameter
   name: (identifier) @error)
@@ -164,6 +175,7 @@
   (#set! label "parameter declared here")
   (#set! help "Change parameter name to use lowerCamelCase"))
 
+; spread parameter should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (spread_parameter
   (variable_declarator
@@ -175,7 +187,7 @@
   (#set! label "parameter declared here")
   (#set! help "Change parameter name to use lowerCamelCase"))
 
-; local variables should be lower/camel case
+; local variables should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   declarator: (variable_declarator
