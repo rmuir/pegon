@@ -1,8 +1,8 @@
 use annotate_snippets::{
     Annotation, AnnotationKind, Level, Renderer, Snippet, renderer::DecorStyle,
 };
-use std::{cmp::min, path::Path, sync::LazyLock};
-use tree_sitter::{Query, QueryCursor, StreamingIterator};
+use std::{cmp::min, ops::Range, path::Path, sync::LazyLock};
+use tree_sitter::{Node, Query, QueryCursor, StreamingIterator};
 
 static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
@@ -16,6 +16,22 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
 });
 
 static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
+
+fn context(node: &Node) -> Option<Range<usize>> {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        match p.kind() {
+            "method_declaration" | "constructor_declaration" | "class_definition" => {
+                if let Some(body) = p.child_by_field_name("body") {
+                    return Some(p.range().start_byte..body.range().start_byte);
+                }
+            }
+            _ => {}
+        }
+        parent = p.parent();
+    }
+    None
+}
 
 pub struct Linter {
     parser: tree_sitter::Parser,
@@ -76,11 +92,8 @@ impl Linter {
                     .highlight_source(true),
             );
 
-            // TODO: use "real" context
-            if let Some(parent) = node.parent() {
-                let range = parent.byte_range();
-                let end = min(range.end, node.byte_range().end);
-                annotations.push(AnnotationKind::Visible.span(range.start..end));
+            if let Some(ctx) = context(&node) {
+                annotations.push(AnnotationKind::Visible.span(ctx.start..ctx.end));
             }
 
             let source = str::from_utf8(data.as_slice()).unwrap();
