@@ -1,7 +1,7 @@
 use annotate_snippets::{
     Annotation, AnnotationKind, Level, Renderer, Snippet, renderer::DecorStyle,
 };
-use std::{cmp::min, ops::Range, path::Path, sync::LazyLock};
+use std::{ops::Range, path::Path, sync::LazyLock};
 use tree_sitter::{Node, Query, QueryCursor, StreamingIterator};
 
 static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
