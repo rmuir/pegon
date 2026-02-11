@@ -94,55 +94,6 @@
         }
       ],
       "description": "sets key/value metadata for a specific match or capture"
-    },
-    "trim": {
-      "parameters": [
-        {
-          "type": "capture",
-          "arity": "required"
-        },
-        {
-          "type": "string",
-          "arity": "optional",
-          "constraint": {
-            "enum": [
-              "0",
-              "1"
-            ]
-          }
-        },
-        {
-          "type": "string",
-          "arity": "optional",
-          "constraint": {
-            "enum": [
-              "0",
-              "1"
-            ]
-          }
-        },
-        {
-          "type": "string",
-          "arity": "optional",
-          "constraint": {
-            "enum": [
-              "0",
-              "1"
-            ]
-          }
-        },
-        {
-          "type": "string",
-          "arity": "optional",
-          "constraint": {
-            "enum": [
-              "0",
-              "1"
-            ]
-          }
-        }
-      ],
-      "description": "Trims whitespace from the node. Sets a new `metadata[capture_id].range`. Takes a capture ID and, optionally, four integers to customize trimming behavior (`1` meaning trim, `0` meaning don't trim). When only given a capture ID, trims blank lines (lines that contain only whitespace, or are empty) from the end of the node (for backwards compatibility). Can trim all whitespace from both sides of the node if parameters are given."
     }
   }
 }
