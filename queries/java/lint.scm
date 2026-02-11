@@ -164,6 +164,39 @@
   (#set! label "identifier here")
   (#set! help "Change to use only ASCII letters, digits, and underscores"))
 
+; package names should be lowercase and digits only
+; https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
+((package_declaration
+  (identifier) @error)
+  (#match? @error "[^a-z0-9]")
+  (#set! severity "error")
+  (#set! name "invalid-package-name")
+  (#set! title "Illegal characters used in package name")
+  (#set! label "package declared here")
+  (#set! help "Change package name to use lowercase and digits"))
+
+; module names should be lowercase and digits only
+; https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
+((module_declaration
+  (identifier) @error)
+  (#match? @error "[^a-z0-9]")
+  (#set! severity "error")
+  (#set! name "invalid-module-name")
+  (#set! title "Illegal characters used in module name")
+  (#set! label "module declared here")
+  (#set! help "Change module name to use lowercase and digits"))
+
+; class names should be UpperCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
+((class_declaration
+  name: (identifier) @error)
+  (#match? @error "^[a-z]")
+  (#set! severity "error")
+  (#set! name "invalid-class-name")
+  (#set! title "Lowercase class name")
+  (#set! label "class declared here")
+  (#set! help "Change class name to use UpperCamelCase"))
+
 ; parameters should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 ((formal_parameter
