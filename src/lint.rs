@@ -1,5 +1,5 @@
 use annotate_snippets::{
-    Annotation, AnnotationKind, Group, Level, Renderer, Snippet, renderer::DecorStyle,
+    Annotation, AnnotationKind, Level, Renderer, Snippet, renderer::DecorStyle,
 };
 use std::{cmp::min, path::Path, sync::LazyLock};
 use tree_sitter::{Query, QueryCursor, StreamingIterator};
@@ -92,18 +92,16 @@ impl Linter {
                 "hint" => Level::NOTE,
                 _ => Level::ERROR,
             };
-            let report = &[
-                level
-                    .primary_title(prop_title.unwrap().to_string())
-                    .id(name)
-                    .id_url(prop_url)
-                    .element(
-                        Snippet::source(source)
-                            .path(path.to_str())
-                            .annotations(annotations),
-                    ),
-                Group::with_title(Level::HELP.secondary_title(prop_help.unwrap().to_string())),
-            ];
+            let report = &[level
+                .primary_title(prop_title.unwrap().to_string())
+                .id(name)
+                .id_url(prop_url)
+                .element(
+                    Snippet::source(source)
+                        .path(path.to_str())
+                        .annotations(annotations),
+                )
+                .element(Level::HELP.message(prop_help.unwrap().to_string()))];
             anstream::println!("{}\n", RENDERER.render(report))
         }
     }
