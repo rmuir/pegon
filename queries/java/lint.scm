@@ -30,7 +30,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\b")
+  (#set! help "Replace the raw escape with the special escape \\b")
   (#set! fix "\\b"))
 
 ; special escape sequences encoded as octal/hex
@@ -41,7 +41,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\t")
+  (#set! help "Replace the raw escape with the special escape \\t")
   (#set! fix "\\t"))
 
 ; special escape sequences encoded as octal/hex
@@ -52,7 +52,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\n")
+  (#set! help "Replace the raw escape with the special escape \\n")
   (#set! fix "\\n"))
 
 ; special escape sequences encoded as octal/hex
@@ -63,7 +63,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\f")
+  (#set! help "Replace the raw escape with the special escape \\f")
   (#set! fix "\\f"))
 
 ; special escape sequences encoded as octal/hex
@@ -74,7 +74,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\r")
+  (#set! help "Replace the raw escape with the special escape \\r")
   (#set! fix "\\r"))
 
 ; special escape sequences encoded as octal/hex
@@ -85,7 +85,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\\"")
+  (#set! help "Replace the raw escape with the special escape \\\"")
   (#set! fix "\\\""))
 
 ; special escape sequences encoded as octal/hex
@@ -96,7 +96,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\'")
+  (#set! help "Replace the raw escape with the special escape \\'")
   (#set! fix "\\'"))
 
 ; special escape sequences encoded as octal/hex
@@ -107,7 +107,7 @@
   (#set! name "raw-special-escape")
   (#set! title "Special escape sequence in octal/hex form")
   (#set! label "Raw escape used here")
-  (#set! help "Replace the raw escape with \\\\")
+  (#set! help "Replace the raw escape with the special escape \\\\")
   (#set! fix "\\\\"))
 
 ; line-wrapped package declaration
@@ -150,7 +150,7 @@
   (#set! severity "error")
   (#set! title "Multiple top-level classes in this file")
   (#set! label "Additional top-level class defined here")
-  (#set! help "Move classes into their own files"))
+  (#set! help "Move top-level classes into their own files: only one per file"))
 
 ; integer literal with lowercase 'l'
 ; https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
@@ -160,7 +160,7 @@
   (#set! severity "error")
   (#set! title "Lowercase suffix used for long literal")
   (#set! label "literal used here")
-  (#set! help "Change to an uppercase L suffix"))
+  (#set! help "Change to an uppercase L suffix to improve legibility"))
 
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 ((formal_parameter
@@ -170,7 +170,7 @@
   (#set! name "invalid-param-name")
   (#set! title "Uppercase parameter name")
   (#set! label "parameter declared here")
-  (#set! help "Fix name to use lowerCamelcase"))
+  (#set! help "Fix parameter name to use lowerCamelCase"))
 
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (spread_parameter
@@ -181,7 +181,7 @@
   (#set! name "invalid-param-name")
   (#set! title "Uppercase parameter name")
   (#set! label "parameter declared here")
-  (#set! help "Fix name to use lowerCamelcase"))
+  (#set! help "Fix parameter name to use lowerCamelCase"))
 
 ; local variables should be lower/camel case
 ; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -193,4 +193,4 @@
   (#set! name "invalid-local-name")
   (#set! title "Uppercase local variable name")
   (#set! label "variable declared here")
-  (#set! help "Fix name to use lowerCamelcase"))
+  (#set! help "Fix variable name to use lowerCamelCase: not static final"))
