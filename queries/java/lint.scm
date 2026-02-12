@@ -199,26 +199,28 @@
 
 ; parameters should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-((formal_parameter
-  name: (identifier) @error)
-  (#match? @error "^[A-Z]")
-  (#set! severity "error")
-  (#set! name "invalid-param-name")
-  (#set! title "Uppercase parameter name")
-  (#set! label "parameter declared here")
-  (#set! help "Change parameter name to use lowerCamelCase"))
+(formal_parameters
+  ((formal_parameter
+    name: (identifier) @error)
+    (#match? @error "^[A-Z]")
+    (#set! severity "error")
+    (#set! name "invalid-param-name")
+    (#set! title "Uppercase parameter name")
+    (#set! label "parameter declared here")
+    (#set! help "Change parameter name to use lowerCamelCase"))) @visible
 
 ; spread parameter should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-(spread_parameter
-  (variable_declarator
-    name: (identifier) @error)
-  (#match? @error "^[A-Z]")
-  (#set! severity "error")
-  (#set! name "invalid-param-name")
-  (#set! title "Uppercase parameter name")
-  (#set! label "parameter declared here")
-  (#set! help "Change parameter name to use lowerCamelCase"))
+(formal_parameters
+  (spread_parameter
+    (variable_declarator
+      name: (identifier) @error)
+    (#match? @error "^[A-Z]")
+    (#set! severity "error")
+    (#set! name "invalid-param-name")
+    (#set! title "Uppercase parameter name")
+    (#set! label "parameter declared here")
+    (#set! help "Change parameter name to use lowerCamelCase"))) @visible
 
 ; local variables should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -230,7 +232,7 @@
   (#set! name "invalid-local-name")
   (#set! title "Uppercase local variable name")
   (#set! label "variable declared here")
-  (#set! help "Change variable name to use lowerCamelCase: not static final"))
+  (#set! help "Change variable name to use lowerCamelCase: not static final")) @visible
 
 ; Caught exceptions: not ignored
 ; https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
