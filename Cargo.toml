@@ -17,9 +17,15 @@ opt-level = 1
 codegen-units = 16
 
 [dependencies]
+# Renders console diagnostics
 annotate-snippets = "0.12.11"
+# ANSI styling
 anstream = "0.6.21"
+# Caching already-processed files
 blake3 = "1.8.3"
+# Traversing directories, respecting ignore files
 ignore = "0.4.25"
+# Parsing system
 tree-sitter = "0.26.5"
+# Parser for java
 tree-sitter-java = "0.23.5"
