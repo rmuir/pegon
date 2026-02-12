@@ -18,23 +18,24 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
 static JAVA_ERROR_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap());
 
-static JAVA_CONTEXT_CAPTURE: LazyLock<u32> =
+static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
 
-static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
+static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Ascii);
 
-fn ts_context(node: &Node) -> Option<Range<usize>> {
-    let mut parent = node.parent();
-    while let Some(p) = parent {
-        match p.kind() {
+fn top_context(error_node: &Node) -> Option<Range<usize>> {
+    let mut parent = error_node.parent();
+    while let Some(node) = parent {
+        match node.kind() {
             "method_declaration" | "constructor_declaration" | "class_definition" => {
-                if let Some(body) = p.child_by_field_name("body") {
-                    return Some(p.range().start_byte..body.range().start_byte);
+                if let Some(body) = node.child_by_field_name("body") {
+                    return Some(node.range().start_byte..body.range().start_byte);
+                } else {
+                    return None;
                 }
             }
-            _ => {}
+            _ => parent = node.parent(),
         }
-        parent = p.parent();
     }
     None
 }
@@ -92,6 +93,7 @@ impl Linter {
                 prop_label.unwrap().to_string()
             };
 
+            // primary error annotation: as precise of a range as possible
             let mut annotations: Vec<Annotation> = Vec::new();
             annotations.push(
                 AnnotationKind::Primary
@@ -100,12 +102,14 @@ impl Linter {
                     .highlight_source(true),
             );
 
-            for context in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
-                annotations.push(AnnotationKind::Visible.span(context.byte_range()));
+            // node context: explicitly marked visible in the query
+            for visible in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
+                annotations.push(AnnotationKind::Visible.span(visible.byte_range()));
             }
 
-            if let Some(ctx) = ts_context(&node) {
-                annotations.push(AnnotationKind::Visible.span(ctx.start..ctx.end));
+            // top context: e.g. what function are you in
+            if let Some(ctx) = top_context(&node) {
+                annotations.push(AnnotationKind::Visible.span(ctx));
             }
 
             let source = str::from_utf8(data.as_slice()).unwrap();
