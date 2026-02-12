@@ -231,3 +231,17 @@
   (#set! title "Uppercase local variable name")
   (#set! label "variable declared here")
   (#set! help "Change variable name to use lowerCamelCase: not static final"))
+
+; Caught exceptions: not ignored
+; https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
+(catch_clause
+  (catch_formal_parameter
+    name: (identifier) @error)
+  body: (block) @context
+  (#not-any-of? @error "_" "ignored")
+  (#not-match? @context "[a-zA-Z0-9_]")
+  (#set! severity "error")
+  (#set! name "ignored-caught-exception")
+  (#set! title "Caught exception ignored")
+  (#set! label "exception being ignored")
+  (#set! help "Handle the exception, add a comment, or indicate via unnamed variable _"))
