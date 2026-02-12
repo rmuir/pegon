@@ -24,7 +24,7 @@
       "label": "label applied to the captured error such as `problem here`",
       "severity": "diagnostic severity level",
       "help": "instructions to address issue",
-      "context": "captured nodes with relevance to the error"
+      "visible": "indicates the captured node is relevant and should be visible"
     }
   },
   "valid_predicates": {

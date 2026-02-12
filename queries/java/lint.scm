@@ -236,12 +236,13 @@
 ; https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
 (catch_clause
   (catch_formal_parameter
+    (catch_type)
     name: (identifier) @error)
-  body: (block) @context
-  (#not-any-of? @error "_" "ignored")
-  (#not-match? @context "[a-zA-Z0-9_]")
+  body: (block) @_block
+  (#not-eq? @error "_")
+  (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! severity "error")
   (#set! name "ignored-caught-exception")
   (#set! title "Caught exception ignored")
   (#set! label "exception being ignored")
-  (#set! help "Handle the exception, add a comment, or indicate via unnamed variable _"))
+  (#set! help "Handle the exception, add a comment, or indicate via unnamed variable _")) @visible

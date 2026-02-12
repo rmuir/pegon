@@ -15,9 +15,15 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
     .unwrap()
 });
 
+static JAVA_ERROR_CAPTURE: LazyLock<u32> =
+    LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap());
+
+static JAVA_CONTEXT_CAPTURE: LazyLock<u32> =
+    LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
+
 static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
 
-fn context(node: &Node) -> Option<Range<usize>> {
+fn ts_context(node: &Node) -> Option<Range<usize>> {
     let mut parent = node.parent();
     while let Some(p) = parent {
         match p.kind() {
@@ -75,8 +81,10 @@ impl Linter {
             let name = prop_name.unwrap().to_string();
             let prop_url = format!("https://github.com/rmuir/pegon/wiki/lints#{}", name);
 
-            let error_capture = JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap();
-            let node = hit.nodes_for_capture_index(error_capture).next().unwrap();
+            let node = hit
+                .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
+                .next()
+                .unwrap();
 
             let label = if node.is_missing() {
                 format!("missing {} here", node.kind())
@@ -92,7 +100,11 @@ impl Linter {
                     .highlight_source(true),
             );
 
-            if let Some(ctx) = context(&node) {
+            for context in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+                annotations.push(AnnotationKind::Visible.span(context.byte_range()));
+            }
+
+            if let Some(ctx) = ts_context(&node) {
                 annotations.push(AnnotationKind::Visible.span(ctx.start..ctx.end));
             }
 
