@@ -30,7 +30,6 @@ classifiers = [
   "Operating System :: OS Independent",
   "Intended Audience :: Developers",
   "Environment :: Console",
-  "Typing :: Typed",
 ]
 dependencies = []
 
