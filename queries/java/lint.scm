@@ -234,6 +234,17 @@
   (#set! label "variable declared here")
   (#set! help "Change variable name to use lowerCamelCase: not static final")) @visible
 
+; type variables should be UpperCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
+((type_parameter
+  (type_identifier) @error)
+  (#match? @error "^[a-z]")
+  (#set! severity "error")
+  (#set! name "invalid-type-name")
+  (#set! title "Lowercase type name")
+  (#set! label "type variable declared here")
+  (#set! help "Change type name to use UpperCamelCase"))
+
 ; Caught exceptions: not ignored
 ; https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
 (catch_clause
