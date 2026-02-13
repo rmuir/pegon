@@ -56,6 +56,7 @@ dev = [
     { name = "prek" },
     { name = "rumdl" },
     { name = "shellcheck-py" },
+    { name = "typos" },
     { name = "validate-pyproject", extra = ["all"] },
     { name = "zizmor" },
 ]
@@ -69,6 +70,7 @@ dev = [
     { name = "prek", specifier = "==0.3.1" },
     { name = "rumdl", specifier = "==0.1.7" },
     { name = "shellcheck-py", specifier = "==0.11.0.1" },
+    { name = "typos", specifier = "==1.43.4" },
     { name = "validate-pyproject", extras = ["all"], specifier = "==0.25" },
     { name = "zizmor", specifier = "==1.22.0" },
 ]
@@ -185,6 +187,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/43/7935f8ea93fcb6680bc10a6fdbf534075c198eeead59150dd5ed68449642/trove_classifiers-2026.1.14.14.tar.gz", hash = "sha256:00492545a1402b09d4858605ba190ea33243d361e2b01c9c296ce06b5c3325f3", size = 16997, upload-time = "2026-01-14T14:54:50.526Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bb/4a/2e5583e544bc437d5e8e54b47db87430df9031b29b48d17f26d129fa60c0/trove_classifiers-2026.1.14.14-py3-none-any.whl", hash = "sha256:1f9553927f18d0513d8e5ff80ab8980b8202ce37ecae0e3274ed2ef11880e74d", size = 14197, upload-time = "2026-01-14T14:54:49.067Z" },
+]
+
+[[package]]
+name = "typos"
+version = "1.43.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/db/dece16ef4f2fd73b114b3ebd30f3d1b18dbcfc4741a23e9a4c89ec8be707/typos-1.43.4.tar.gz", hash = "sha256:593d2f13f4e6d57bc3062eaf1c35083f86090f84a1868a1c21295b98da88c91e", size = 1798880, upload-time = "2026-02-09T14:26:52.226Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/ad/d028a67fc9428cffafd7222f613f68f5b951b9cdd7c4366ed95a43aaaa77/typos-1.43.4-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:aa3771cfbd78df2dafe77bea4de67cb352b073a92274f6c831f6a7f6a551e646", size = 3449305, upload-time = "2026-02-09T14:26:35.603Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/55/2a943b2e79dd93522c683d9eb63d23813bbb9d3e96d1b65c6315de4c095f/typos-1.43.4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:aba0654a8ecb92be31fc559aff1bce68eb132a5f6f065ecfe213cd46cb433179", size = 3344013, upload-time = "2026-02-09T14:26:37.879Z" },
+    { url = "https://files.pythonhosted.org/packages/95/0d/bd2c52e6e6d53b99d7238f60012c9c65d73d139ae338bf29f517ca5e8467/typos-1.43.4-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a7eb60f4b09614b4054495de83d10610da7c11c5fd1e72ad04fc5b20442bee9b", size = 8154117, upload-time = "2026-02-09T14:26:39.819Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/dd/240eeffc8bb3e99c8241df2f57869af72ceb4077de78704f534f40306abf/typos-1.43.4-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c3e5c915ad2808c66bae041cb29607e1ec506e2a08608f07f4f415020df5590a", size = 7297810, upload-time = "2026-02-09T14:26:42.11Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/07/34e3c7371f0fb65c1f4f5b07a3a6f9147b61361dc8dc8b0989450e49e90b/typos-1.43.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f9c9b2e14423c40eb55e5cba8ba96af0827fa1c88ac52f685f17f01971162f6e", size = 7676638, upload-time = "2026-02-09T14:26:44.648Z" },
+    { url = "https://files.pythonhosted.org/packages/86/3f/f7d9135eb04c5106fd213213fcc057d234f89ee6bd8b654451825c8ed83c/typos-1.43.4-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:36acc5afe8c876c5799b7eab7f66886787861848630ee17a3dcc6455cb6bb143", size = 8105255, upload-time = "2026-02-09T14:26:46.545Z" },
+    { url = "https://files.pythonhosted.org/packages/60/fb/f06d85fb64a1f4d9a636803ea18c68f7ea3478dd5fcb04fbaef105a0bf65/typos-1.43.4-py3-none-win32.whl", hash = "sha256:338d163d8e1dfd4d1a5233561d0d4747bb6f5e377c042be78ac5c1ea8ae553a9", size = 3094938, upload-time = "2026-02-09T14:26:48.58Z" },
+    { url = "https://files.pythonhosted.org/packages/61/78/ecf3f89c98b766ae1185af444bb323b92f2378e2abc5ae0af62021f9a94b/typos-1.43.4-py3-none-win_amd64.whl", hash = "sha256:73fc9858fa40bd89aabf3877f263fb3cce1c9388ed922dd50a1f2643341636f9", size = 3285300, upload-time = "2026-02-09T14:26:50.531Z" },
 ]
 
 [[package]]
