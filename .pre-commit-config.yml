@@ -59,7 +59,7 @@ repos:
   - repo: local
     hooks:
       - id: actionlint
-        name: Check Github Actions
+        name: Check Github Workflows
         priority: 0
         language: system
         entry: uv
@@ -72,6 +72,34 @@ repos:
         files:
           glob:
             - .github/**/*.yml
+
+      - id: jsonschema-github-workflows
+        name: Check Github Workflows Schema
+        priority: 0
+        require_serial: true
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "check-jsonschema", "--builtin-schema", "vendor.github-workflows"]
+        env:
+          UV_FROZEN: "1"
+        types: [yaml]
+        files:
+          glob:
+            - ".github/workflows/*.{yml,yaml}"
+
+      - id: jsonschema-github-workflow-timeouts
+        name: Check Github Workflows Timeouts
+        priority: 0
+        require_serial: true
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "check-jsonschema", "--builtin-schema", "custom.github-workflows-require-timeout"]
+        env:
+          UV_FROZEN: "1"
+        types: [yaml]
+        files:
+          glob:
+            - ".github/workflows/*.{yml,yaml}"
 
       - id: zizmor
         name: Check Github Actions Security

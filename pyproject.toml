@@ -53,6 +53,8 @@ dev = [
   "rumdl==0.1.7",
   # yaml
   "google-yamlfmt==0.21.0",
+  # yaml schema
+  "check-jsonschema==0.36.1",
   # spelling
   "typos==1.43.4",
   # this file
