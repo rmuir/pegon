@@ -132,16 +132,7 @@ repos:
         types: ["yaml"]
 
       # slower rust checks
-
-      - id: cargo-fmt
-        name: Fix Rust formatting
-        language: system
-        entry: cargo
-        args: ["fmt", "--all"]
-        # runs across all files if any are touched
-        require_serial: true
-        pass_filenames: false
-        types: [rust]
+      # each one runs sequentially for now
 
       - id: cargo-check
         name: Check Rust compilation
@@ -212,6 +203,16 @@ repos:
         entry: cargo
         args: ["fix", "--workspace", "--allow-dirty", "--allow-staged"]
         types: ["rust"]
+
+      - id: cargo-fmt
+        name: Fix Rust formatting
+        language: system
+        entry: cargo
+        args: ["fmt", "--all"]
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        types: [rust]
 
   # self-checks for this configuration file
   - repo: meta
