@@ -69,7 +69,7 @@ impl Linter {
             let mut prop_title: Option<Box<str>> = None;
             let mut prop_label: Option<Box<str>> = None;
             let mut prop_severity: Option<Box<str>> = None;
-            let mut prop_help: Option<Box<str>> = None;
+            let mut prop_note: Option<Box<str>> = None;
             for prop in props {
                 let name = &*prop.key;
                 if name == "name" {
@@ -80,8 +80,8 @@ impl Linter {
                     prop_label = prop.value.clone();
                 } else if name == "severity" {
                     prop_severity = prop.value.clone();
-                } else if name == "help" {
-                    prop_help = prop.value.clone();
+                } else if name == "note" {
+                    prop_note = prop.value.clone();
                 }
             }
             let name = prop_name.unwrap().to_string();
@@ -136,7 +136,7 @@ impl Linter {
                             .path(path.to_str())
                             .annotations(annotations),
                     ),
-                Group::with_title(Level::NOTE.secondary_title(prop_help.unwrap().to_string())),
+                Group::with_title(Level::NOTE.secondary_title(prop_note.unwrap().to_string())),
             ];
             anstream::println!("{}\n", RENDERER.render(report))
         }
