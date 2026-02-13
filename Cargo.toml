@@ -15,7 +15,7 @@ strip = true
 
 [dependencies]
 # Renders console diagnostics
-annotate-snippets = "0.12.11"
+annotate-snippets = { version = "0.12.11", features = ["simd"] }
 # ANSI styling
 anstream = "0.6.21"
 # Caching already-processed files
