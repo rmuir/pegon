@@ -20,6 +20,7 @@ lint: ## Lint, format, test
 
 .PHONY: bench
 bench: ## Run micro-benchmarks
+	# run benchmark suite
 	cargo bench
 
 .PHONY: help

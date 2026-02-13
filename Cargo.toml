@@ -8,19 +8,10 @@ license = "Apache-2.0"
 repository = "https://github.com/rmuir/pegon"
 documentation = "https://github.com/rmuir/pegon/wiki"
 
-
 [profile.release]
 lto = true
-strip = true
-opt-level = 3
 codegen-units = 1
-
-[profile.profiling]
-inherits = "release"
-lto = false
-strip = false
-opt-level = 1
-codegen-units = 16
+strip = true
 
 [dependencies]
 # Renders console diagnostics
