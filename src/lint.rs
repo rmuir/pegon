@@ -1,5 +1,5 @@
 use annotate_snippets::{
-    Annotation, AnnotationKind, Level, Renderer, Snippet,
+    Annotation, AnnotationKind, Group, Level, Renderer, Snippet,
     renderer::{DecorStyle, Style},
 };
 use std::{ops::Range, path::Path, sync::LazyLock};
@@ -123,19 +123,21 @@ impl Linter {
                 "error" => Level::ERROR,
                 "warning" => Level::WARNING,
                 "info" => Level::INFO,
-                "hint" => Level::NOTE,
+                "hint" => Level::HELP,
                 _ => Level::ERROR,
             };
-            let report = &[level
-                .primary_title(prop_title.unwrap().to_string())
-                .id(name)
-                .id_url(prop_url)
-                .element(
-                    Snippet::source(source)
-                        .path(path.to_str())
-                        .annotations(annotations),
-                )
-                .element(Level::HELP.message(prop_help.unwrap().to_string()))];
+            let report = &[
+                level
+                    .primary_title(prop_title.unwrap().to_string())
+                    .id(name)
+                    .id_url(prop_url)
+                    .element(
+                        Snippet::source(source)
+                            .path(path.to_str())
+                            .annotations(annotations),
+                    ),
+                Group::with_title(Level::NOTE.secondary_title(prop_help.unwrap().to_string())),
+            ];
             anstream::println!("{}\n", RENDERER.render(report))
         }
     }
