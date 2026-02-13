@@ -1,5 +1,6 @@
 use annotate_snippets::{
-    Annotation, AnnotationKind, Level, Renderer, Snippet, renderer::DecorStyle,
+    Annotation, AnnotationKind, Level, Renderer, Snippet,
+    renderer::{DecorStyle, Style},
 };
 use std::{ops::Range, path::Path, sync::LazyLock};
 use tree_sitter::{Node, Query, QueryCursor, StreamingIterator};
@@ -21,7 +22,9 @@ static JAVA_ERROR_CAPTURE: LazyLock<u32> =
 static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
 
-static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
+static RENDERER: Renderer = Renderer::styled()
+    .decor_style(DecorStyle::Unicode)
+    .line_num(Style::new().dimmed());
 
 /// simplified version of nvim-treesitter-context
 /// <https://github.com/nvim-treesitter/nvim-treesitter-context>
