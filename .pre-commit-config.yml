@@ -89,7 +89,7 @@ repos:
             - .github/**/*.yml
 
       - id: validate-pyproject
-        name: Validate pyproject.toml
+        name: Check pyproject.toml
         priority: 0
         language: system
         entry: uv
@@ -100,6 +100,16 @@ repos:
         files:
           glob:
             - pyproject.toml
+
+      - id: typos
+        name: Check spelling
+        priority: 0
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "typos", "--force-exclude"]
+        env:
+          UV_FROZEN: "1"
+        require_serial: true
 
       - id: rumdl
         name: Fix Markdown
@@ -120,6 +130,88 @@ repos:
           UV_FROZEN: "1"
         require_serial: true
         types: ["yaml"]
+
+      # slower rust checks
+
+      - id: cargo-fmt
+        name: Fix Rust formatting
+        language: system
+        entry: cargo
+        args: ["fmt", "--all"]
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        types: [rust]
+
+      - id: cargo-check
+        name: Check Rust compilation
+        language: system
+        entry: cargo
+        args: ["check", "--workspace"]
+        env:
+          RUSTFLAGS: "-D warnings"
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - Cargo.toml
+            - Cargo.lock
+            - "**/*.rs"
+
+      - id: cargo-clippy
+        name: Check Rust lints
+        language: system
+        entry: cargo
+        args: ["clippy", "--workspace", "--", "-D", "warnings"]
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - Cargo.toml
+            - Cargo.lock
+            - "**/*.rs"
+
+      - id: cargo-test
+        name: Check Rust tests
+        language: system
+        entry: cargo
+        args: ["test", "--workspace"]
+        # run across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - Cargo.toml
+            - Cargo.lock
+            - "**/*.rs"
+
+      - id: cargo-rustdoc
+        name: Check Rust documentation
+        language: system
+        entry: cargo
+        args: ["rustdoc"]
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - Cargo.toml
+            - Cargo.lock
+            - "**/*.rs"
+            - "README.*"
+
+      - id: cargo-fix
+        name: Fix Rust problems
+        language: system
+        pass_filenames: false
+        require_serial: true
+        entry: cargo
+        args: ["fix", "--workspace", "--allow-dirty", "--allow-staged"]
+        types: ["rust"]
 
   # self-checks for this configuration file
   - repo: meta
