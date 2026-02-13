@@ -3,8 +3,8 @@
 SHELL := /bin/bash
 .SHELLFLAGS := --norc -euo pipefail -c
 
-.PHONY: all
-all: ## Create binary
+.PHONY: pegon
+pegon: ## Create binary
 	# create target/release/pegon
 	cargo build --release
 
@@ -14,9 +14,13 @@ wheel: ## Create python package
 	uv build
 
 .PHONY: lint
-lint: ## Lint and format sources
+lint: ## Lint, format, test
 	# run checks on all files
 	uv run --frozen --only-dev prek --all-files
+
+.PHONY: bench
+bench: ## Run micro-benchmarks
+	cargo bench
 
 .PHONY: help
 help: ## Display this help screen
