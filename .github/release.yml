@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/github-release-config.json
+changelog:
+  categories:
+    - title: 🏕 Changes
+      labels:
+        - "*"
+      exclude:
+        labels:
+          - skip-changelog
+          - dependencies
+    - title: 👒 Dependencies
+      labels:
+        - dependencies
+      exclude:
+        labels:
+          - skip-changelog

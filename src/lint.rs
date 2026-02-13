@@ -23,6 +23,8 @@ static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
 
 static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Ascii);
 
+/// simplified version of nvim-treesitter-context
+/// https://github.com/nvim-treesitter/nvim-treesitter-context
 fn top_context(error_node: &Node) -> Option<Range<usize>> {
     let mut parent = error_node.parent();
     while let Some(node) = parent {

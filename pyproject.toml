@@ -1,0 +1,64 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "pegon"
+description = "A slightly fast Java linter and code formatter, written in Rust."
+version = "0.1.0"
+keywords = ["lint", "tree-sitter", "java",]
+authors = [{ name = "Robert Muir", email = "rmuir@apache.org" }]
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = [ "LICENSE" ]
+classifiers = [
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Text Processing :: General",
+  "Topic :: Utilities",
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Java",
+  "Programming Language :: Rust",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Developers",
+  "Environment :: Console",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/rmuir/pegon"
+Documentation = "https://github.com/rmuir/pegon/wiki"
+Changelog = "https://github.com/rmuir/pegon/releases"
+
+[dependency-groups]
+dev = [
+  # git hooks and repository checks
+  "prek==0.3.1",
+  # validates github actions
+  "zizmor==1.22.0",
+  # validates github actions
+  "actionlint-py==1.7.10.24",
+  # validates bash in github actions
+  "shellcheck-py==0.11.0.1",
+  # validates markdown
+  "rumdl==0.1.7",
+  # validates this file
+  "validate-pyproject[all]==0.25",
+  # formats yaml
+  "google-yamlfmt==0.21.0"
+]
+
+[tool.maturin]
+bindings = "bin"
+manifest-path = "Cargo.toml"
+python-packages = ["pegon"]
+strip = true

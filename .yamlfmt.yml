@@ -1,0 +1,9 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/google/yamlfmt/refs/heads/main/schema.json
+formatter:
+  type: basic
+  include_document_start: true
+  line_ending: lf
+  retain_line_breaks_single: true
+  disallow_anchors: true
+  force_quote_style: double

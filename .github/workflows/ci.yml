@@ -1,0 +1,66 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: CI
+
+permissions: {}
+
+env:
+  # currently not bumped by dependabot
+  TS_QUERY_LS_VERSION: "v3.15.1"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Cache ts_query_ls binary
+        id: cache-ts-query-ls
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        with:
+          path: ~/.local/bin/ts_query_ls
+          key: ts_query_ls-${{ env.TS_QUERY_LS_VERSION }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Setup ts_query_ls
+        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p ~/.local/bin
+          curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin ts_query_ls
+        env:
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-x86_64-unknown-linux-gnu.tar.gz"
+
+      - name: Add ts_query_ls to PATH
+        run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        with:
+          version: "0.9.27"
+          enable-cache: true
+          prune-cache: false
+          save-cache: ${{ github.event_name != 'pull_request' }}
+          cache-dependency-glob: uv.lock
+          cache-suffix: dev-tools
+
+      - name: Run prek
+        run: uv run --only-dev prek --all-files --show-diff-on-failure
+        env:
+          UV_FROZEN: "1"

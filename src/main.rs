@@ -8,7 +8,7 @@ use crate::lint::Linter;
 
 fn main() -> ExitCode {
     let mut typesbuilder = TypesBuilder::new();
-    // TODO: the default types for java are crazy and include jsp and properties
+    // TODO: the default types for java are crazy and include JSP and properties
     // i guess we could format those?
     typesbuilder.add("java", "*.java").unwrap();
     typesbuilder.select("java");
@@ -19,9 +19,13 @@ fn main() -> ExitCode {
     overrides.add("!**/HTMLStripCharFilter.java").unwrap();
     overrides.add("!**/TestJapaneseAnalyzer.java").unwrap();
     overrides.add("!**/StandardTokenizerImpl.java").unwrap();
-    overrides.add("!**/UAX29URLEmailTokenizerImpl.java").unwrap();
+    overrides
+        .add("!**/UAX29URLEmailTokenizerImpl.java")
+        .unwrap();
     overrides.add("!**/WikipediaTokenizerImpl.java").unwrap();
-    overrides.add("!**/WordBreakTestUnicode_12_1_0.java").unwrap();
+    overrides
+        .add("!**/WordBreakTestUnicode_12_1_0.java")
+        .unwrap();
     let mut builder = WalkBuilder::new("/home/rmuir/workspace/lucene");
     builder.types(matcher);
     builder.overrides(overrides.build().unwrap());
