@@ -248,3 +248,17 @@
   (#set! title "Caught exception ignored")
   (#set! label "exception being ignored")
   (#set! help "Handle the exception, add a comment, or indicate via unnamed variable _")) @visible
+
+; Finalizers: not used
+; https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
+((method_declaration
+  type: (void_type)
+  name: (identifier) @error
+  parameters: (formal_parameters) @_params)
+  (#eq? @error "finalize")
+  (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
+  (#set! severity "error")
+  (#set! name "finalizer-used")
+  (#set! title "Do not override Object.finalize")
+  (#set! label "override here")
+  (#set! help "Migrate to other resource management such as try-with-resources or cleaners"))
