@@ -1,7 +1,13 @@
 [package]
 name = "pegon"
+description = "A slightly fast Java linter and code formatter, written in Rust."
 version = "0.1.0"
 edition = "2024"
+readme = "README.md"
+license = "Apache-2.0"
+repository = "https://github.com/rmuir/pegon"
+documentation = "https://github.com/rmuir/pegon/wiki"
+
 
 [profile.release]
 lto = true

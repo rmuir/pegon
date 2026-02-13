@@ -11,7 +11,7 @@ authors = [{ name = "Robert Muir", email = "rmuir@apache.org" }]
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-license-files = [ "LICENSE" ]
+license-files = [ "LICENSE.txt" ]
 classifiers = [
   "Topic :: Software Development :: Quality Assurance",
   "Topic :: Text Processing :: General",
@@ -64,5 +64,6 @@ dev = [
 [tool.maturin]
 bindings = "bin"
 manifest-path = "Cargo.toml"
-python-packages = ["pegon"]
+module-name = "pegon"
 strip = true
+exclude = []

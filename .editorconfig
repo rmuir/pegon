@@ -12,3 +12,6 @@ format_on_save = true
 
 [*.rs]
 indent_size = 4
+
+[Makefile]
+indent_style = tab
