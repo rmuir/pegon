@@ -14,7 +14,7 @@ fn main() -> ExitCode {
     typesbuilder.select("java");
     let matcher = typesbuilder.build().unwrap();
     let mut overrides = OverrideBuilder::new("/home/rmuir/workspace/lucene");
-    // jflex-generated code with escaped DFA
+    // JFlex-generated code with escaped DFA
     overrides.add("!**/ClassicTokenizerImpl.java").unwrap();
     overrides.add("!**/HTMLStripCharFilter.java").unwrap();
     overrides.add("!**/TestJapaneseAnalyzer.java").unwrap();
