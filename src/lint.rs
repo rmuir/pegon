@@ -25,6 +25,7 @@ static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
 static RENDERER: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
     .line_num(Style::new().dimmed());
+// gives GCC-like output, but let's fix it! .short_message(true);
 
 /// simplified version of nvim-treesitter-context
 /// <https://github.com/nvim-treesitter/nvim-treesitter-context>
