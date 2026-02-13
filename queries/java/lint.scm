@@ -241,7 +241,9 @@
     (catch_type)
     name: (identifier) @error)
   body: (block) @_block
+  ; unnamed variable
   (#not-eq? @error "_")
+  ; no real content at all
   (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! severity "error")
   (#set! name "ignored-caught-exception")
@@ -256,6 +258,7 @@
   name: (identifier) @error
   parameters: (formal_parameters) @_params)
   (#eq? @error "finalize")
+  ; only parentheses
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
   (#set! severity "error")
   (#set! name "finalizer-used")
