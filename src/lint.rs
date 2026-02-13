@@ -21,7 +21,7 @@ static JAVA_ERROR_CAPTURE: LazyLock<u32> =
 static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
 
-static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Ascii);
+static RENDERER: Renderer = Renderer::styled().decor_style(DecorStyle::Unicode);
 
 /// simplified version of nvim-treesitter-context
 /// <https://github.com/nvim-treesitter/nvim-treesitter-context>
