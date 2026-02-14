@@ -118,7 +118,7 @@
   (asterisk) @error)
   (#set! severity "error")
   (#set! name "wildcard-import")
-  (#set! title "Do not use wildcard imports")
+  (#set! title "Wildcard import")
   (#set! label "Wildcard used here")
   (#set! note "Replace the wildcard import with standard import(s)"))
 
@@ -128,7 +128,7 @@
   (#match? @error "\n")
   (#set! severity "error")
   (#set! name "wrapped-import")
-  (#set! title "Do not line-wrap imports")
+  (#set! title "Line-wrapped import")
   (#set! label "import declared here")
   (#set! note "Remove newlines from the import statement"))
 
@@ -140,7 +140,7 @@
     name: (identifier) @error)
   (#set! name "multiple-classes")
   (#set! severity "error")
-  (#set! title "Multiple top-level classes in this file")
+  (#set! title "Multiple top-level classes")
   (#set! label "Additional top-level class defined here")
   (#set! note "Move top-level classes into their own files: only one per file"))
 

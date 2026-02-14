@@ -25,7 +25,6 @@ static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
 static RENDERER: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
     .line_num(Style::new().dimmed());
-// gives GCC-like output, but let's fix it! .short_message(true);
 
 /// simplified version of nvim-treesitter-context
 /// <https://github.com/nvim-treesitter/nvim-treesitter-context>
@@ -124,7 +123,7 @@ impl Linter {
                 "error" => Level::ERROR,
                 "warning" => Level::WARNING,
                 "info" => Level::INFO,
-                "hint" => Level::HELP,
+                "hint" => Level::NOTE,
                 _ => Level::ERROR,
             };
             let report = &[
@@ -137,7 +136,7 @@ impl Linter {
                             .path(path.to_str())
                             .annotations(annotations),
                     ),
-                Group::with_title(Level::NOTE.secondary_title(prop_note.unwrap().to_string())),
+                Group::with_title(Level::HELP.secondary_title(prop_note.unwrap().to_string())),
             ];
             anstream::println!("{}\n", RENDERER.render(report))
         }
