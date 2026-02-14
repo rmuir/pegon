@@ -36,14 +36,15 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
             | "constructor_declaration"
             | "class_declaration"
             | "record_declaration" => {
-                if let Some(name) = node.child_by_field_name("name") {
+                if let Some(name) = node.child_by_field_name("name")
+                    && name.start_position().row != error_node.start_position().row
+                {
                     return Some(name.byte_range());
-                } else {
-                    return None;
                 }
             }
-            _ => parent = node.parent(),
+            _ => {}
         }
+        parent = node.parent()
     }
     None
 }
