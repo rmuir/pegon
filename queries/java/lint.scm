@@ -130,7 +130,7 @@
   (#set! title "Octal double quote escape")
   (#set! label "Double quote")
   (#set! note "Replace with the special escape `\\\"`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -140,25 +140,47 @@
   (#set! title "Hexadecimal double quote escape")
   (#set! label "Double quote")
   (#set! note "Replace with the special escape `\\\"`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u0027" "\\047" "\\47")
-  (#set! name "wrong-escape")
-  (#set! title "Single quote escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\'")
-  (#set! severity "error"))
+  (#any-of? @error "\\047" "\\47")
+  (#set! name "octal-single-quote")
+  (#set! title "Octal single quote escape")
+  (#set! label "Single quote")
+  (#set! note "Replace with the special escape `\\'`")
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u005c" "\\u005C" "\\134")
-  (#set! name "wrong-escape")
-  (#set! title "Backslash escaped incorrectly")
-  (#set! note "Replace the raw escape with the special escape \\\\")
-  (#set! severity "error"))
+  (#eq? @error "\\u0027")
+  (#set! name "hex-single-quote")
+  (#set! title "Hexadecimal single quote escape")
+  (#set! label "Single quote")
+  (#set! note "Replace with the special escape `\\'`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#eq? @error "\\134")
+  (#set! name "octal-backslash")
+  (#set! title "Octal backslash escape")
+  (#set! label "Backslash")
+  (#set! note "Replace with the special escape `\\\\`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\u005c" "\\u005C")
+  (#set! name "hex-backslash")
+  (#set! title "Hexadecimal backslash escape")
+  (#set! label "Backslash")
+  (#set! note "Replace with the special escape `\\\\`")
+  (#set! severity "warning"))
 
 ; line-wrapped package declaration
 ; https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
