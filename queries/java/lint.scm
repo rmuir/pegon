@@ -216,7 +216,6 @@
 ; wildcard imports
 ; https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
 ((import_declaration
-  (_) ; TODO: thing being imported
   (asterisk) @error)
   (#set! name "wildcard-import")
   (#set! title "Wildcard import")
@@ -352,14 +351,15 @@
 ; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
-  (modifiers)
+  (modifiers) @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-final-local")
   (#set! title "Uppercase final local variable name")
   (#set! label "Uppercase")
-  (#set! note "Rename non-constant using lowerCamelCase")
+  (#set! context.label "Not a constant")
+  (#set! note "Rename local variable using lowerCamelCase")
   (#set! severity "error"))
 
 ; type variables should be UpperCamelCase
@@ -387,7 +387,7 @@
   (#set! name "swallowed-exception")
   (#set! title "Unhandled caught exception")
   (#set! label "Exception ignored")
-  (#set! note "Handle the exception, add a comment, or indicate via unnamed variable _")
+  (#set! note "Handle the exception, add a comment, or indicate via unnamed variable `_`")
   (#set! severity "error")) @visible ; body is small (empty)
 
 ; Finalizers: not used
