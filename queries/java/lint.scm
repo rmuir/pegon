@@ -30,17 +30,17 @@
   (#set! title "Octal backspace escape")
   (#set! label "Backspace")
   (#set! note "Replace with the special escape `\\b`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0008")
-  (#set! name "unicode-backspace")
-  (#set! title "Unicode backspace escape")
+  (#set! name "hex-backspace")
+  (#set! title "Hexadecimal backspace escape")
   (#set! label "Backspace")
   (#set! note "Replace with the special escape `\\b`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -50,17 +50,17 @@
   (#set! title "Octal tab escape")
   (#set! label "Tab")
   (#set! note "Replace with the special escape `\\t`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0009")
-  (#set! name "unicode-tab")
-  (#set! title "Unicode tab escape")
+  (#set! name "hex-tab")
+  (#set! title "Hexadecimal tab escape")
   (#set! label "Tab")
   (#set! note "Replace with the special escape `\\t`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -70,43 +70,76 @@
   (#set! title "Octal newline escape")
   (#set! label "Newline")
   (#set! note "Replace with the special escape `\\n`")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000a" "\\u000A")
-  (#set! name "unicode-newline")
-  (#set! title "Unicode newline escape")
+  (#set! name "hex-newline")
+  (#set! title "Hexadecimal newline escape")
   (#set! label "Newline")
   (#set! note "Replace with the special escape `\\n`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\014" "\\14")
+  (#set! name "octal-formfeed")
+  (#set! title "Octal form feed escape")
+  (#set! label "Form feed")
+  (#set! note "Replace with the special escape `\\f`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\u000c" "\\u000C")
+  (#set! name "hex-formfeed")
+  (#set! title "Hexadecimal form feed escape")
+  (#set! label "Form feed")
+  (#set! note "Replace with the special escape `\\f`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\015" "\\15")
+  (#set! name "octal-return")
+  (#set! title "Octal carriage return escape")
+  (#set! label "Carriage return")
+  (#set! note "Replace with the special escape `\\r`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\u000d" "\\u000D")
+  (#set! name "hex-return")
+  (#set! title "Hexadecimal carriage return escape")
+  (#set! label "Carriage return")
+  (#set! note "Replace with the special escape `\\r`")
+  (#set! severity "warning"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\042" "\\42")
+  (#set! name "octal-double-quote")
+  (#set! title "Octal double quote escape")
+  (#set! label "Double quote")
+  (#set! note "Replace with the special escape `\\\"`")
   (#set! severity "error"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u000c" "\\u000C" "\\014" "\\14")
-  (#set! name "wrong-escape")
-  (#set! title "Form feed escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\f")
-  (#set! severity "error"))
-
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\u000d" "\\u000D" "\\015" "\\15")
-  (#set! name "wrong-escape")
-  (#set! title "Carriage return escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\r")
-  (#set! severity "error"))
-
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\u0022" "\\042" "\\42")
-  (#set! name "wrong-escape")
-  (#set! title "Double quote escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\\"")
+  (#eq? @error "\\u0022")
+  (#set! name "hex-double-quote")
+  (#set! title "Hexadecimal double quote escape")
+  (#set! label "Double quote")
+  (#set! note "Replace with the special escape `\\\"`")
   (#set! severity "error"))
 
 ; special escape sequences encoded as octal/hex
@@ -152,7 +185,7 @@
 ; https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
 ((import_declaration) @error
   (#match? @error "\n")
-  (#set! name "line-wrapped-import")
+  (#set! name "wrapped-import")
   (#set! title "Line-wrapped import")
   (#set! label "Wrapped")
   (#set! note "Remove newlines from the import statement")
@@ -227,7 +260,7 @@
 ((class_declaration
   name: (identifier) @error)
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-class-name")
+  (#set! name "lowercase-class")
   (#set! title "Lowercase class name")
   (#set! label "Lowercase")
   (#set! note "Rename class using UpperCamelCase")
@@ -238,7 +271,7 @@
 ((formal_parameter
   name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-param-name")
+  (#set! name "uppercase-param")
   (#set! title "Uppercase parameter name")
   (#set! label "Uppercase")
   (#set! note "Rename parameter using lowerCamelCase")
@@ -250,7 +283,7 @@
   (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-vararg-name")
+  (#set! name "uppercase-vararg")
   (#set! title "Uppercase vararg parameter name")
   (#set! label "Uppercase")
   (#set! note "Rename vararg parameter using lowerCamelCase")
@@ -262,7 +295,7 @@
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-local-name")
+  (#set! name "uppercase-local")
   (#set! title "Uppercase local variable name")
   (#set! label "Uppercase")
   (#set! note "Rename local variable using lowerCamelCase")
@@ -273,7 +306,7 @@
 ((type_parameter
   (type_identifier) @error)
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-type-name")
+  (#set! name "lowercase-type")
   (#set! title "Lowercase type parameter name")
   (#set! label "Lowercase")
   (#set! note "Rename type using UpperCamelCase")
