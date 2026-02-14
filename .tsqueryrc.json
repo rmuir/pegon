@@ -21,12 +21,15 @@
     },
     "lint": {
       "error": "indicates the captured node is the source of the error",
+      "visible": "indicates the captured node is relevant and should be visible",
+      "context": "indicates captured node should be highlighted",
       "name": "diagnostic name such as `no-crappy-code`",
       "title": "diagnostic headline such as `Do not write code like this`",
       "label": "label applied to the captured error such as `problem here`",
       "severity": "diagnostic severity level",
       "help": "instructions to address issue",
-      "visible": "indicates the captured node is relevant and should be visible"
+      "fix": "automatic fix to address the issue",
+      "context.label": "label applied to context such as `previously defined here`"
     }
   },
   "valid_predicates": {

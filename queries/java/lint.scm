@@ -237,12 +237,14 @@
 ; multiple top-level classes in the same file
 ; https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
 (program
-  (class_declaration)
+  (class_declaration
+    name: (identifier) @context)+
   (class_declaration
     name: (identifier) @error)
   (#set! name "multiple-classes")
   (#set! title "Multiple top-level classes")
-  (#set! label "Additional class in file")
+  (#set! label "Additional class")
+  (#set! context.label "Previous class")
   (#set! note "Move top-level classes into their own files: only one per file")
   (#set! severity "error"))
 

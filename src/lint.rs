@@ -58,6 +58,9 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
 static JAVA_ERROR_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap());
 
+static JAVA_CONTEXT_CAPTURE: LazyLock<u32> =
+    LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("context").unwrap());
+
 static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
 
@@ -93,6 +96,7 @@ impl Linter {
             let mut prop_label: Option<Box<str>> = None;
             let mut prop_note: Option<Box<str>> = None;
             let mut prop_fix: Option<Box<str>> = None;
+            let mut prop_context_label: Option<Box<str>> = None;
             for prop in props {
                 let name = &*prop.key;
                 if name == "name" {
@@ -107,6 +111,8 @@ impl Linter {
                     prop_note = prop.value.clone();
                 } else if name == "fix" {
                     prop_fix = prop.value.clone();
+                } else if name == "context.label" {
+                    prop_context_label = prop.value.clone();
                 }
             }
             let name = prop_name.unwrap().to_string();
@@ -128,7 +134,18 @@ impl Linter {
             // primary error annotation: as precise of a range as possible
             annotations.push(AnnotationKind::Primary.span(node.byte_range()).label(label));
 
-            // node context: explicitly marked visible in the query
+            let context_label = prop_context_label.unwrap_or_default().to_string();
+
+            // explicitly marked context in the query
+            for visible in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+                annotations.push(
+                    AnnotationKind::Context
+                        .span(visible.byte_range())
+                        .label(&context_label),
+                );
+            }
+
+            // explicitly marked visible in the query
             for visible in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
                 annotations.push(AnnotationKind::Visible.span(visible.byte_range()));
             }
