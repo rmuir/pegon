@@ -1,3 +1,4 @@
+use aho_corasick::{AhoCorasick, MatchKind};
 use annotate_snippets::{
     Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
     renderer::{DecorStyle, Style},
@@ -64,6 +65,13 @@ static JAVA_CONTEXT_CAPTURE: LazyLock<u32> =
 static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
     LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
 
+static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
+    AhoCorasick::builder()
+        .match_kind(MatchKind::LeftmostFirst)
+        .build(["{node_text}", "{node_kind}"])
+        .unwrap()
+});
+
 static RENDERER: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
     .line_num(Style::new().dimmed());
@@ -123,6 +131,11 @@ impl Linter {
                 .next()
                 .unwrap();
 
+            let node_text = node.utf8_text(&data).unwrap_or_default();
+            let node_kind = node.kind();
+            let replacements = &[node_text, node_kind];
+            let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), replacements);
+
             let label = if node.is_missing() {
                 format!("missing {} here", node.kind())
             } else {
@@ -168,7 +181,7 @@ impl Linter {
             let mut report = Vec::new();
             report.push(
                 level
-                    .primary_title(prop_title.unwrap().to_string())
+                    .primary_title(title)
                     .id(name)
                     .id_url(prop_url)
                     .element(

@@ -23,6 +23,10 @@ bench: ## Run micro-benchmarks
 	# run benchmark suite
 	cargo bench
 
+.PHONY: profile
+profile: ## Profile queries
+	ts_query_ls profile
+
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

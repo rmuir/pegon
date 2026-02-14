@@ -27,7 +27,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\010" "\\10")
   (#set! name "octal-backspace")
-  (#set! title "Octal backspace escape")
+  (#set! title "Octal backspace escape: `{node_text}`")
   (#set! label "Backspace")
   (#set! note "Replace with the special escape `\\b`")
   (#set! fix "\\b")
@@ -38,7 +38,7 @@
 ((escape_sequence) @error
   (#eq? @error "\\u0008")
   (#set! name "hex-backspace")
-  (#set! title "Hexadecimal backspace escape")
+  (#set! title "Hexadecimal backspace escape: `{node_text}`")
   (#set! label "Backspace")
   (#set! note "Replace with the special escape `\\b`")
   (#set! fix "\\b")
@@ -49,7 +49,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\011" "\\11")
   (#set! name "octal-tab")
-  (#set! title "Octal tab escape")
+  (#set! title "Octal tab escape: `{node_text}`")
   (#set! label "Tab")
   (#set! note "Replace with the special escape `\\t`")
   (#set! fix "\\t")
@@ -60,7 +60,7 @@
 ((escape_sequence) @error
   (#eq? @error "\\u0009")
   (#set! name "hex-tab")
-  (#set! title "Hexadecimal tab escape")
+  (#set! title "Hexadecimal tab escape: `{node_text}`")
   (#set! label "Tab")
   (#set! note "Replace with the special escape `\\t`")
   (#set! fix "\\t")
@@ -71,7 +71,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\012" "\\12")
   (#set! name "octal-newline")
-  (#set! title "Octal newline escape")
+  (#set! title "Octal newline escape: `{node_text}`")
   (#set! label "Newline")
   (#set! note "Replace with the special escape `\\n`")
   (#set! fix "\\n")
@@ -82,7 +82,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\u000a" "\\u000A")
   (#set! name "hex-newline")
-  (#set! title "Hexadecimal newline escape")
+  (#set! title "Hexadecimal newline escape: `{node_text}`")
   (#set! label "Newline")
   (#set! note "Replace with the special escape `\\n`")
   (#set! fix "\\n")
@@ -93,7 +93,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\014" "\\14")
   (#set! name "octal-formfeed")
-  (#set! title "Octal form feed escape")
+  (#set! title "Octal form feed escape: `{node_text}`")
   (#set! label "Form feed")
   (#set! note "Replace with the special escape `\\f`")
   (#set! fix "\\f")
@@ -104,7 +104,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\u000c" "\\u000C")
   (#set! name "hex-formfeed")
-  (#set! title "Hexadecimal form feed escape")
+  (#set! title "Hexadecimal form feed escape: `{node_text}`")
   (#set! label "Form feed")
   (#set! note "Replace with the special escape `\\f`")
   (#set! fix "\\f")
@@ -115,7 +115,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\015" "\\15")
   (#set! name "octal-return")
-  (#set! title "Octal carriage return escape")
+  (#set! title "Octal carriage return escape: `{node_text}`")
   (#set! label "Carriage return")
   (#set! note "Replace with the special escape `\\r`")
   (#set! fix "\\r")
@@ -126,7 +126,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\u000d" "\\u000D")
   (#set! name "hex-return")
-  (#set! title "Hexadecimal carriage return escape")
+  (#set! title "Hexadecimal carriage return escape: `{node_text}`")
   (#set! label "Carriage return")
   (#set! note "Replace with the special escape `\\r`")
   (#set! fix "\\r")
@@ -137,7 +137,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\042" "\\42")
   (#set! name "octal-double-quote")
-  (#set! title "Octal double quote escape")
+  (#set! title "Octal double quote escape: `{node_text}`")
   (#set! label "Double quote")
   (#set! note "Replace with the special escape `\\\"`")
   (#set! fix "\\\"")
@@ -148,7 +148,7 @@
 ((escape_sequence) @error
   (#eq? @error "\\u0022")
   (#set! name "hex-double-quote")
-  (#set! title "Hexadecimal double quote escape")
+  (#set! title "Hexadecimal double quote escape: `{node_text}`")
   (#set! label "Double quote")
   (#set! note "Replace with the special escape `\\\"`")
   (#set! fix "\\\"")
@@ -159,7 +159,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\047" "\\47")
   (#set! name "octal-single-quote")
-  (#set! title "Octal single quote escape")
+  (#set! title "Octal single quote escape: `{node_text}`")
   (#set! label "Single quote")
   (#set! note "Replace with the special escape `\\'`")
   (#set! fix "\\'")
@@ -170,7 +170,7 @@
 ((escape_sequence) @error
   (#eq? @error "\\u0027")
   (#set! name "hex-single-quote")
-  (#set! title "Hexadecimal single quote escape")
+  (#set! title "Hexadecimal single quote escape: `{node_text}`")
   (#set! label "Single quote")
   (#set! note "Replace with the special escape `\\'`")
   (#set! fix "\\'")
@@ -181,7 +181,7 @@
 ((escape_sequence) @error
   (#eq? @error "\\134")
   (#set! name "octal-backslash")
-  (#set! title "Octal backslash escape")
+  (#set! title "Octal backslash escape: `{node_text}`")
   (#set! label "Backslash")
   (#set! note "Replace with the special escape `\\\\`")
   (#set! fix "\\\\")
@@ -192,7 +192,7 @@
 ((escape_sequence) @error
   (#any-of? @error "\\u005c" "\\u005C")
   (#set! name "hex-backslash")
-  (#set! title "Hexadecimal backslash escape")
+  (#set! title "Hexadecimal backslash escape: `{node_text}`")
   (#set! label "Backslash")
   (#set! note "Replace with the special escape `\\\\`")
   (#set! fix "\\\\")
@@ -208,7 +208,7 @@
   ]) @error
   (#match? @error "\n")
   (#set! name "wrapped-package")
-  (#set! title "Line-wrapped package declaration")
+  (#set! title "Line-wrapped package declaration: `{node_text}`")
   (#set! label "Wrapped")
   (#set! note "Remove newlines from the package statement")
   (#set! severity "error"))
@@ -241,7 +241,7 @@
   (class_declaration
     name: (identifier) @error)
   (#set! name "multiple-classes")
-  (#set! title "Multiple top-level classes")
+  (#set! title "Multiple top-level classes: `{node_text}`")
   (#set! label "Additional class")
   (#set! context.label "Previous class")
   (#set! note "Move top-level classes into their own files: only one per file")
@@ -252,7 +252,7 @@
 ((decimal_integer_literal) @error
   (#match? @error "l$")
   (#set! name "lowercase-long-literal")
-  (#set! title "Lowercase long integer literal")
+  (#set! title "Lowercase long integer literal: `{node_text}`")
   (#set! label "Lowercase")
   (#set! note "Replace with uppercase L suffix to improve legibility")
   (#set! severity "error"))
@@ -262,7 +262,7 @@
 ((identifier) @error
   (#match? @error "[$]")
   (#set! name "dollar-in-identifier")
-  (#set! title "Dollar sign in identifier")
+  (#set! title "Dollar sign in identifier: `{node_text}`")
   (#set! label "Identifier")
   (#set! note "Rename using only ASCII letters, digits, and underscores")
   (#set! severity "error"))
@@ -272,7 +272,7 @@
 ((identifier) @error
   (#match? @error "[^a-zA-Z0-9_$]")
   (#set! name "unicode-identifier")
-  (#set! title "Unicode in identifier")
+  (#set! title "Unicode in identifier: `{node_text}`")
   (#set! label "Identifier")
   (#set! note "Rename using only ASCII letters, digits, and underscores")
   (#set! severity "error"))
@@ -283,7 +283,7 @@
   (identifier) @error)
   (#match? @error "[^a-z0-9]")
   (#set! name "invalid-package-name")
-  (#set! title "Invalid package name")
+  (#set! title "Invalid package name: `{node_text}`")
   (#set! label "Package")
   (#set! note "Rename package using only lowercase and digits")
   (#set! severity "error"))
@@ -294,7 +294,7 @@
   (identifier) @error)
   (#match? @error "[^a-z0-9]")
   (#set! name "invalid-module-name")
-  (#set! title "Invalid module name")
+  (#set! title "Invalid module name: `{node_text}`")
   (#set! label "Module")
   (#set! note "Rename module using only lowercase and digits")
   (#set! severity "error"))
@@ -305,7 +305,7 @@
   name: (identifier) @error)
   (#match? @error "^[a-z]")
   (#set! name "lowercase-class")
-  (#set! title "Lowercase class name")
+  (#set! title "Lowercase class name: `{node_text}`")
   (#set! label "Lowercase")
   (#set! note "Rename class using UpperCamelCase")
   (#set! severity "error"))
@@ -316,7 +316,7 @@
   name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-param")
-  (#set! title "Uppercase parameter name")
+  (#set! title "Uppercase parameter name: `{node_text}`")
   (#set! label "Uppercase")
   (#set! note "Rename parameter using lowerCamelCase")
   (#set! severity "error")) @visible
@@ -328,7 +328,7 @@
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-vararg")
-  (#set! title "Uppercase vararg parameter name")
+  (#set! title "Uppercase vararg name: `{node_text}`")
   (#set! label "Uppercase")
   (#set! note "Rename vararg parameter using lowerCamelCase")
   (#set! severity "error")) @visible
@@ -342,7 +342,7 @@
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-local")
-  (#set! title "Uppercase local variable name")
+  (#set! title "Uppercase local variable name: `{node_text}`")
   (#set! label "Uppercase")
   (#set! note "Rename local variable using lowerCamelCase")
   (#set! severity "error"))
@@ -356,7 +356,7 @@
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-final-local")
-  (#set! title "Uppercase final local variable name")
+  (#set! title "Uppercase local variable name: `{node_text}`")
   (#set! label "Uppercase")
   (#set! context.label "Not a constant")
   (#set! note "Rename local variable using lowerCamelCase")
@@ -368,7 +368,7 @@
   (type_identifier) @error)
   (#match? @error "^[a-z]")
   (#set! name "lowercase-type")
-  (#set! title "Lowercase type parameter name")
+  (#set! title "Lowercase type parameter name: `{node_text}`")
   (#set! label "Lowercase")
   (#set! note "Rename type using UpperCamelCase")
   (#set! severity "error")) @visible
@@ -385,7 +385,7 @@
   ; no real content at all
   (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! name "swallowed-exception")
-  (#set! title "Unhandled caught exception")
+  (#set! title "Unhandled caught exception: `{node_text}`")
   (#set! label "Exception ignored")
   (#set! note "Handle the exception, add a comment, or indicate via unnamed variable `_`")
   (#set! severity "error")) @visible ; body is small (empty)
@@ -401,7 +401,7 @@
   ; only parentheses
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
   (#set! name "finalizer-used")
-  (#set! title "Finalizer used")
+  (#set! title "Finalizer used: `{node_text}`")
   (#set! label "Overrides Object.finalize()")
   (#set! note "Migrate to other resource management such as try-with-resources or cleaners")
   (#set! severity "error"))
