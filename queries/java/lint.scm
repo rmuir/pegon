@@ -342,7 +342,7 @@
   (#set! title "Uppercase local variable name")
   (#set! label "Uppercase")
   (#set! note "Rename local variable using lowerCamelCase")
-  (#set! severity "error")) @visible
+  (#set! severity "error"))
 
 ; type variables should be UpperCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names

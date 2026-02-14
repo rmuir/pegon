@@ -26,9 +26,7 @@ fn main() -> ExitCode {
     overrides
         .add("!**/WordBreakTestUnicode_12_1_0.java")
         .unwrap();
-    let mut builder = WalkBuilder::new(
-        "/home/rmuir/workspace/OpenSearch/server/src/main/java/org/opensearch/monitor/jvm/",
-    );
+    let mut builder = WalkBuilder::new("/home/rmuir/workspace/OpenSearch/");
     builder.types(matcher);
     builder.overrides(overrides.build().unwrap());
     builder.build_parallel().run(|| {
