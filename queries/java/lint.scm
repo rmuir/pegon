@@ -210,7 +210,7 @@
   (#set! fix "\\'")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal
+; Octal backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\134")
@@ -221,7 +221,7 @@
   (#set! fix "\\\\")
   (#set! severity "warning"))
 
-; special escape sequences encoded as hex
+; Unicode hex backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u005c" "\\u005C")
@@ -232,7 +232,7 @@
   (#set! fix "\\\\")
   (#set! severity "warning"))
 
-; line-wrapped package declaration
+; Line-wrapped package declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
 ((package_declaration
   .
@@ -247,7 +247,7 @@
   (#set! note "Remove newlines from the package statement")
   (#set! severity "error"))
 
-; wildcard imports
+; Wildcard imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
 ((import_declaration
   (asterisk) @error)
@@ -257,7 +257,7 @@
   (#set! note "Replace the wildcard import with standard import(s)")
   (#set! severity "error"))
 
-; line-wrapped imports
+; Line-wrapped imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
 ((import_declaration) @error
   (#match? @error "\n")
@@ -267,7 +267,7 @@
   (#set! note "Remove newlines from the import statement")
   (#set! severity "error"))
 
-; multiple top-level classes in the same file
+; Multiple top-level classes in the same file
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
 (program
   (class_declaration
@@ -281,7 +281,7 @@
   (#set! note "Move `{node.text}` to separate `{node.text}.java` file")
   (#set! severity "error"))
 
-; integer literal with lowercase 'l'
+; Integer literal with lowercase 'l'
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
 ((decimal_integer_literal) @error
   (#match? @error "l$")
@@ -291,7 +291,7 @@
   (#set! note "Replace with uppercase L suffix to improve legibility")
   (#set! severity "error"))
 
-; dollar sign in identifier
+; Dollar sign in identifier
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[$]")
@@ -301,7 +301,7 @@
   (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
   (#set! severity "error"))
 
-; identifier containing unicode character
+; Identifier containing unicode character
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[^a-zA-Z0-9_$]")
@@ -311,7 +311,7 @@
   (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
   (#set! severity "error"))
 
-; package names should be lowercase and digits only
+; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 ((package_declaration
   (identifier) @error)
@@ -322,7 +322,7 @@
   (#set! note "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
 
-; module names should be lowercase and digits only
+; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 ((module_declaration
   (identifier) @error)
@@ -333,7 +333,7 @@
   (#set! note "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
 
-; class names should be UpperCamelCase
+; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 ((class_declaration
   name: (identifier) @error)
@@ -344,7 +344,7 @@
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
-; parameters should be lowerCamelCase
+; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 ((formal_parameter
   name: (identifier) @error)
@@ -355,7 +355,7 @@
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
-; spread parameter should be lowerCamelCase
+; Varargs parameter should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (spread_parameter
   (variable_declarator
@@ -367,7 +367,7 @@
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
-; local variables should be lowerCamelCase
+; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
@@ -381,7 +381,7 @@
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
-; local variables should be lowerCamelCase
+; Local variables should be lowerCamelCase (final variant)
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
@@ -396,7 +396,7 @@
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
-; type variables should be UpperCamelCase
+; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
 ((type_parameter
   (type_identifier) @error)
