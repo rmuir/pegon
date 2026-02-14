@@ -335,6 +335,8 @@
 ; local variables should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
+  .
+  type: (_)
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
@@ -342,6 +344,20 @@
   (#set! title "Uppercase local variable name")
   (#set! label "Uppercase")
   (#set! note "Rename local variable using lowerCamelCase")
+  (#set! severity "error"))
+
+; local variables should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
+(local_variable_declaration
+  .
+  (modifiers)
+  declarator: (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-final-local")
+  (#set! title "Uppercase final local variable name")
+  (#set! label "Non-constant")
+  (#set! note "Rename final local variable using lowerCamelCase")
   (#set! severity "error"))
 
 ; type variables should be UpperCamelCase
