@@ -1,3 +1,31 @@
+; Lint queries written in tree-sitter query language.
+; See <https://tree-sitter.github.io/tree-sitter/using-parsers/queries/1-syntax.html>
+;
+; Maximize relevance of the diagnostic content: use a scalpel.
+;
+;  * Narrow the @error to the most precise node possible.
+;  * Take care with @visible: avoid any captures that span multiple lines.
+;  * Extra care with @context: avoid insane ANSI line drawings.
+;  * Split a rule into multiple patterns, if it makes it easier on the user.
+;
+; When working on these files, you'll want the following tools:
+;
+;  * <https://github.com/ribru17/ts_query_ls>
+;  * <https://github.com/tree-sitter/tree-sitter-java>
+;
+; To get started quickly, run the following from the repository root:
+;
+; ```sh
+; cargo install ts_query_ls
+; curl -fLO https://github.com/tree-sitter/tree-sitter-java/releases/download/v0.23.5/tree-sitter-java.wasm
+; ```
+;
+; The `.tsqueryrc.json` looks for tree-sitter-java parser in the following:
+;
+;  * current directory (e.g. WASM file from curl example above)
+;  * /usr/lib/treesitter (e.g. `yay -S tree-sitter-java` from Arch AUR)
+;  * nvim-treesitter installation (in case you use neovim and have it already)
+;
 ; TS parsing error
 ((ERROR) @error
   (#set! name "parse-error")
