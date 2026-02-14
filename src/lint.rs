@@ -1,5 +1,5 @@
 use annotate_snippets::{
-    Annotation, AnnotationKind, Group, Level, Renderer, Snippet,
+    Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
     renderer::{DecorStyle, Style},
 };
 use std::{ops::Range, path::Path, sync::LazyLock};
@@ -32,9 +32,12 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
     let mut parent = error_node.parent();
     while let Some(node) = parent {
         match node.kind() {
-            "method_declaration" | "constructor_declaration" | "class_definition" => {
-                if let Some(body) = node.child_by_field_name("body") {
-                    return Some(node.range().start_byte..body.range().start_byte);
+            "method_declaration"
+            | "constructor_declaration"
+            | "class_declaration"
+            | "record_declaration" => {
+                if let Some(name) = node.child_by_field_name("name") {
+                    return Some(name.byte_range());
                 } else {
                     return None;
                 }
@@ -70,6 +73,7 @@ impl Linter {
             let mut prop_severity: Option<Box<str>> = None;
             let mut prop_label: Option<Box<str>> = None;
             let mut prop_note: Option<Box<str>> = None;
+            let mut prop_fix: Option<Box<str>> = None;
             for prop in props {
                 let name = &*prop.key;
                 if name == "name" {
@@ -82,6 +86,8 @@ impl Linter {
                     prop_label = prop.value.clone();
                 } else if name == "note" {
                     prop_note = prop.value.clone();
+                } else if name == "fix" {
+                    prop_fix = prop.value.clone();
                 }
             }
             let name = prop_name.unwrap().to_string();
@@ -114,6 +120,7 @@ impl Linter {
             }
 
             let source = str::from_utf8(data.as_slice()).unwrap();
+
             let severity = prop_severity.unwrap().to_string();
             let level = match severity.as_str() {
                 "error" => Level::ERROR,
@@ -122,7 +129,8 @@ impl Linter {
                 "hint" => Level::NOTE,
                 _ => Level::ERROR,
             };
-            let report = &[
+            let mut report = Vec::new();
+            report.push(
                 level
                     .primary_title(prop_title.unwrap().to_string())
                     .id(name)
@@ -132,9 +140,22 @@ impl Linter {
                             .path(path.to_str())
                             .annotations(annotations),
                     ),
-                Group::with_title(Level::HELP.secondary_title(prop_note.unwrap().to_string())),
-            ];
-            anstream::println!("{}\n", RENDERER.render(report))
+            );
+            if let Some(fix) = prop_fix {
+                report.push(
+                    Level::HELP
+                        .secondary_title(prop_note.unwrap().to_string())
+                        .element(
+                            Snippet::source(source)
+                                .patch(Patch::new(node.byte_range(), fix.to_string())),
+                        ),
+                );
+            } else {
+                report.push(Group::with_title(
+                    Level::HELP.secondary_title(prop_note.unwrap().to_string()),
+                ));
+            }
+            anstream::println!("{}\n", RENDERER.render(&report))
         }
     }
 }

@@ -30,6 +30,7 @@
   (#set! title "Octal backspace escape")
   (#set! label "Backspace")
   (#set! note "Replace with the special escape `\\b`")
+  (#set! fix "\\b")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -40,6 +41,7 @@
   (#set! title "Hexadecimal backspace escape")
   (#set! label "Backspace")
   (#set! note "Replace with the special escape `\\b`")
+  (#set! fix "\\b")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -50,6 +52,7 @@
   (#set! title "Octal tab escape")
   (#set! label "Tab")
   (#set! note "Replace with the special escape `\\t`")
+  (#set! fix "\\t")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -60,6 +63,7 @@
   (#set! title "Hexadecimal tab escape")
   (#set! label "Tab")
   (#set! note "Replace with the special escape `\\t`")
+  (#set! fix "\\t")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -70,6 +74,7 @@
   (#set! title "Octal newline escape")
   (#set! label "Newline")
   (#set! note "Replace with the special escape `\\n`")
+  (#set! fix "\\n")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -80,6 +85,7 @@
   (#set! title "Hexadecimal newline escape")
   (#set! label "Newline")
   (#set! note "Replace with the special escape `\\n`")
+  (#set! fix "\\n")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -90,6 +96,7 @@
   (#set! title "Octal form feed escape")
   (#set! label "Form feed")
   (#set! note "Replace with the special escape `\\f`")
+  (#set! fix "\\f")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -100,6 +107,7 @@
   (#set! title "Hexadecimal form feed escape")
   (#set! label "Form feed")
   (#set! note "Replace with the special escape `\\f`")
+  (#set! fix "\\f")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -110,6 +118,7 @@
   (#set! title "Octal carriage return escape")
   (#set! label "Carriage return")
   (#set! note "Replace with the special escape `\\r`")
+  (#set! fix "\\r")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -120,6 +129,7 @@
   (#set! title "Hexadecimal carriage return escape")
   (#set! label "Carriage return")
   (#set! note "Replace with the special escape `\\r`")
+  (#set! fix "\\r")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -130,6 +140,7 @@
   (#set! title "Octal double quote escape")
   (#set! label "Double quote")
   (#set! note "Replace with the special escape `\\\"`")
+  (#set! fix "\\\"")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -140,6 +151,7 @@
   (#set! title "Hexadecimal double quote escape")
   (#set! label "Double quote")
   (#set! note "Replace with the special escape `\\\"`")
+  (#set! fix "\\\"")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -150,6 +162,7 @@
   (#set! title "Octal single quote escape")
   (#set! label "Single quote")
   (#set! note "Replace with the special escape `\\'`")
+  (#set! fix "\\'")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -160,6 +173,7 @@
   (#set! title "Hexadecimal single quote escape")
   (#set! label "Single quote")
   (#set! note "Replace with the special escape `\\'`")
+  (#set! fix "\\'")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -170,6 +184,7 @@
   (#set! title "Octal backslash escape")
   (#set! label "Backslash")
   (#set! note "Replace with the special escape `\\\\`")
+  (#set! fix "\\\\")
   (#set! severity "warning"))
 
 ; special escape sequences encoded as octal/hex
@@ -180,11 +195,17 @@
   (#set! title "Hexadecimal backslash escape")
   (#set! label "Backslash")
   (#set! note "Replace with the special escape `\\\\`")
+  (#set! fix "\\\\")
   (#set! severity "warning"))
 
 ; line-wrapped package declaration
 ; https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
-((package_declaration) @error
+((package_declaration
+  .
+  [
+    (identifier)
+    (scoped_identifier)
+  ]) @error
   (#match? @error "\n")
   (#set! name "wrapped-package")
   (#set! title "Line-wrapped package declaration")
