@@ -1,4 +1,4 @@
-use aho_corasick::{AhoCorasick, MatchKind};
+use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use annotate_snippets::{
     Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
     renderer::{DecorStyle, Style},
@@ -67,8 +67,8 @@ static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
 
 static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
     AhoCorasick::builder()
-        .match_kind(MatchKind::LeftmostFirst)
-        .build(["{node_text}", "{node_kind}"])
+        .kind(AhoCorasickKind::DFA.into())
+        .build(["{node.text}", "{node.kind}"])
         .unwrap()
 });
 
