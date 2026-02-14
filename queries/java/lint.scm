@@ -356,8 +356,8 @@
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-final-local")
   (#set! title "Uppercase final local variable name")
-  (#set! label "Non-constant")
-  (#set! note "Rename final local variable using lowerCamelCase")
+  (#set! label "Uppercase")
+  (#set! note "Rename non-constant using lowerCamelCase")
   (#set! severity "error"))
 
 ; type variables should be UpperCamelCase
