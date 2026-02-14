@@ -1,10 +1,16 @@
 pub mod lint;
 
-use std::{fs, process::ExitCode};
+use std::{
+    fs,
+    process::ExitCode,
+    sync::atomic::{AtomicU32, Ordering},
+};
 
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 
 use crate::lint::Linter;
+
+static COUNT: AtomicU32 = AtomicU32::new(0);
 
 fn main() -> ExitCode {
     let mut typesbuilder = TypesBuilder::new();
@@ -26,9 +32,10 @@ fn main() -> ExitCode {
     overrides
         .add("!**/WordBreakTestUnicode_12_1_0.java")
         .unwrap();
-    let mut builder = WalkBuilder::new("/home/rmuir/workspace/OpenSearch/");
+    let mut builder = WalkBuilder::new("/home/rmuir/workspace/lucene");
     builder.types(matcher);
     builder.overrides(overrides.build().unwrap());
+
     builder.build_parallel().run(|| {
         let mut linter = Linter::new();
 
@@ -44,7 +51,10 @@ fn main() -> ExitCode {
                         if res == "foobar" {
                             println!("bogus: {}", res);
                         }
-                        linter.lint(entry.path(), data);
+                        let errors = linter.lint(entry.path(), data);
+                        if errors > 0 {
+                            COUNT.fetch_add(errors, Ordering::Relaxed);
+                        }
                     }
                 }
                 Err(err) => println!("error: {}", err),
@@ -52,5 +62,12 @@ fn main() -> ExitCode {
             WalkState::Continue
         })
     });
-    ExitCode::SUCCESS
+    let violations = COUNT.load(Ordering::Relaxed);
+    if violations > 0 {
+        println!("Found {violations} diagnostics");
+        ExitCode::FAILURE
+    } else {
+        println!("All checks passed!");
+        ExitCode::SUCCESS
+    }
 }

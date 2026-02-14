@@ -62,12 +62,14 @@ impl Linter {
         Linter { parser }
     }
 
-    pub fn lint(&mut self, path: &Path, data: Vec<u8>) {
+    pub fn lint(&mut self, path: &Path, data: Vec<u8>) -> u32 {
         self.parser.reset();
+        let mut errors = 0;
         let tree = self.parser.parse(&data, None).unwrap();
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
         while let Some(hit) = matches.next() {
+            errors += 1;
             let props = JAVA_ERROR_QUERY.property_settings(hit.pattern_index);
             let mut prop_name: Option<Box<str>> = None;
             let mut prop_title: Option<Box<str>> = None;
@@ -158,5 +160,6 @@ impl Linter {
             }
             anstream::println!("{}\n", RENDERER.render(&report))
         }
+        errors
     }
 }
