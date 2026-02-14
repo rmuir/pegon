@@ -364,7 +364,7 @@
   (#set! name "uppercase-final-local")
   (#set! title "Uppercase local variable name: `{node.text}`")
   (#set! label "Uppercase")
-  (#set! context.label "Not a constant")
+  (#set! context.label "Not a `static final` constant")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
