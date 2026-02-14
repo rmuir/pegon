@@ -14,15 +14,17 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+# Templates diagnostic errors
+aho-corasick = "1.1.4"
 # Renders console diagnostics
 annotate-snippets = { version = "0.12.11", features = ["simd"] }
-# ANSI styling
+# ANSI styling of console output
 anstream = "0.6.21"
 # Caching already-processed files
 blake3 = "1.8.3"
 # Traversing directories, respecting ignore files
 ignore = "0.4.25"
-# Parsing system
+# Parser framework
 tree-sitter = "0.26.5"
-# Parser for java
+# Parser for java language
 tree-sitter-java = "0.23.5"
