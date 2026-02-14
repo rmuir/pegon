@@ -133,14 +133,10 @@ impl Linter {
 
             let node_text = node.utf8_text(&data).unwrap_or_default();
             let node_kind = node.kind();
-            let replacements = &[node_text, node_kind];
-            let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), replacements);
-
-            let label = if node.is_missing() {
-                format!("missing {} here", node.kind())
-            } else {
-                prop_label.unwrap_or_default().to_string()
-            };
+            let replacements = [node_text, node_kind];
+            let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
+            let label = TEMPLATE_ENGINE.replace_all(&prop_label.unwrap_or_default(), &replacements);
+            let note = TEMPLATE_ENGINE.replace_all(&prop_note.unwrap_or_default(), &replacements);
 
             let mut annotations: Vec<Annotation> = Vec::new();
 
@@ -191,18 +187,11 @@ impl Linter {
                     ),
             );
             if let Some(fix) = prop_fix {
-                report.push(
-                    Level::HELP
-                        .secondary_title(prop_note.unwrap().to_string())
-                        .element(
-                            Snippet::source(source)
-                                .patch(Patch::new(node.byte_range(), fix.to_string())),
-                        ),
-                );
-            } else {
-                report.push(Group::with_title(
-                    Level::HELP.secondary_title(prop_note.unwrap().to_string()),
+                report.push(Level::HELP.secondary_title(note).element(
+                    Snippet::source(source).patch(Patch::new(node.byte_range(), fix.to_string())),
                 ));
+            } else {
+                report.push(Group::with_title(Level::HELP.secondary_title(note)));
             }
             anstream::println!("{}\n", RENDERER.render(&report))
         }
