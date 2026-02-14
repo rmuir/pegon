@@ -68,6 +68,7 @@ impl Linter {
             let mut prop_name: Option<Box<str>> = None;
             let mut prop_title: Option<Box<str>> = None;
             let mut prop_severity: Option<Box<str>> = None;
+            let mut prop_label: Option<Box<str>> = None;
             let mut prop_note: Option<Box<str>> = None;
             for prop in props {
                 let name = &*prop.key;
@@ -77,6 +78,8 @@ impl Linter {
                     prop_title = prop.value.clone();
                 } else if name == "severity" {
                     prop_severity = prop.value.clone();
+                } else if name == "label" {
+                    prop_label = prop.value.clone();
                 } else if name == "note" {
                     prop_note = prop.value.clone();
                 }
@@ -88,10 +91,17 @@ impl Linter {
                 .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
                 .next()
                 .unwrap();
+
+            let label = if node.is_missing() {
+                format!("missing {} here", node.kind())
+            } else {
+                prop_label.unwrap_or_default().to_string()
+            };
+
             let mut annotations: Vec<Annotation> = Vec::new();
 
             // primary error annotation: as precise of a range as possible
-            annotations.push(AnnotationKind::Primary.span(node.byte_range()));
+            annotations.push(AnnotationKind::Primary.span(node.byte_range()).label(label));
 
             // node context: explicitly marked visible in the query
             for visible in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {

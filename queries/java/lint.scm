@@ -8,6 +8,7 @@
   (#set! note "Correct the invalid Java syntax")
   (#set! severity "hint"))
 
+; Whitespace other than ASCII horizontal space inside a literal.
 ; https://google.github.io/styleguide/javaguide.html#s2.3.1-whitespace-characters
 ([
   (character_literal)
@@ -15,36 +16,70 @@
   (multiline_string_fragment)
 ] @error
   (#match? @error "[\\s&&[^\\u0020\n]]")
-  (#set! name "unescaped-literal-space")
+  (#set! name "literal-special-space")
   (#set! title "Special whitespace in literal")
-  (#set! note "Escape the special whitespace: only 0x20 may appear in literals")
+  (#set! label "Literal")
+  (#set! note "Escape the special whitespace: only `0x20` may appear in literals")
   (#set! severity "error"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u0008" "\\010" "\\10")
-  (#set! name "wrong-escape")
-  (#set! title "Backspace escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\b")
+  (#any-of? @error "\\010" "\\10")
+  (#set! name "octal-backspace")
+  (#set! title "Octal backspace escape")
+  (#set! label "Backspace")
+  (#set! note "Replace with the special escape `\\b`")
   (#set! severity "error"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u0009" "\\011" "\\11")
-  (#set! name "wrong-escape")
-  (#set! title "Tab escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\t")
+  (#eq? @error "\\u0008")
+  (#set! name "unicode-backspace")
+  (#set! title "Unicode backspace escape")
+  (#set! label "Backspace")
+  (#set! note "Replace with the special escape `\\b`")
   (#set! severity "error"))
 
 ; special escape sequences encoded as octal/hex
 ; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u000a" "\\u000A" "\\012" "\\12")
-  (#set! name "wrong-escape")
-  (#set! title "Newline escaped incorrectly")
-  (#set! note "Replace the octal/hex escape with the special escape \\n")
+  (#any-of? @error "\\011" "\\11")
+  (#set! name "octal-tab")
+  (#set! title "Octal tab escape")
+  (#set! label "Tab")
+  (#set! note "Replace with the special escape `\\t`")
+  (#set! severity "error"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#eq? @error "\\u0009")
+  (#set! name "unicode-tab")
+  (#set! title "Unicode tab escape")
+  (#set! label "Tab")
+  (#set! note "Replace with the special escape `\\t`")
+  (#set! severity "error"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\012" "\\12")
+  (#set! name "octal-newline")
+  (#set! title "Octal newline escape")
+  (#set! label "Newline")
+  (#set! note "Replace with the special escape `\\n`")
+  (#set! severity "error"))
+
+; special escape sequences encoded as octal/hex
+; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+((escape_sequence) @error
+  (#any-of? @error "\\u000a" "\\u000A")
+  (#set! name "unicode-newline")
+  (#set! title "Unicode newline escape")
+  (#set! label "Newline")
+  (#set! note "Replace with the special escape `\\n`")
   (#set! severity "error"))
 
 ; special escape sequences encoded as octal/hex
@@ -98,6 +133,7 @@
   (#match? @error "\n")
   (#set! name "wrapped-package")
   (#set! title "Line-wrapped package declaration")
+  (#set! label "Wrapped")
   (#set! note "Remove newlines from the package statement")
   (#set! severity "error"))
 
@@ -108,6 +144,7 @@
   (asterisk) @error)
   (#set! name "wildcard-import")
   (#set! title "Wildcard import")
+  (#set! label "Wildcard")
   (#set! note "Replace the wildcard import with standard import(s)")
   (#set! severity "error"))
 
@@ -117,6 +154,7 @@
   (#match? @error "\n")
   (#set! name "line-wrapped-import")
   (#set! title "Line-wrapped import")
+  (#set! label "Wrapped")
   (#set! note "Remove newlines from the import statement")
   (#set! severity "error"))
 
@@ -128,6 +166,7 @@
     name: (identifier) @error)
   (#set! name "multiple-classes")
   (#set! title "Multiple top-level classes")
+  (#set! label "Additional class in file")
   (#set! note "Move top-level classes into their own files: only one per file")
   (#set! severity "error"))
 
@@ -137,15 +176,27 @@
   (#match? @error "l$")
   (#set! name "lowercase-long-literal")
   (#set! title "Lowercase long integer literal")
+  (#set! label "Lowercase")
   (#set! note "Replace with uppercase L suffix to improve legibility")
   (#set! severity "error"))
 
-; identifier containing illegal character
+; dollar sign in identifier
 ; https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
-  (#match? @error "[^a-zA-Z0-9_]")
-  (#set! name "invalid-identifier")
-  (#set! title "Invalid identifier")
+  (#match? @error "[$]")
+  (#set! name "dollar-in-identifier")
+  (#set! title "Dollar sign in identifier")
+  (#set! label "Identifier")
+  (#set! note "Rename using only ASCII letters, digits, and underscores")
+  (#set! severity "error"))
+
+; identifier containing unicode character
+; https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
+((identifier) @error
+  (#match? @error "[^a-zA-Z0-9_$]")
+  (#set! name "unicode-identifier")
+  (#set! title "Unicode in identifier")
+  (#set! label "Identifier")
   (#set! note "Rename using only ASCII letters, digits, and underscores")
   (#set! severity "error"))
 
@@ -156,6 +207,7 @@
   (#match? @error "[^a-z0-9]")
   (#set! name "invalid-package-name")
   (#set! title "Invalid package name")
+  (#set! label "Package")
   (#set! note "Rename package using only lowercase and digits")
   (#set! severity "error"))
 
@@ -166,6 +218,7 @@
   (#match? @error "[^a-z0-9]")
   (#set! name "invalid-module-name")
   (#set! title "Invalid module name")
+  (#set! label "Module")
   (#set! note "Rename module using only lowercase and digits")
   (#set! severity "error"))
 
@@ -174,8 +227,9 @@
 ((class_declaration
   name: (identifier) @error)
   (#match? @error "^[a-z]")
-  (#set! name "invalid-class-name")
-  (#set! title "Invalid class name")
+  (#set! name "lowercase-class-name")
+  (#set! title "Lowercase class name")
+  (#set! label "Lowercase")
   (#set! note "Rename class using UpperCamelCase")
   (#set! severity "error"))
 
@@ -184,8 +238,9 @@
 ((formal_parameter
   name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "invalid-param-name")
-  (#set! title "Invalid parameter name")
+  (#set! name "uppercase-param-name")
+  (#set! title "Uppercase parameter name")
+  (#set! label "Uppercase")
   (#set! note "Rename parameter using lowerCamelCase")
   (#set! severity "error")) @visible
 
@@ -195,8 +250,9 @@
   (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "invalid-param-name")
-  (#set! title "Invalid vararg parameter name")
+  (#set! name "uppercase-vararg-name")
+  (#set! title "Uppercase vararg parameter name")
+  (#set! label "Uppercase")
   (#set! note "Rename vararg parameter using lowerCamelCase")
   (#set! severity "error")) @visible
 
@@ -206,8 +262,9 @@
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "invalid-local-name")
-  (#set! title "Invalid local variable name")
+  (#set! name "uppercase-local-name")
+  (#set! title "Uppercase local variable name")
+  (#set! label "Uppercase")
   (#set! note "Rename local variable using lowerCamelCase")
   (#set! severity "error")) @visible
 
@@ -216,8 +273,9 @@
 ((type_parameter
   (type_identifier) @error)
   (#match? @error "^[a-z]")
-  (#set! name "invalid-type-name")
-  (#set! title "Invalid type name")
+  (#set! name "lowercase-type-name")
+  (#set! title "Lowercase type parameter name")
+  (#set! label "Lowercase")
   (#set! note "Rename type using UpperCamelCase")
   (#set! severity "error")) @visible
 
@@ -232,8 +290,9 @@
   (#not-eq? @error "_")
   ; no real content at all
   (#not-match? @_block "[a-zA-Z0-9_]")
-  (#set! name "unhandled-exception")
+  (#set! name "swallowed-exception")
   (#set! title "Unhandled caught exception")
+  (#set! label "Exception ignored")
   (#set! note "Handle the exception, add a comment, or indicate via unnamed variable _")
   (#set! severity "error")) @visible ; body is small (empty)
 
@@ -249,5 +308,6 @@
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
   (#set! name "finalizer-used")
   (#set! title "Finalizer used")
+  (#set! label "Overrides Object.finalize()")
   (#set! note "Migrate to other resource management such as try-with-resources or cleaners")
   (#set! severity "error"))
