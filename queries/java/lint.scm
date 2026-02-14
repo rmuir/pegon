@@ -43,7 +43,7 @@
   (#set! severity "hint"))
 
 ; Whitespace other than ASCII horizontal space inside a literal.
-; https://google.github.io/styleguide/javaguide.html#s2.3.1-whitespace-characters
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.1-whitespace-characters
 ([
   (character_literal)
   (string_fragment)
@@ -56,8 +56,8 @@
   (#set! note "Escape the special whitespace: only `0x20` may appear in literals")
   (#set! severity "error"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal backspace escape instead of `\b`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\010" "\\10")
   (#set! name "octal-backspace")
@@ -67,8 +67,8 @@
   (#set! fix "\\b")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex backspace escape instead of `\b`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0008")
   (#set! name "hex-backspace")
@@ -78,8 +78,8 @@
   (#set! fix "\\b")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal tab escape instead of `\t`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\011" "\\11")
   (#set! name "octal-tab")
@@ -89,8 +89,8 @@
   (#set! fix "\\t")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex tab escape instead of `\t`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0009")
   (#set! name "hex-tab")
@@ -100,8 +100,8 @@
   (#set! fix "\\t")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal newline escape instead of `\n`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\012" "\\12")
   (#set! name "octal-newline")
@@ -111,8 +111,8 @@
   (#set! fix "\\n")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex newline escape instead of `\n`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000a" "\\u000A")
   (#set! name "hex-newline")
@@ -122,8 +122,8 @@
   (#set! fix "\\n")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal form feed escape instead of `\f`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\014" "\\14")
   (#set! name "octal-formfeed")
@@ -133,8 +133,8 @@
   (#set! fix "\\f")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex form feed escape instead of `\f`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000c" "\\u000C")
   (#set! name "hex-formfeed")
@@ -144,8 +144,8 @@
   (#set! fix "\\f")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal carriage return escape instead of `\r`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\015" "\\15")
   (#set! name "octal-return")
@@ -155,8 +155,8 @@
   (#set! fix "\\r")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex carriage return escape instead of `\r`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000d" "\\u000D")
   (#set! name "hex-return")
@@ -166,8 +166,8 @@
   (#set! fix "\\r")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal double-quote escape instead of `\"`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\042" "\\42")
   (#set! name "octal-double-quote")
@@ -177,8 +177,8 @@
   (#set! fix "\\\"")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex double-quote escape instead of `\"`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0022")
   (#set! name "hex-double-quote")
@@ -188,8 +188,8 @@
   (#set! fix "\\\"")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Octal single-quote escape instead of `\'`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\047" "\\47")
   (#set! name "octal-single-quote")
@@ -199,8 +199,8 @@
   (#set! fix "\\'")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; Unicode hex single-quote escape instead of `\'`
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0027")
   (#set! name "hex-single-quote")
@@ -210,8 +210,8 @@
   (#set! fix "\\'")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; special escape sequences encoded as octal
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\134")
   (#set! name "octal-backslash")
@@ -221,8 +221,8 @@
   (#set! fix "\\\\")
   (#set! severity "warning"))
 
-; special escape sequences encoded as octal/hex
-; https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
+; special escape sequences encoded as hex
+; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u005c" "\\u005C")
   (#set! name "hex-backslash")
@@ -233,7 +233,7 @@
   (#set! severity "warning"))
 
 ; line-wrapped package declaration
-; https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
+; @see https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
 ((package_declaration
   .
   [
@@ -248,7 +248,7 @@
   (#set! severity "error"))
 
 ; wildcard imports
-; https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
+; @see https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
 ((import_declaration
   (asterisk) @error)
   (#set! name "wildcard-import")
@@ -258,7 +258,7 @@
   (#set! severity "error"))
 
 ; line-wrapped imports
-; https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
+; @see https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
 ((import_declaration) @error
   (#match? @error "\n")
   (#set! name "wrapped-import")
@@ -268,7 +268,7 @@
   (#set! severity "error"))
 
 ; multiple top-level classes in the same file
-; https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
+; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
 (program
   (class_declaration
     name: (identifier) @context)+
@@ -282,7 +282,7 @@
   (#set! severity "error"))
 
 ; integer literal with lowercase 'l'
-; https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
+; @see https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
 ((decimal_integer_literal) @error
   (#match? @error "l$")
   (#set! name "lowercase-long-literal")
@@ -292,7 +292,7 @@
   (#set! severity "error"))
 
 ; dollar sign in identifier
-; https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[$]")
   (#set! name "dollar-in-identifier")
@@ -302,7 +302,7 @@
   (#set! severity "error"))
 
 ; identifier containing unicode character
-; https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[^a-zA-Z0-9_$]")
   (#set! name "unicode-identifier")
@@ -312,7 +312,7 @@
   (#set! severity "error"))
 
 ; package names should be lowercase and digits only
-; https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 ((package_declaration
   (identifier) @error)
   (#match? @error "[^a-z0-9]")
@@ -323,7 +323,7 @@
   (#set! severity "error"))
 
 ; module names should be lowercase and digits only
-; https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 ((module_declaration
   (identifier) @error)
   (#match? @error "[^a-z0-9]")
@@ -334,7 +334,7 @@
   (#set! severity "error"))
 
 ; class names should be UpperCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 ((class_declaration
   name: (identifier) @error)
   (#match? @error "^[a-z]")
@@ -345,7 +345,7 @@
   (#set! severity "error"))
 
 ; parameters should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 ((formal_parameter
   name: (identifier) @error)
   (#match? @error "^[A-Z]")
@@ -356,7 +356,7 @@
   (#set! severity "error")) @visible
 
 ; spread parameter should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (spread_parameter
   (variable_declarator
     name: (identifier) @error)
@@ -368,7 +368,7 @@
   (#set! severity "error")) @visible
 
 ; local variables should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
   type: (_)
@@ -382,7 +382,7 @@
   (#set! severity "error"))
 
 ; local variables should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
   (modifiers) @context
@@ -397,7 +397,7 @@
   (#set! severity "error"))
 
 ; type variables should be UpperCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
 ((type_parameter
   (type_identifier) @error)
   (#match? @error "^[a-z]")
@@ -408,7 +408,7 @@
   (#set! severity "error")) @visible
 
 ; Caught exceptions: not ignored
-; https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
+; @see https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
 (catch_clause
   (catch_formal_parameter
     (catch_type)
@@ -425,7 +425,7 @@
   (#set! severity "error")) @visible ; body is small (empty)
 
 ; Finalizers: not used
-; https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
+; @see https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
 ((method_declaration
   type: (void_type) @visible
   ; body could be large
