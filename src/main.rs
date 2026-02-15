@@ -1,9 +1,10 @@
 pub mod lint;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 use std::{
     fs,
+    path::PathBuf,
     process::ExitCode,
     sync::atomic::{AtomicU32, Ordering},
 };
@@ -74,16 +75,43 @@ fn lint() -> ExitCode {
     }
 }
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// command to run
-    #[arg(short, long)]
-    operation: String,
+#[derive(Parser)]
+#[command(about, long_about = None, version, arg_required_else_help = true)]
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Run pegon on the given files or directories.
+    Check {
+        /// List of files or directories to check, or `-` to read from stdin
+        files: Vec<PathBuf>,
+
+        /// Apply fixes to resolve lint violations.
+        #[arg(long, short)]
+        fix: bool,
+    },
+
+    /// Run the pegon formatter on the given files or directories.
+    Format {
+        /// List of files or directories to format, or `-` to read from stdin
+        files: Vec<PathBuf>,
+
+        /// Avoid writing any formatted files back; instead, exit with a non-zero status code if any
+        /// files would be modified, and zero otherwise.
+        #[arg(long, short)]
+        check: bool,
+    },
 }
 
 fn main() -> ExitCode {
-    let args = Args::parse();
-    println!("Hello {:?}", args);
-    lint()
+    let cli = Cli::parse();
+    match &cli.command {
+        Some(Commands::Check { files: _, fix: _ }) => lint(),
+        Some(_) => todo!(),
+        None => ExitCode::FAILURE,
+    }
 }
