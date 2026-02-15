@@ -3,6 +3,7 @@ use annotate_snippets::{
     Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
     renderer::{DecorStyle, Style},
 };
+use anyhow::Error;
 use std::{ops::Range, path::Path, sync::LazyLock};
 use tree_sitter::{Node, Query, QueryCursor, StreamingIterator};
 
@@ -89,7 +90,7 @@ impl Linter {
         Linter { parser }
     }
 
-    pub fn lint(&mut self, path: &Path, data: Vec<u8>) -> u32 {
+    pub fn lint(&mut self, path: &Path, data: Vec<u8>) -> Result<u32, Error> {
         self.parser.reset();
         let mut errors = 0;
         let tree = self.parser.parse(&data, None).unwrap();
@@ -164,7 +165,7 @@ impl Linter {
                 annotations.push(AnnotationKind::Visible.span(ctx));
             }
 
-            let source = str::from_utf8(data.as_slice()).unwrap();
+            let source = str::from_utf8(&data)?;
 
             let severity = prop_severity.unwrap().to_string();
             let level = match severity.as_str() {
@@ -195,6 +196,6 @@ impl Linter {
             }
             anstream::println!("{}\n", RENDERER.render(&report))
         }
-        errors
+        Ok(errors)
     }
 }

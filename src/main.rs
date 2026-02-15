@@ -49,7 +49,7 @@ fn lint() -> Result<(), Error> {
                         if res == "foobar" {
                             println!("bogus: {}", res);
                         }
-                        let errors = linter.lint(entry.path(), data);
+                        let errors = linter.lint(entry.path(), data).unwrap();
                         if errors > 0 {
                             COUNT.fetch_add(errors, Ordering::Relaxed);
                         }
