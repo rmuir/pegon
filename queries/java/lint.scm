@@ -51,7 +51,7 @@
 ] @error
   (#match? @error "[\\s&&[^\\u0020\n]]")
   (#set! name "literal-special-space")
-  (#set! title "Special whitespace in literal")
+  (#set! title "Literal contains unescaped special whitespace")
   (#set! label "Literal")
   (#set! note "Escape the special whitespace: only `0x20` may appear in literals")
   (#set! severity "error"))
