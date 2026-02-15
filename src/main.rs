@@ -1,6 +1,6 @@
 pub mod lint;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, builder::styling};
 
 use std::{
     fs,
@@ -76,8 +76,10 @@ fn lint() -> ExitCode {
 }
 
 #[derive(Parser)]
-#[command(about, long_about = None, version, arg_required_else_help = true)]
+#[command(about, long_about = None, version)]
+#[command(arg_required_else_help = true)]
 #[command(propagate_version = true)]
+#[command(styles = CLI_STYLES)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -106,6 +108,12 @@ enum Commands {
         check: bool,
     },
 }
+
+const CLI_STYLES: styling::Styles = styling::Styles::styled()
+    .header(styling::AnsiColor::Green.on_default().bold())
+    .usage(styling::AnsiColor::Green.on_default().bold())
+    .literal(styling::AnsiColor::Blue.on_default().bold())
+    .placeholder(styling::AnsiColor::Cyan.on_default());
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
