@@ -385,7 +385,7 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
-  (modifiers) @context
+  (modifiers) @context ; 'final' implicit: only modifier for a local variable
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
