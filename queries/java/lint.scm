@@ -249,8 +249,8 @@
 
 ; Wildcard imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
-((import_declaration
-  (asterisk) @error)
+(import_declaration
+  (asterisk) @error
   (#set! name "wildcard-import")
   (#set! title "Wildcard import")
   (#set! label "Wildcard")
@@ -273,13 +273,13 @@
   (class_declaration
     name: (identifier) @context)+
   (class_declaration
-    name: (identifier) @error)
-  (#set! name "multiple-classes")
-  (#set! title "Multiple top-level classes: `{node.text}`")
-  (#set! label "Additional class")
-  (#set! context.label "Previous class")
-  (#set! note "Move `{node.text}` to separate `{node.text}.java` file")
-  (#set! severity "error"))
+    name: (identifier) @error
+    (#set! name "multiple-classes")
+    (#set! title "Multiple top-level classes: `{node.text}`")
+    (#set! label "Additional class")
+    (#set! context.label "Previous class")
+    (#set! note "Move `{node.text}` to separate `{node.text}.java` file")
+    (#set! severity "error")))
 
 ; Integer literal with lowercase 'l'
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
@@ -313,8 +313,8 @@
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
-((package_declaration
-  (identifier) @error)
+(package_declaration
+  (identifier) @error
   (#match? @error "[^a-z0-9]")
   (#set! name "invalid-package-name")
   (#set! title "Invalid package name: `{node.text}`")
@@ -324,8 +324,8 @@
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
-((module_declaration
-  (identifier) @error)
+(module_declaration
+  (identifier) @error
   (#match? @error "[^a-z0-9]")
   (#set! name "invalid-module-name")
   (#set! title "Invalid module name: `{node.text}`")
@@ -335,8 +335,8 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-((class_declaration
-  name: (identifier) @error)
+(class_declaration
+  name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-class")
   (#set! title "Lowercase class name: `{node.text}`")
@@ -346,8 +346,8 @@
 
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-((formal_parameter
-  name: (identifier) @error)
+(formal_parameter
+  name: (identifier) @error
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-param")
   (#set! title "Uppercase parameter name: `{node.text}`")
@@ -359,13 +359,13 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (spread_parameter
   (variable_declarator
-    name: (identifier) @error)
-  (#match? @error "^[A-Z]")
-  (#set! name "uppercase-vararg")
-  (#set! title "Uppercase vararg name: `{node.text}`")
-  (#set! label "Uppercase")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error")) @visible
+    name: (identifier) @error
+    (#match? @error "^[A-Z]")
+    (#set! name "uppercase-vararg")
+    (#set! title "Uppercase vararg name: `{node.text}`")
+    (#set! label "Uppercase")
+    (#set! note "Rename `{node.text}` using lowerCamelCase")
+    (#set! severity "error"))) @visible
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -373,13 +373,13 @@
   .
   type: (_)
   declarator: (variable_declarator
-    name: (identifier) @error)
-  (#match? @error "^[A-Z]")
-  (#set! name "uppercase-local")
-  (#set! title "Uppercase local variable name: `{node.text}`")
-  (#set! label "Uppercase")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+    name: (identifier) @error
+    (#match? @error "^[A-Z]")
+    (#set! name "uppercase-local")
+    (#set! title "Uppercase local variable name: `{node.text}`")
+    (#set! label "Uppercase")
+    (#set! note "Rename `{node.text}` using lowerCamelCase")
+    (#set! severity "error")))
 
 ; Local variables should be lowerCamelCase (final variant)
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
