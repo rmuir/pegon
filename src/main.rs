@@ -1,16 +1,15 @@
+pub mod cli;
 pub mod lint;
-
-use clap::{Parser, Subcommand, builder::styling};
 
 use std::{
     fs,
-    path::PathBuf,
     process::ExitCode,
     sync::atomic::{AtomicU32, Ordering},
 };
 
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 
+use crate::cli::{Commands, parse};
 use crate::lint::Linter;
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
@@ -75,51 +74,10 @@ fn lint() -> ExitCode {
     }
 }
 
-#[derive(Parser)]
-#[command(about, long_about = None, version)]
-#[command(arg_required_else_help = true)]
-#[command(propagate_version = true)]
-#[command(styles = CLI_STYLES)]
-struct Cli {
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Run pegon on the given files or directories.
-    Check {
-        /// List of files or directories to check, or `-` to read from stdin
-        files: Vec<PathBuf>,
-
-        /// Apply fixes to resolve lint violations.
-        #[arg(long, short)]
-        fix: bool,
-    },
-
-    /// Run the pegon formatter on the given files or directories.
-    Format {
-        /// List of files or directories to format, or `-` to read from stdin
-        files: Vec<PathBuf>,
-
-        /// Avoid writing any formatted files back; instead, exit with a non-zero status code if any
-        /// files would be modified, and zero otherwise.
-        #[arg(long, short)]
-        check: bool,
-    },
-}
-
-const CLI_STYLES: styling::Styles = styling::Styles::styled()
-    .header(styling::AnsiColor::Green.on_default().bold())
-    .usage(styling::AnsiColor::Green.on_default().bold())
-    .literal(styling::AnsiColor::Blue.on_default().bold())
-    .placeholder(styling::AnsiColor::Cyan.on_default());
-
 fn main() -> ExitCode {
-    let cli = Cli::parse();
+    let cli = parse();
     match &cli.command {
-        Some(Commands::Check { files: _, fix: _ }) => lint(),
-        Some(_) => todo!(),
-        None => ExitCode::FAILURE,
+        Commands::Check { files: _, fix: _ } => lint(),
+        Commands::Format { files: _, check: _ } => todo!(),
     }
 }
