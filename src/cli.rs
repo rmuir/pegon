@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand, builder::styling};
+use clap::{Parser, Subcommand, builder::styling::AnsiColor, builder::styling::Styles};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -35,11 +35,11 @@ pub(crate) enum Commands {
     },
 }
 
-const CLI_STYLES: styling::Styles = styling::Styles::styled()
-    .header(styling::AnsiColor::Green.on_default().bold())
-    .usage(styling::AnsiColor::Green.on_default().bold())
-    .literal(styling::AnsiColor::Blue.on_default().bold())
-    .placeholder(styling::AnsiColor::Cyan.on_default());
+const CLI_STYLES: Styles = Styles::styled()
+    .header(AnsiColor::Green.on_default().bold())
+    .usage(AnsiColor::Green.on_default().bold())
+    .literal(AnsiColor::Blue.on_default().bold())
+    .placeholder(AnsiColor::Cyan.on_default());
 
 pub(crate) fn parse() -> Cli {
     Cli::parse()
