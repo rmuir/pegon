@@ -387,19 +387,19 @@
   .
   (modifiers) @context ; 'final' implicit: only modifier for a local variable
   declarator: (variable_declarator
-    name: (identifier) @error)
-  (#match? @error "^[A-Z]")
-  (#set! name "uppercase-final-local")
-  (#set! title "Uppercase local variable name: `{node.text}`")
-  (#set! label "Uppercase")
-  (#set! context.label "Not a `static final` constant")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+    name: (identifier) @error
+    (#match? @error "^[A-Z]")
+    (#set! name "uppercase-final-local")
+    (#set! title "Uppercase local variable name: `{node.text}`")
+    (#set! label "Uppercase")
+    (#set! context.label "Not a `static final` constant")
+    (#set! note "Rename `{node.text}` using lowerCamelCase")
+    (#set! severity "error")))
 
 ; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
-((type_parameter
-  (type_identifier) @error)
+(type_parameter
+  (type_identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-type")
   (#set! title "Lowercase type parameter name: `{node.text}`")
@@ -426,11 +426,11 @@
 
 ; Finalizers: not used
 ; @see https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
-((method_declaration
+(method_declaration
   type: (void_type) @visible
   ; body could be large
   name: (identifier) @error
-  parameters: (formal_parameters) @_params)
+  parameters: (formal_parameters) @_params
   (#eq? @error "finalize")
   ; only parentheses
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
