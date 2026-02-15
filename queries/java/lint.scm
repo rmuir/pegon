@@ -344,6 +344,17 @@
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
+; Method names should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
+(method_declaration
+  name: (identifier) @error
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-method")
+  (#set! title "Uppercase method name: `{node.text}`")
+  (#set! label "Uppercase")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (formal_parameter
