@@ -1,5 +1,7 @@
 pub mod lint;
 
+use clap::Parser;
+
 use std::{
     fs,
     process::ExitCode,
@@ -12,7 +14,7 @@ use crate::lint::Linter;
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
 
-fn main() -> ExitCode {
+fn lint() -> ExitCode {
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
     // i guess we could format those?
@@ -70,4 +72,18 @@ fn main() -> ExitCode {
         println!("All checks passed!");
         ExitCode::SUCCESS
     }
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// command to run
+    #[arg(short, long)]
+    operation: String,
+}
+
+fn main() -> ExitCode {
+    let args = Args::parse();
+    println!("Hello {:?}", args);
+    lint()
 }
