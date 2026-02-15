@@ -3,10 +3,10 @@ pub mod lint;
 
 use std::{
     fs,
-    process::ExitCode,
     sync::atomic::{AtomicU32, Ordering},
 };
 
+use anyhow::Error;
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 
 use crate::cli::{Commands, parse};
@@ -14,29 +14,25 @@ use crate::lint::Linter;
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
 
-fn lint() -> ExitCode {
+fn lint() -> Result<(), Error> {
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
     // i guess we could format those?
-    typesbuilder.add("java", "*.java").unwrap();
+    typesbuilder.add("java", "*.java")?;
     typesbuilder.select("java");
-    let matcher = typesbuilder.build().unwrap();
+    let matcher = typesbuilder.build()?;
     let mut overrides = OverrideBuilder::new("/home/rmuir/workspace/lucene");
     // JFlex-generated code with escaped DFA
-    overrides.add("!**/ClassicTokenizerImpl.java").unwrap();
-    overrides.add("!**/HTMLStripCharFilter.java").unwrap();
-    overrides.add("!**/TestJapaneseAnalyzer.java").unwrap();
-    overrides.add("!**/StandardTokenizerImpl.java").unwrap();
-    overrides
-        .add("!**/UAX29URLEmailTokenizerImpl.java")
-        .unwrap();
-    overrides.add("!**/WikipediaTokenizerImpl.java").unwrap();
-    overrides
-        .add("!**/WordBreakTestUnicode_12_1_0.java")
-        .unwrap();
+    overrides.add("!**/ClassicTokenizerImpl.java")?;
+    overrides.add("!**/HTMLStripCharFilter.java")?;
+    overrides.add("!**/TestJapaneseAnalyzer.java")?;
+    overrides.add("!**/StandardTokenizerImpl.java")?;
+    overrides.add("!**/UAX29URLEmailTokenizerImpl.java")?;
+    overrides.add("!**/WikipediaTokenizerImpl.java")?;
+    overrides.add("!**/WordBreakTestUnicode_12_1_0.java")?;
     let mut builder = WalkBuilder::new("/home/rmuir/workspace/lucene");
     builder.types(matcher);
-    builder.overrides(overrides.build().unwrap());
+    builder.overrides(overrides.build()?);
 
     builder.build_parallel().run(|| {
         let mut linter = Linter::new();
@@ -66,15 +62,14 @@ fn lint() -> ExitCode {
     });
     let violations = COUNT.load(Ordering::Relaxed);
     if violations > 0 {
-        println!("Found {violations} diagnostics");
-        ExitCode::FAILURE
+        Err(anyhow::anyhow!("Found {} diagnostics", violations))
     } else {
         println!("All checks passed!");
-        ExitCode::SUCCESS
+        Ok(())
     }
 }
 
-fn main() -> ExitCode {
+fn main() -> Result<(), Error> {
     let cli = parse();
     match &cli.command {
         Commands::Check { files: _, fix: _ } => lint(),

@@ -24,6 +24,8 @@ aho-corasick = "1.1.4"
 annotate-snippets = { version = "0.12.11", features = ["simd"] }
 # ANSI styling of console output
 anstream = "0.6.21"
+# Error handling
+anyhow = "1.0.101"
 # Caching already-processed files
 blake3 = "1.8.3"
 # CLI argument processing
