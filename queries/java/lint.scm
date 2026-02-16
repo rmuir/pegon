@@ -403,7 +403,9 @@
 ; Primitive type constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers
+    "static"
+    "final")
   type: [
     (boolean_type)
     (integral_type)
@@ -413,8 +415,6 @@
     name: (identifier) @error)
   (#match? @error "[a-z]")
   (#not-eq? @error "serialVersionUID")
-  (#match? @_modifiers "static")
-  (#match? @_modifiers "final")
   (#set! name "invalid-primitive-constant")
   (#set! title "Invalid constant name: `{node.text}`")
   (#set! label "Constant")
