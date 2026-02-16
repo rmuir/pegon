@@ -106,7 +106,7 @@ impl Linter {
             let mut prop_title: Option<Box<str>> = None;
             let mut prop_severity: Option<Box<str>> = None;
             let mut prop_label: Option<Box<str>> = None;
-            let mut prop_note: Option<Box<str>> = None;
+            let mut prop_help: Option<Box<str>> = None;
             let mut prop_fix: Option<Box<str>> = None;
             let mut prop_context_label: Option<Box<str>> = None;
             for prop in props {
@@ -119,8 +119,8 @@ impl Linter {
                     prop_severity = prop.value.clone();
                 } else if name == "label" {
                     prop_label = prop.value.clone();
-                } else if name == "note" {
-                    prop_note = prop.value.clone();
+                } else if name == "help" {
+                    prop_help = prop.value.clone();
                 } else if name == "fix" {
                     prop_fix = prop.value.clone();
                 } else if name == "context.label" {
@@ -140,7 +140,7 @@ impl Linter {
             let replacements = [node_text, node_kind];
             let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
             let label = TEMPLATE_ENGINE.replace_all(&prop_label.unwrap_or_default(), &replacements);
-            let note = TEMPLATE_ENGINE.replace_all(&prop_note.unwrap_or_default(), &replacements);
+            let help = TEMPLATE_ENGINE.replace_all(&prop_help.unwrap_or_default(), &replacements);
 
             let mut annotations: Vec<Annotation> = Vec::new();
 
@@ -198,11 +198,11 @@ impl Linter {
                     ),
             );
             if let Some(fix) = prop_fix {
-                report.push(Level::HELP.secondary_title(note).element(
+                report.push(Level::HELP.secondary_title(help).element(
                     Snippet::source(source).patch(Patch::new(node.byte_range(), fix.to_string())),
                 ));
             } else {
-                report.push(Group::with_title(Level::HELP.secondary_title(note)));
+                report.push(Group::with_title(Level::HELP.secondary_title(help)));
             }
             anstream::println!("{}\n", RENDERER.render(&report))
         }

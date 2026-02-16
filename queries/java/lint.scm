@@ -31,7 +31,7 @@
   (#set! name "parse-error")
   (#set! title "Parse Error")
   (#set! label "Syntax problem")
-  (#set! note "Correct the invalid Java syntax")
+  (#set! help "Correct the invalid Java syntax")
   (#set! severity "hint"))
 
 ; TS parsing error
@@ -39,7 +39,7 @@
   (#set! name "parse-error")
   (#set! title "Parse Error")
   (#set! label "Missing {node.kind}")
-  (#set! note "Correct the invalid Java syntax")
+  (#set! help "Correct the invalid Java syntax")
   (#set! severity "hint"))
 
 ; Whitespace other than ASCII horizontal space inside a literal.
@@ -53,7 +53,7 @@
   (#set! name "literal-special-space")
   (#set! title "Literal contains unescaped special whitespace")
   (#set! label "Literal")
-  (#set! note "Escape the special whitespace: only `0x20` may appear in literals")
+  (#set! help "Escape the special whitespace: only `0x20` may appear in literals")
   (#set! severity "warning"))
 
 ; Octal backspace escape instead of `\b`
@@ -63,7 +63,7 @@
   (#set! name "octal-backspace")
   (#set! title "Octal backspace escape: `{node.text}`")
   (#set! label "Backspace")
-  (#set! note "Replace `{node.text}` with special escape `\\b`")
+  (#set! help "Replace `{node.text}` with special escape `\\b`")
   (#set! fix "\\b")
   (#set! severity "warning"))
 
@@ -74,7 +74,7 @@
   (#set! name "hex-backspace")
   (#set! title "Hexadecimal backspace escape: `{node.text}`")
   (#set! label "Backspace")
-  (#set! note "Replace `{node.text}` with special escape `\\b`")
+  (#set! help "Replace `{node.text}` with special escape `\\b`")
   (#set! fix "\\b")
   (#set! severity "warning"))
 
@@ -85,7 +85,7 @@
   (#set! name "octal-tab")
   (#set! title "Octal tab escape: `{node.text}`")
   (#set! label "Tab")
-  (#set! note "Replace `{node.text}` with special escape `\\t`")
+  (#set! help "Replace `{node.text}` with special escape `\\t`")
   (#set! fix "\\t")
   (#set! severity "warning"))
 
@@ -96,7 +96,7 @@
   (#set! name "hex-tab")
   (#set! title "Hexadecimal tab escape: `{node.text}`")
   (#set! label "Tab")
-  (#set! note "Replace `{node.text}` with special escape `\\t`")
+  (#set! help "Replace `{node.text}` with special escape `\\t`")
   (#set! fix "\\t")
   (#set! severity "warning"))
 
@@ -107,7 +107,7 @@
   (#set! name "octal-newline")
   (#set! title "Octal newline escape: `{node.text}`")
   (#set! label "Newline")
-  (#set! note "Replace `{node.text}` with special escape `\\n`")
+  (#set! help "Replace `{node.text}` with special escape `\\n`")
   (#set! fix "\\n")
   (#set! severity "warning"))
 
@@ -118,7 +118,7 @@
   (#set! name "hex-newline")
   (#set! title "Hexadecimal newline escape: `{node.text}`")
   (#set! label "Newline")
-  (#set! note "Replace `{node.text}` with special escape `\\n`")
+  (#set! help "Replace `{node.text}` with special escape `\\n`")
   (#set! fix "\\n")
   (#set! severity "warning"))
 
@@ -129,7 +129,7 @@
   (#set! name "octal-formfeed")
   (#set! title "Octal form feed escape: `{node.text}`")
   (#set! label "Form feed")
-  (#set! note "Replace `{node.text}` with special escape `\\f`")
+  (#set! help "Replace `{node.text}` with special escape `\\f`")
   (#set! fix "\\f")
   (#set! severity "warning"))
 
@@ -140,7 +140,7 @@
   (#set! name "hex-formfeed")
   (#set! title "Hexadecimal form feed escape: `{node.text}`")
   (#set! label "Form feed")
-  (#set! note "Replace `{node.text}` with special escape `\\f`")
+  (#set! help "Replace `{node.text}` with special escape `\\f`")
   (#set! fix "\\f")
   (#set! severity "warning"))
 
@@ -151,7 +151,7 @@
   (#set! name "octal-return")
   (#set! title "Octal carriage return escape: `{node.text}`")
   (#set! label "Carriage return")
-  (#set! note "Replace `{node.text}` with special escape `\\r`")
+  (#set! help "Replace `{node.text}` with special escape `\\r`")
   (#set! fix "\\r")
   (#set! severity "warning"))
 
@@ -162,7 +162,7 @@
   (#set! name "hex-return")
   (#set! title "Hexadecimal carriage return escape: `{node.text}`")
   (#set! label "Carriage return")
-  (#set! note "Replace `{node.text}` with special escape `\\r`")
+  (#set! help "Replace `{node.text}` with special escape `\\r`")
   (#set! fix "\\r")
   (#set! severity "warning"))
 
@@ -173,7 +173,7 @@
   (#set! name "octal-double-quote")
   (#set! title "Octal double quote escape: `{node.text}`")
   (#set! label "Double quote")
-  (#set! note "Replace `{node.text}` with special escape `\\\"`")
+  (#set! help "Replace `{node.text}` with special escape `\\\"`")
   (#set! fix "\\\"")
   (#set! severity "warning"))
 
@@ -184,7 +184,7 @@
   (#set! name "hex-double-quote")
   (#set! title "Hexadecimal double quote escape: `{node.text}`")
   (#set! label "Double quote")
-  (#set! note "Replace `{node.text}` with special escape `\\\"`")
+  (#set! help "Replace `{node.text}` with special escape `\\\"`")
   (#set! fix "\\\"")
   (#set! severity "warning"))
 
@@ -195,7 +195,7 @@
   (#set! name "octal-single-quote")
   (#set! title "Octal single quote escape: `{node.text}`")
   (#set! label "Single quote")
-  (#set! note "Replace `{node.text}` with special escape `\\'`")
+  (#set! help "Replace `{node.text}` with special escape `\\'`")
   (#set! fix "\\'")
   (#set! severity "warning"))
 
@@ -206,7 +206,7 @@
   (#set! name "hex-single-quote")
   (#set! title "Hexadecimal single quote escape: `{node.text}`")
   (#set! label "Single quote")
-  (#set! note "Replace `{node.text}` with special escape `\\'`")
+  (#set! help "Replace `{node.text}` with special escape `\\'`")
   (#set! fix "\\'")
   (#set! severity "warning"))
 
@@ -217,7 +217,7 @@
   (#set! name "octal-backslash")
   (#set! title "Octal backslash escape: `{node.text}`")
   (#set! label "Backslash")
-  (#set! note "Replace `{node.text}` with special escape `\\\\`")
+  (#set! help "Replace `{node.text}` with special escape `\\\\`")
   (#set! fix "\\\\")
   (#set! severity "warning"))
 
@@ -228,7 +228,7 @@
   (#set! name "hex-backslash")
   (#set! title "Hexadecimal backslash escape: `{node.text}`")
   (#set! label "Backslash")
-  (#set! note "Replace `{node.text}` with special escape `\\\\`")
+  (#set! help "Replace `{node.text}` with special escape `\\\\`")
   (#set! fix "\\\\")
   (#set! severity "warning"))
 
@@ -244,7 +244,7 @@
   (#set! name "wrapped-package")
   (#set! title "Line-wrapped package declaration: `{node.text}`")
   (#set! label "Package")
-  (#set! note "Remove newlines from the package statement")
+  (#set! help "Remove newlines from the package statement")
   (#set! severity "info"))
 
 ; Wildcard imports
@@ -254,7 +254,7 @@
   (#set! name "wildcard-import")
   (#set! title "Wildcard import")
   (#set! label "Wildcard")
-  (#set! note "Replace the wildcard import with standard import(s)")
+  (#set! help "Replace the wildcard import with standard import(s)")
   (#set! severity "error"))
 
 ; Line-wrapped imports
@@ -264,7 +264,7 @@
   (#set! name "wrapped-import")
   (#set! title "Line-wrapped import")
   (#set! label "Import")
-  (#set! note "Remove newlines from the import statement")
+  (#set! help "Remove newlines from the import statement")
   (#set! severity "info"))
 
 ; Multiple top-level classes in the same file
@@ -278,7 +278,7 @@
     (#set! title "Multiple top-level classes: `{node.text}`")
     (#set! label "Additional class")
     (#set! context.label "First class")
-    (#set! note "Move `{node.text}` to separate `{node.text}.java` file")
+    (#set! help "Move `{node.text}` to separate `{node.text}.java` file")
     (#set! severity "info")))
 
 ; One variable per declaration
@@ -293,7 +293,7 @@
       (#set! title "Multiple variable declaration: `{node.text}`")
       (#set! label "Additional variable")
       (#set! context.label "First variable")
-      (#set! note "Move `{node.text}` to separate declaration")
+      (#set! help "Move `{node.text}` to separate declaration")
       (#set! severity "info"))))
 
 ; Integer literal with lowercase 'l'
@@ -303,7 +303,7 @@
   (#set! name "lowercase-long-literal")
   (#set! title "Lowercase long integer literal: `{node.text}`")
   (#set! label "Literal")
-  (#set! note "Replace with uppercase L suffix to improve legibility")
+  (#set! help "Replace with uppercase L suffix to improve legibility")
   (#set! severity "warning"))
 
 ; Dollar sign in identifier
@@ -313,7 +313,7 @@
   (#set! name "dollar-identifier")
   (#set! title "Dollar sign in identifier: `{node.text}`")
   (#set! label "Identifier")
-  (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
+  (#set! help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
   (#set! severity "info"))
 
 ; Identifier containing unicode character
@@ -323,7 +323,7 @@
   (#set! name "unicode-identifier")
   (#set! title "Unicode in identifier: `{node.text}`")
   (#set! label "Identifier")
-  (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
+  (#set! help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
   (#set! severity "warning"))
 
 ; Package names should be lowercase and digits only
@@ -334,7 +334,7 @@
   (#set! name "uppercase-package")
   (#set! title "Uppercase in package: `{node.text}`")
   (#set! label "Package")
-  (#set! note "Rename `{node.text}` using only lowercase and digits")
+  (#set! help "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
 
 ; Package names should be lowercase and digits only
@@ -345,7 +345,7 @@
   (#set! name "underscore-package")
   (#set! title "Underscore in package: `{node.text}`")
   (#set! label "Package")
-  (#set! note "Rename `{node.text}` using only lowercase and digits")
+  (#set! help "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
 
 ; Module names should be lowercase and digits only
@@ -356,7 +356,7 @@
   (#set! name "uppercase-module")
   (#set! title "Uppercase in module: `{node.text}`")
   (#set! label "Module")
-  (#set! note "Rename `{node.text}` using only lowercase and digits")
+  (#set! help "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
 
 ; Module names should be lowercase and digits only
@@ -367,7 +367,7 @@
   (#set! name "underscore-module")
   (#set! title "Underscore in module: `{node.text}`")
   (#set! label "Module")
-  (#set! note "Rename `{node.text}` using only lowercase and digits")
+  (#set! help "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
 
 ; Class names should be UpperCamelCase
@@ -378,7 +378,7 @@
   (#set! name "lowercase-class")
   (#set! title "Lowercase class: `{node.text}`")
   (#set! label "Class")
-  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! help "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
 ; Class names should be UpperCamelCase
@@ -389,7 +389,7 @@
   (#set! name "lowercase-record")
   (#set! title "Lowercase record: `{node.text}`")
   (#set! label "Record")
-  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! help "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
 ; Class names should be UpperCamelCase
@@ -400,7 +400,7 @@
   (#set! name "lowercase-enum")
   (#set! title "Lowercase enum: `{node.text}`")
   (#set! label "Enum")
-  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! help "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
 ; Class names should be UpperCamelCase
@@ -411,7 +411,7 @@
   (#set! name "lowercase-interface")
   (#set! title "Lowercase interface: `{node.text}`")
   (#set! label "Interface")
-  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! help "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
 ; Class names should be UpperCamelCase
@@ -422,7 +422,7 @@
   (#set! name "lowercase-annotation")
   (#set! title "Lowercase annotation: `{node.text}`")
   (#set! label "Annotation")
-  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! help "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
 ; Method names should be lowerCamelCase
@@ -433,7 +433,7 @@
   (#set! name "uppercase-method")
   (#set! title "Uppercase method: `{node.text}`")
   (#set! label "Method")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; Method names should be lowerCamelCase
@@ -444,7 +444,7 @@
   (#set! name "uppercase-annotation-element")
   (#set! title "Uppercase annotation element: `{node.text}`")
   (#set! label "Element")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; Enumerated type constants should be UPPER_SNAKE_CASE
@@ -455,7 +455,7 @@
   (#set! name "lowercase-enum-constant")
   (#set! title "Lowercase in enum constant: `{node.text}`")
   (#set! label "Enum constant")
-  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; Primitive type constants should be UPPER_SNAKE_CASE
@@ -483,7 +483,7 @@
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
-  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; String constants should be UPPER_SNAKE_CASE
@@ -507,7 +507,7 @@
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
-  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; Null constants should be UPPER_SNAKE_CASE
@@ -530,7 +530,7 @@
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
-  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; Empty array constants should be UPPER_SNAKE_CASE
@@ -554,7 +554,7 @@
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
-  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
@@ -569,7 +569,7 @@
   (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
@@ -585,7 +585,7 @@
   (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
@@ -601,7 +601,7 @@
   (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
@@ -617,7 +617,7 @@
   (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; Parameters should be lowerCamelCase
@@ -628,7 +628,7 @@
   (#set! name "uppercase-param")
   (#set! title "Uppercase parameter: `{node.text}`")
   (#set! label "Parameter")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
 ; Varargs parameter should be lowerCamelCase
@@ -640,7 +640,7 @@
     (#set! name "uppercase-vararg")
     (#set! title "Uppercase vararg: `{node.text}`")
     (#set! label "Vararg parameter")
-    (#set! note "Rename `{node.text}` using lowerCamelCase")
+    (#set! help "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error"))) @visible
 
 ; Parameters should be lowerCamelCase
@@ -651,7 +651,7 @@
   (#set! name "uppercase-catch-param")
   (#set! title "Uppercase catch parameter: `{node.text}`")
   (#set! label "Catch parameter")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
 ; Parameters should be lowerCamelCase
@@ -662,7 +662,7 @@
   (#set! name "uppercase-resource")
   (#set! title "Uppercase resource: `{node.text}`")
   (#set! label "Resource")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
 ; Local variables should be lowerCamelCase
@@ -676,7 +676,7 @@
     (#set! name "uppercase-local")
     (#set! title "Uppercase local variable: `{node.text}`")
     (#set! label "Local variable")
-    (#set! note "Rename `{node.text}` using lowerCamelCase")
+    (#set! help "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error")))
 
 ; Local variables should be lowerCamelCase (final variant)
@@ -692,7 +692,7 @@
     (#set! title "Uppercase local variable: `{node.text}`")
     (#set! label "Local variable")
     (#set! context.label "Not `static final`")
-    (#set! note "Rename `{node.text}` using lowerCamelCase")
+    (#set! help "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error")))
 
 ; Local variables should be lowerCamelCase
@@ -703,7 +703,7 @@
   (#set! name "uppercase-for-local")
   (#set! title "Uppercase local variable: `{node.text}`")
   (#set! label "Local variable")
-  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
 ; Type variables should be UpperCamelCase
@@ -714,7 +714,7 @@
   (#set! name "lowercase-type")
   (#set! title "Lowercase type parameter: `{node.text}`")
   (#set! label "Type parameter")
-  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! help "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error")) @visible
 
 ; Caught exceptions: not ignored
@@ -731,7 +731,7 @@
   (#set! name "swallowed-exception")
   (#set! title "Unhandled caught exception: `{node.text}`")
   (#set! label "Exception")
-  (#set! note "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
+  (#set! help "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
   (#set! severity "info")) @visible ; body is small (empty)
 
 ; Finalizers: not used
@@ -747,5 +747,5 @@
   (#set! name "finalizer-used")
   (#set! title "Finalizer used: `{node.text}`")
   (#set! label "Finalizer")
-  (#set! note "Migrate to other resource management such as try-with-resources or cleaners")
+  (#set! help "Migrate to other resource management such as try-with-resources or cleaners")
   (#set! severity "info"))
