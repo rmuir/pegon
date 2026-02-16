@@ -368,13 +368,23 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-; TODO: annotation type
 (interface_declaration
   name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-interface")
   (#set! title "Lowercase interface name: `{node.text}`")
   (#set! label "Interface")
+  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! severity "error"))
+
+; Class names should be UpperCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
+(annotation_type_declaration
+  name: (identifier) @error
+  (#match? @error "^[a-z]")
+  (#set! name "lowercase-annotation")
+  (#set! title "Lowercase annotation name: `{node.text}`")
+  (#set! label "Annotation")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
@@ -386,6 +396,17 @@
   (#set! name "uppercase-method")
   (#set! title "Uppercase method name: `{node.text}`")
   (#set! label "Method")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
+; Method names should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
+(annotation_type_element_declaration
+  name: (identifier) @error
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-annotation-element")
+  (#set! title "Uppercase element name: `{node.text}`")
+  (#set! label "Element")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
