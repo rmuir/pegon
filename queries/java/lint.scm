@@ -430,6 +430,65 @@
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
+; non-constants should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+(field_declaration
+  . ; no modifiers
+  type: (_)
+  declarator: (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-field-name")
+  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! label "Uppercase")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
+; non-constants should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+(field_declaration
+  (modifiers) @_modifiers
+  declarator: (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#not-match? @_modifiers "final")
+  (#not-match? @_modifiers "static")
+  (#set! name "uppercase-field-name")
+  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! label "Uppercase")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
+; non-constants should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+(field_declaration
+  (modifiers) @_modifiers
+  declarator: (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#match? @_modifiers "static")
+  (#not-match? @_modifiers "final")
+  (#set! name "uppercase-static-field-name")
+  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! label "Uppercase")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
+; non-constants should be lowerCamelCase
+; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+(field_declaration
+  (modifiers) @_modifiers
+  declarator: (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#not-match? @_modifiers "static")
+  (#match? @_modifiers "final")
+  (#set! name "uppercase-final-field-name")
+  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! label "Uppercase")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (formal_parameter
