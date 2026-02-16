@@ -3,6 +3,7 @@ pub mod lint;
 
 use std::{
     fs,
+    path::PathBuf,
     sync::atomic::{AtomicU32, Ordering},
 };
 
@@ -14,7 +15,8 @@ use crate::lint::Linter;
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
 
-fn lint() -> Result<(), Error> {
+fn lint(files: &[PathBuf]) -> Result<(), Error> {
+    let mut paths = files.to_vec();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
     // i guess we could format those?
@@ -30,7 +32,10 @@ fn lint() -> Result<(), Error> {
     overrides.add("!**/UAX29URLEmailTokenizerImpl.java")?;
     overrides.add("!**/WikipediaTokenizerImpl.java")?;
     overrides.add("!**/WordBreakTestUnicode_12_1_0.java")?;
-    let mut builder = WalkBuilder::new("/home/rmuir/workspace/lucene");
+    let mut builder = WalkBuilder::new(paths.pop().unwrap_or(PathBuf::from(".")));
+    for remaining in paths {
+        builder.add(remaining);
+    }
     builder.types(matcher);
     builder.overrides(overrides.build()?);
 
@@ -72,7 +77,7 @@ fn lint() -> Result<(), Error> {
 fn main() -> Result<(), Error> {
     let cli = parse();
     match &cli.command {
-        Commands::Check { files: _, fix: _ } => lint(),
+        Commands::Check { files, fix: _ } => lint(files),
         Commands::Format { files: _, check: _ } => todo!(),
     }
 }
