@@ -363,15 +363,52 @@
     (boolean_type)
     (integral_type)
     (floating_point_type)
-  ]
+  ] @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "[a-z]")
+  (#not-eq? @error "serialVersionUID")
   (#match? @_modifiers "static")
   (#match? @_modifiers "final")
   (#set! name "invalid-primitive-constant")
   (#set! title "Invalid constant name: `{node.text}`")
   (#set! label "Constant")
+  (#set! context.label "Immutable")
+  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! severity "error"))
+
+; String constants should be UPPER_SNAKE_CASE
+; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+(field_declaration
+  (modifiers) @_modifiers
+  type: (type_identifier) @_type @context
+  declarator: (variable_declarator
+    name: (identifier) @error)
+  (#match? @error "[a-z]")
+  (#eq? @_type "String")
+  (#match? @_modifiers "static")
+  (#match? @_modifiers "final")
+  (#set! name "invalid-string-constant")
+  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! label "Constant")
+  (#set! context.label "Immutable")
+  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! severity "error"))
+
+; Null constants should be UPPER_SNAKE_CASE
+; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+(field_declaration
+  (modifiers) @_modifiers
+  declarator: (variable_declarator
+    name: (identifier) @error
+    value: (null_literal) @context)
+  (#match? @error "[a-z]")
+  (#match? @_modifiers "static")
+  (#match? @_modifiers "final")
+  (#set! name "invalid-null-constant")
+  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! label "Constant")
+  (#set! context.label "Immutable")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
