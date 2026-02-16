@@ -344,6 +344,40 @@
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
+; Class names should be UpperCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
+(record_declaration
+  name: (identifier) @error
+  (#match? @error "^[a-z]")
+  (#set! name "lowercase-record")
+  (#set! title "Lowercase record name: `{node.text}`")
+  (#set! label "Lowercase")
+  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! severity "error"))
+
+; Class names should be UpperCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
+(enum_declaration
+  name: (identifier) @error
+  (#match? @error "^[a-z]")
+  (#set! name "lowercase-enum")
+  (#set! title "Lowercase enum name: `{node.text}`")
+  (#set! label "Lowercase")
+  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! severity "error"))
+
+; Class names should be UpperCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
+; TODO: annotation type
+(interface_declaration
+  name: (identifier) @error
+  (#match? @error "^[a-z]")
+  (#set! name "lowercase-interface")
+  (#set! title "Lowercase interface name: `{node.text}`")
+  (#set! label "Lowercase")
+  (#set! note "Rename `{node.text}` using UpperCamelCase")
+  (#set! severity "error"))
+
 ; Method names should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
 (method_declaration
@@ -353,6 +387,17 @@
   (#set! title "Uppercase method name: `{node.text}`")
   (#set! label "Uppercase")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error"))
+
+; Enumerated type constants should be UPPER_SNAKE_CASE
+; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+(enum_constant
+  name: (identifier) @error
+  (#match? @error "[a-z]")
+  (#set! name "invalid-enum-constant")
+  (#set! title "Invalid enum constant name: `{node.text}`")
+  (#set! label "Constant")
+  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; Primitive type constants should be UPPER_SNAKE_CASE
