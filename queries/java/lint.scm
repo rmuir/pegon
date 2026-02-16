@@ -606,6 +606,28 @@
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error"))) @visible
 
+; Parameters should be lowerCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
+(catch_formal_parameter
+  name: (identifier) @error
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-catch-param")
+  (#set! title "Uppercase catch parameter name: `{node.text}`")
+  (#set! label "Catch parameter")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error")) @visible
+
+; Parameters should be lowerCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
+(resource
+  name: (identifier) @error
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-resource")
+  (#set! title "Uppercase resource name: `{node.text}`")
+  (#set! label "Resource")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error")) @visible
+
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
@@ -629,12 +651,23 @@
   declarator: (variable_declarator
     name: (identifier) @error
     (#match? @error "^[A-Z]")
-    (#set! name "uppercase-final-local")
+    (#set! name "uppercase-local-final")
     (#set! title "Uppercase local variable name: `{node.text}`")
     (#set! label "Local variable")
     (#set! context.label "Not `static final`")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error")))
+
+; Local variables should be lowerCamelCase
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
+(enhanced_for_statement
+  name: (identifier) @error
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-local-for")
+  (#set! title "Uppercase local variable name: `{node.text}`")
+  (#set! label "Local variable")
+  (#set! note "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "error")) @visible
 
 ; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
