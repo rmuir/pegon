@@ -188,6 +188,7 @@ impl Linter {
             let mut report = Vec::new();
             report.push(
                 level
+                    .with_name(severity)
                     .primary_title(title)
                     .id(name)
                     .id_url(prop_url)
