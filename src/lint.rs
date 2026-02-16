@@ -77,6 +77,7 @@ static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
 
 static RENDERER: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
+    .context(Style::new().dimmed())
     .line_num(Style::new().dimmed());
 
 pub(crate) struct Linter {

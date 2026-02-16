@@ -54,7 +54,7 @@
   (#set! title "Literal contains unescaped special whitespace")
   (#set! label "Literal")
   (#set! note "Escape the special whitespace: only `0x20` may appear in literals")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; Octal backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -245,7 +245,7 @@
   (#set! title "Line-wrapped package declaration: `{node.text}`")
   (#set! label "Package")
   (#set! note "Remove newlines from the package statement")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Wildcard imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
@@ -265,7 +265,7 @@
   (#set! title "Line-wrapped import")
   (#set! label "Import")
   (#set! note "Remove newlines from the import statement")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Multiple top-level classes in the same file
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
@@ -277,9 +277,24 @@
     (#set! name "multiple-classes")
     (#set! title "Multiple top-level classes: `{node.text}`")
     (#set! label "Additional class")
-    (#set! context.label "Previous class")
+    (#set! context.label "First class")
     (#set! note "Move `{node.text}` to separate `{node.text}.java` file")
-    (#set! severity "error")))
+    (#set! severity "info")))
+
+; One variable per declaration
+; https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
+(block
+  (local_variable_declaration
+    (variable_declarator
+      name: (identifier) @context)+
+    (variable_declarator
+      name: (identifier) @error
+      (#set! name "multiple-variable-declaration")
+      (#set! title "Multiple variable declaration: `{node.text}`")
+      (#set! label "Additional variable")
+      (#set! context.label "First variable")
+      (#set! note "Move `{node.text}` to separate declaration")
+      (#set! severity "info"))))
 
 ; Integer literal with lowercase 'l'
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
@@ -289,7 +304,7 @@
   (#set! title "Lowercase long integer literal: `{node.text}`")
   (#set! label "Literal")
   (#set! note "Replace with uppercase L suffix to improve legibility")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; Dollar sign in identifier
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
@@ -299,7 +314,7 @@
   (#set! title "Dollar sign in identifier: `{node.text}`")
   (#set! label "Identifier")
   (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Identifier containing unicode character
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
@@ -309,7 +324,7 @@
   (#set! title "Unicode in identifier: `{node.text}`")
   (#set! label "Identifier")
   (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
-  (#set! severity "error"))
+  (#set! severity "warning"))
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
@@ -717,7 +732,7 @@
   (#set! title "Unhandled caught exception: `{node.text}`")
   (#set! label "Exception")
   (#set! note "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
-  (#set! severity "error")) @visible ; body is small (empty)
+  (#set! severity "info")) @visible ; body is small (empty)
 
 ; Finalizers: not used
 ; @see https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
@@ -733,4 +748,4 @@
   (#set! title "Finalizer used: `{node.text}`")
   (#set! label "Finalizer")
   (#set! note "Migrate to other resource management such as try-with-resources or cleaners")
-  (#set! severity "error"))
+  (#set! severity "info"))
