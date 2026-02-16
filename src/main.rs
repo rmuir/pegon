@@ -60,7 +60,10 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         }
                     }
                 }
-                Err(err) => println!("error: {}", err),
+                Err(err) => {
+                    println!("error: {}", err);
+                    COUNT.fetch_add(1, Ordering::Relaxed);
+                }
             }
             WalkState::Continue
         })
