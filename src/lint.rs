@@ -180,7 +180,7 @@ impl Linter {
             let severity = prop_severity.unwrap().to_string();
             let level = match severity.as_str() {
                 "error" => Level::ERROR,
-                "warning" => Level::WARNING,
+                "warn" => Level::WARNING,
                 "info" => Level::INFO,
                 "hint" => Level::NOTE,
                 _ => Level::ERROR,

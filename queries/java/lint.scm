@@ -54,7 +54,7 @@
   (#set! title "Literal contains unescaped special whitespace")
   (#set! label "Literal")
   (#set! help "Escape the special whitespace: only `0x20` may appear in literals")
-  (#set! severity "warning"))
+  (#set! severity "warn")) ; TODO: implement autofix
 
 ; Octal backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -65,7 +65,7 @@
   (#set! label "Backspace")
   (#set! help "Replace `{node.text}` with special escape `\\b`")
   (#set! fix "\\b")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -76,7 +76,7 @@
   (#set! label "Backspace")
   (#set! help "Replace `{node.text}` with special escape `\\b`")
   (#set! fix "\\b")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal tab escape instead of `\t`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -87,7 +87,7 @@
   (#set! label "Tab")
   (#set! help "Replace `{node.text}` with special escape `\\t`")
   (#set! fix "\\t")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex tab escape instead of `\t`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -98,7 +98,7 @@
   (#set! label "Tab")
   (#set! help "Replace `{node.text}` with special escape `\\t`")
   (#set! fix "\\t")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal newline escape instead of `\n`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -109,7 +109,7 @@
   (#set! label "Newline")
   (#set! help "Replace `{node.text}` with special escape `\\n`")
   (#set! fix "\\n")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex newline escape instead of `\n`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -120,7 +120,7 @@
   (#set! label "Newline")
   (#set! help "Replace `{node.text}` with special escape `\\n`")
   (#set! fix "\\n")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal form feed escape instead of `\f`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -131,7 +131,7 @@
   (#set! label "Form feed")
   (#set! help "Replace `{node.text}` with special escape `\\f`")
   (#set! fix "\\f")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex form feed escape instead of `\f`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -142,7 +142,7 @@
   (#set! label "Form feed")
   (#set! help "Replace `{node.text}` with special escape `\\f`")
   (#set! fix "\\f")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal carriage return escape instead of `\r`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -153,7 +153,7 @@
   (#set! label "Carriage return")
   (#set! help "Replace `{node.text}` with special escape `\\r`")
   (#set! fix "\\r")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex carriage return escape instead of `\r`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -164,7 +164,7 @@
   (#set! label "Carriage return")
   (#set! help "Replace `{node.text}` with special escape `\\r`")
   (#set! fix "\\r")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal double-quote escape instead of `\"`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -175,7 +175,7 @@
   (#set! label "Double quote")
   (#set! help "Replace `{node.text}` with special escape `\\\"`")
   (#set! fix "\\\"")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex double-quote escape instead of `\"`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -186,7 +186,7 @@
   (#set! label "Double quote")
   (#set! help "Replace `{node.text}` with special escape `\\\"`")
   (#set! fix "\\\"")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal single-quote escape instead of `\'`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -197,7 +197,7 @@
   (#set! label "Single quote")
   (#set! help "Replace `{node.text}` with special escape `\\'`")
   (#set! fix "\\'")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex single-quote escape instead of `\'`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -208,7 +208,7 @@
   (#set! label "Single quote")
   (#set! help "Replace `{node.text}` with special escape `\\'`")
   (#set! fix "\\'")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Octal backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -219,7 +219,7 @@
   (#set! label "Backslash")
   (#set! help "Replace `{node.text}` with special escape `\\\\`")
   (#set! fix "\\\\")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Unicode hex backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -230,7 +230,7 @@
   (#set! label "Backslash")
   (#set! help "Replace `{node.text}` with special escape `\\\\`")
   (#set! fix "\\\\")
-  (#set! severity "warning"))
+  (#set! severity "hint"))
 
 ; Line-wrapped package declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
@@ -255,7 +255,7 @@
   (#set! title "Wildcard import")
   (#set! label "Wildcard")
   (#set! help "Replace the wildcard import with standard import(s)")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Line-wrapped imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
@@ -279,7 +279,7 @@
     (#set! label "Additional class")
     (#set! context.label "First class")
     (#set! help "Move `{node.text}` to separate `{node.text}.java` file")
-    (#set! severity "info")))
+    (#set! severity "warn")))
 
 ; One variable per declaration
 ; https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
@@ -304,7 +304,7 @@
   (#set! title "Lowercase long integer literal: `{node.text}`")
   (#set! label "Literal")
   (#set! help "Replace with uppercase L suffix to improve legibility")
-  (#set! severity "warning"))
+  (#set! severity "info")) ; TODO: autofix
 
 ; Dollar sign in identifier
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
@@ -324,7 +324,7 @@
   (#set! title "Unicode in identifier: `{node.text}`")
   (#set! label "Identifier")
   (#set! help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
-  (#set! severity "warning"))
+  (#set! severity "warn"))
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
@@ -335,7 +335,7 @@
   (#set! title "Uppercase in package: `{node.text}`")
   (#set! label "Package")
   (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
@@ -346,7 +346,7 @@
   (#set! title "Underscore in package: `{node.text}`")
   (#set! label "Package")
   (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
@@ -357,7 +357,7 @@
   (#set! title "Uppercase in module: `{node.text}`")
   (#set! label "Module")
   (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
@@ -368,7 +368,7 @@
   (#set! title "Underscore in module: `{node.text}`")
   (#set! label "Module")
   (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
@@ -379,7 +379,7 @@
   (#set! title "Lowercase class: `{node.text}`")
   (#set! label "Class")
   (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
@@ -390,7 +390,7 @@
   (#set! title "Lowercase record: `{node.text}`")
   (#set! label "Record")
   (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
@@ -401,7 +401,7 @@
   (#set! title "Lowercase enum: `{node.text}`")
   (#set! label "Enum")
   (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
@@ -412,7 +412,7 @@
   (#set! title "Lowercase interface: `{node.text}`")
   (#set! label "Interface")
   (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
@@ -423,7 +423,7 @@
   (#set! title "Lowercase annotation: `{node.text}`")
   (#set! label "Annotation")
   (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Method names should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
@@ -434,7 +434,7 @@
   (#set! title "Uppercase method: `{node.text}`")
   (#set! label "Method")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Method names should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
@@ -445,7 +445,7 @@
   (#set! title "Uppercase annotation element: `{node.text}`")
   (#set! label "Element")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; Enumerated type constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -456,7 +456,7 @@
   (#set! title "Lowercase in enum constant: `{node.text}`")
   (#set! label "Enum constant")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Primitive type constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -484,7 +484,7 @@
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; String constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -508,7 +508,7 @@
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Null constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -531,7 +531,7 @@
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Empty array constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -555,7 +555,7 @@
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -570,7 +570,7 @@
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -586,7 +586,7 @@
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -602,7 +602,7 @@
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+  (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -618,7 +618,7 @@
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error"))
+  (#set! severity "info"))
 
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
@@ -629,7 +629,7 @@
   (#set! title "Uppercase parameter: `{node.text}`")
   (#set! label "Parameter")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error")) @visible
+  (#set! severity "warn")) @visible
 
 ; Varargs parameter should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
@@ -641,9 +641,9 @@
     (#set! title "Uppercase vararg: `{node.text}`")
     (#set! label "Vararg parameter")
     (#set! help "Rename `{node.text}` using lowerCamelCase")
-    (#set! severity "error"))) @visible
+    (#set! severity "warn"))) @visible
 
-; Parameters should be lowerCamelCase
+; Catch parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (catch_formal_parameter
   name: (identifier) @error
@@ -652,9 +652,9 @@
   (#set! title "Uppercase catch parameter: `{node.text}`")
   (#set! label "Catch parameter")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error")) @visible
+  (#set! severity "warn")) @visible
 
-; Parameters should be lowerCamelCase
+; Try-with-resource parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (resource
   name: (identifier) @error
@@ -663,7 +663,7 @@
   (#set! title "Uppercase resource: `{node.text}`")
   (#set! label "Resource")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error")) @visible
+  (#set! severity "warn")) @visible
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -677,7 +677,7 @@
     (#set! title "Uppercase local variable: `{node.text}`")
     (#set! label "Local variable")
     (#set! help "Rename `{node.text}` using lowerCamelCase")
-    (#set! severity "error")))
+    (#set! severity "warn")))
 
 ; Local variables should be lowerCamelCase (final variant)
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -693,7 +693,7 @@
     (#set! label "Local variable")
     (#set! context.label "Not `static final`")
     (#set! help "Rename `{node.text}` using lowerCamelCase")
-    (#set! severity "error")))
+    (#set! severity "info")))
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -704,7 +704,7 @@
   (#set! title "Uppercase local variable: `{node.text}`")
   (#set! label "Local variable")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "error")) @visible
+  (#set! severity "warn")) @visible
 
 ; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
@@ -715,7 +715,7 @@
   (#set! title "Lowercase type parameter: `{node.text}`")
   (#set! label "Type parameter")
   (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "error")) @visible
+  (#set! severity "warn")) @visible
 
 ; Caught exceptions: not ignored
 ; @see https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
@@ -748,4 +748,4 @@
   (#set! title "Finalizer used: `{node.text}`")
   (#set! label "Finalizer")
   (#set! help "Migrate to other resource management such as try-with-resources or cleaners")
-  (#set! severity "info"))
+  (#set! severity "warn"))
