@@ -295,7 +295,7 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[$]")
-  (#set! name "dollar-in-identifier")
+  (#set! name "dollar-identifier")
   (#set! title "Dollar sign in identifier: `{node.text}`")
   (#set! label "Identifier")
   (#set! note "Rename `{node.text}` using only ASCII letters, digits, and underscores")
@@ -315,9 +315,20 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 (package_declaration
   (identifier) @error
-  (#match? @error "[^a-z0-9]")
-  (#set! name "invalid-package-name")
-  (#set! title "Invalid package name: `{node.text}`")
+  (#match? @error "[A-Z]")
+  (#set! name "uppercase-package")
+  (#set! title "Uppercase in package: `{node.text}`")
+  (#set! label "Package")
+  (#set! note "Rename `{node.text}` using only lowercase and digits")
+  (#set! severity "error"))
+
+; Package names should be lowercase and digits only
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
+(package_declaration
+  (identifier) @error
+  (#match? @error "[_]")
+  (#set! name "underscore-package")
+  (#set! title "Underscore in package: `{node.text}`")
   (#set! label "Package")
   (#set! note "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
@@ -326,9 +337,20 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 (module_declaration
   (identifier) @error
-  (#match? @error "[^a-z0-9]")
-  (#set! name "invalid-module-name")
-  (#set! title "Invalid module name: `{node.text}`")
+  (#match? @error "[A-Z]")
+  (#set! name "uppercase-module")
+  (#set! title "Uppercase in module: `{node.text}`")
+  (#set! label "Module")
+  (#set! note "Rename `{node.text}` using only lowercase and digits")
+  (#set! severity "error"))
+
+; Module names should be lowercase and digits only
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
+(module_declaration
+  (identifier) @error
+  (#match? @error "[_]")
+  (#set! name "underscore-module")
+  (#set! title "Underscore in module: `{node.text}`")
   (#set! label "Module")
   (#set! note "Rename `{node.text}` using only lowercase and digits")
   (#set! severity "error"))
@@ -339,7 +361,7 @@
   name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-class")
-  (#set! title "Lowercase class name: `{node.text}`")
+  (#set! title "Lowercase class: `{node.text}`")
   (#set! label "Class")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
@@ -350,7 +372,7 @@
   name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-record")
-  (#set! title "Lowercase record name: `{node.text}`")
+  (#set! title "Lowercase record: `{node.text}`")
   (#set! label "Record")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
@@ -361,7 +383,7 @@
   name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-enum")
-  (#set! title "Lowercase enum name: `{node.text}`")
+  (#set! title "Lowercase enum: `{node.text}`")
   (#set! label "Enum")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
@@ -372,7 +394,7 @@
   name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-interface")
-  (#set! title "Lowercase interface name: `{node.text}`")
+  (#set! title "Lowercase interface: `{node.text}`")
   (#set! label "Interface")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
@@ -383,7 +405,7 @@
   name: (identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-annotation")
-  (#set! title "Lowercase annotation name: `{node.text}`")
+  (#set! title "Lowercase annotation: `{node.text}`")
   (#set! label "Annotation")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
@@ -394,7 +416,7 @@
   name: (identifier) @error
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-method")
-  (#set! title "Uppercase method name: `{node.text}`")
+  (#set! title "Uppercase method: `{node.text}`")
   (#set! label "Method")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
@@ -405,7 +427,7 @@
   name: (identifier) @error
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-annotation-element")
-  (#set! title "Uppercase element name: `{node.text}`")
+  (#set! title "Uppercase annotation element: `{node.text}`")
   (#set! label "Element")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
@@ -415,8 +437,8 @@
 (enum_constant
   name: (identifier) @error
   (#match? @error "[a-z]")
-  (#set! name "invalid-enum-constant")
-  (#set! title "Invalid enum constant name: `{node.text}`")
+  (#set! name "lowercase-enum-constant")
+  (#set! title "Lowercase in enum constant: `{node.text}`")
   (#set! label "Enum constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
@@ -442,8 +464,8 @@
     name: (identifier) @error)
   (#match? @error "[a-z]")
   (#not-eq? @error "serialVersionUID")
-  (#set! name "invalid-primitive-constant")
-  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! name "lowercase-primitive-constant")
+  (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
@@ -466,8 +488,8 @@
     name: (identifier) @error)
   (#match? @error "[a-z]")
   (#eq? @_type "String")
-  (#set! name "invalid-string-constant")
-  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! name "lowercase-string-constant")
+  (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
@@ -489,8 +511,8 @@
     name: (identifier) @error
     value: (null_literal) @context)
   (#match? @error "[a-z]")
-  (#set! name "invalid-null-constant")
-  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! name "lowercase-null-constant")
+  (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
@@ -513,8 +535,8 @@
     value: (array_initializer) @_array @context)
   (#match? @error "[a-z]")
   (#match? @_array "^[{]\\s*[}]$")
-  (#set! name "invalid-array-constant")
-  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! name "lowercase-array-constant")
+  (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
@@ -528,8 +550,8 @@
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-field-name")
-  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! name "uppercase-field")
+  (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
@@ -544,8 +566,8 @@
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! name "uppercase-field-name")
-  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! name "uppercase-field")
+  (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
@@ -560,8 +582,8 @@
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
-  (#set! name "uppercase-static-field-name")
-  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! name "uppercase-static-field")
+  (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
@@ -576,8 +598,8 @@
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "static")
-  (#set! name "uppercase-final-field-name")
-  (#set! title "Uppercase field name: `{node.text}`")
+  (#set! name "uppercase-final-field")
+  (#set! title "Uppercase field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
@@ -589,7 +611,7 @@
   name: (identifier) @error
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-param")
-  (#set! title "Uppercase parameter name: `{node.text}`")
+  (#set! title "Uppercase parameter: `{node.text}`")
   (#set! label "Parameter")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
@@ -601,7 +623,7 @@
     name: (identifier) @error
     (#match? @error "^[A-Z]")
     (#set! name "uppercase-vararg")
-    (#set! title "Uppercase vararg name: `{node.text}`")
+    (#set! title "Uppercase vararg: `{node.text}`")
     (#set! label "Vararg parameter")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error"))) @visible
@@ -612,7 +634,7 @@
   name: (identifier) @error
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-catch-param")
-  (#set! title "Uppercase catch parameter name: `{node.text}`")
+  (#set! title "Uppercase catch parameter: `{node.text}`")
   (#set! label "Catch parameter")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
@@ -623,7 +645,7 @@
   name: (identifier) @error
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-resource")
-  (#set! title "Uppercase resource name: `{node.text}`")
+  (#set! title "Uppercase resource: `{node.text}`")
   (#set! label "Resource")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
@@ -637,7 +659,7 @@
     name: (identifier) @error
     (#match? @error "^[A-Z]")
     (#set! name "uppercase-local")
-    (#set! title "Uppercase local variable name: `{node.text}`")
+    (#set! title "Uppercase local variable: `{node.text}`")
     (#set! label "Local variable")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error")))
@@ -651,8 +673,8 @@
   declarator: (variable_declarator
     name: (identifier) @error
     (#match? @error "^[A-Z]")
-    (#set! name "uppercase-local-final")
-    (#set! title "Uppercase local variable name: `{node.text}`")
+    (#set! name "uppercase-final-local")
+    (#set! title "Uppercase local variable: `{node.text}`")
     (#set! label "Local variable")
     (#set! context.label "Not `static final`")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
@@ -663,8 +685,8 @@
 (enhanced_for_statement
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-local-for")
-  (#set! title "Uppercase local variable name: `{node.text}`")
+  (#set! name "uppercase-for-local")
+  (#set! title "Uppercase local variable: `{node.text}`")
   (#set! label "Local variable")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
@@ -675,7 +697,7 @@
   (type_identifier) @error
   (#match? @error "^[a-z]")
   (#set! name "lowercase-type")
-  (#set! title "Lowercase type parameter name: `{node.text}`")
+  (#set! title "Lowercase type parameter: `{node.text}`")
   (#set! label "Type parameter")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error")) @visible
