@@ -412,6 +412,24 @@
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
+; Empty array constants should be UPPER_SNAKE_CASE
+; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+(field_declaration
+  (modifiers) @_modifiers
+  declarator: (variable_declarator
+    name: (identifier) @error
+    value: (array_initializer) @_array @context)
+  (#match? @error "[a-z]")
+  (#match? @_array "^[{]\\s*[}]$")
+  (#match? @_modifiers "static")
+  (#match? @_modifiers "final")
+  (#set! name "invalid-array-constant")
+  (#set! title "Invalid constant name: `{node.text}`")
+  (#set! label "Constant")
+  (#set! context.label "Immutable")
+  (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! severity "error"))
+
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (formal_parameter
