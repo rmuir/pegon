@@ -270,9 +270,27 @@
 ; Multiple top-level classes in the same file
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
 (program
-  (class_declaration
-    name: (identifier) @context)+
-  (class_declaration
+  .
+  [
+    (package_declaration)
+    (import_declaration)
+    (line_comment)
+    (block_comment)
+  ]*
+  .
+  [
+    (class_declaration
+      name: (identifier) @context)
+    (interface_declaration
+      name: (identifier) @context)
+    (record_declaration
+      name: (identifier) @context)
+    (enum_declaration
+      name: (identifier) @context)
+    (annotation_type_declaration
+      name: (identifier) @context)
+  ]
+  (declaration
     name: (identifier) @error
     (#set! name "multiple-classes")
     (#set! title "Multiple top-level classes: `{node.text}`")
