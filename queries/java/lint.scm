@@ -575,7 +575,8 @@
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers) @_modifiers @context
+  (modifiers) @_modifiers
+  type: (_) @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
@@ -592,23 +593,23 @@
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   (modifiers
-    "static") @_modifiers @context
+    "static" @context) @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
   (#set! name "uppercase-static-field")
-  (#set! title "Uppercase field: `{node.text}`")
+  (#set! title "Uppercase mutable static field: `{node.text}`")
   (#set! label "Field")
   (#set! context.label "Not `static final`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
+  (#set! help "Rename `{node.text}` using lowerCamelCase, or make `static final`")
   (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   (modifiers
-    "final") @_modifiers @context
+    "final" @context) @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
@@ -684,7 +685,7 @@
 (local_variable_declaration
   .
   (modifiers
-    "final") @context
+    "final" @context)
   declarator: (variable_declarator
     name: (identifier) @error
     (#match? @error "^[A-Z]")

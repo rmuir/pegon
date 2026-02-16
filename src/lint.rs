@@ -30,6 +30,7 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
     while let Some(node) = parent {
         match node.kind() {
             "method_declaration"
+            | "variable_declarator"
             | "constructor_declaration"
             | "class_declaration"
             | "interface_declaration"
