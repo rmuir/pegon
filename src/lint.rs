@@ -32,6 +32,8 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
             "method_declaration"
             | "constructor_declaration"
             | "class_declaration"
+            | "interface_declaration"
+            | "enum_declaration"
             | "record_declaration" => {
                 if let Some(name) = node.child_by_field_name("name")
                     && name.start_position().row != error_node.start_position().row
