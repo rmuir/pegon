@@ -147,14 +147,21 @@ impl Linter {
             annotations.push(AnnotationKind::Primary.span(node.byte_range()).label(label));
 
             let context_label = prop_context_label.unwrap_or_default().to_string();
+            // only write context label a single time, colors will coordinate
+            let mut label_written = false;
 
             // explicitly marked context in the query
             for visible in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
-                annotations.push(
-                    AnnotationKind::Context
-                        .span(visible.byte_range())
-                        .label(&context_label),
-                );
+                if label_written {
+                    annotations.push(AnnotationKind::Context.span(visible.byte_range()));
+                } else {
+                    annotations.push(
+                        AnnotationKind::Context
+                            .span(visible.byte_range())
+                            .label(&context_label),
+                    );
+                    label_written = true
+                }
             }
 
             // explicitly marked visible in the query

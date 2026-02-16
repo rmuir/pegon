@@ -243,7 +243,7 @@
   (#match? @error "\n")
   (#set! name "wrapped-package")
   (#set! title "Line-wrapped package declaration: `{node.text}`")
-  (#set! label "Wrapped")
+  (#set! label "Package")
   (#set! note "Remove newlines from the package statement")
   (#set! severity "error"))
 
@@ -263,7 +263,7 @@
   (#match? @error "\n")
   (#set! name "wrapped-import")
   (#set! title "Line-wrapped import")
-  (#set! label "Wrapped")
+  (#set! label "Import")
   (#set! note "Remove newlines from the import statement")
   (#set! severity "error"))
 
@@ -287,7 +287,7 @@
   (#match? @error "l$")
   (#set! name "lowercase-long-literal")
   (#set! title "Lowercase long integer literal: `{node.text}`")
-  (#set! label "Lowercase")
+  (#set! label "Literal")
   (#set! note "Replace with uppercase L suffix to improve legibility")
   (#set! severity "error"))
 
@@ -340,7 +340,7 @@
   (#match? @error "^[a-z]")
   (#set! name "lowercase-class")
   (#set! title "Lowercase class name: `{node.text}`")
-  (#set! label "Lowercase")
+  (#set! label "Class")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
@@ -351,7 +351,7 @@
   (#match? @error "^[a-z]")
   (#set! name "lowercase-record")
   (#set! title "Lowercase record name: `{node.text}`")
-  (#set! label "Lowercase")
+  (#set! label "Record")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
@@ -362,7 +362,7 @@
   (#match? @error "^[a-z]")
   (#set! name "lowercase-enum")
   (#set! title "Lowercase enum name: `{node.text}`")
-  (#set! label "Lowercase")
+  (#set! label "Enum")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
@@ -374,7 +374,7 @@
   (#match? @error "^[a-z]")
   (#set! name "lowercase-interface")
   (#set! title "Lowercase interface name: `{node.text}`")
-  (#set! label "Lowercase")
+  (#set! label "Interface")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error"))
 
@@ -385,7 +385,7 @@
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-method")
   (#set! title "Uppercase method name: `{node.text}`")
-  (#set! label "Uppercase")
+  (#set! label "Method")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
@@ -396,7 +396,7 @@
   (#match? @error "[a-z]")
   (#set! name "invalid-enum-constant")
   (#set! title "Invalid enum constant name: `{node.text}`")
-  (#set! label "Constant")
+  (#set! label "Enum constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
@@ -404,8 +404,14 @@
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
   (modifiers
-    "static"
-    "final")
+    [
+      "static"
+      "final"
+    ] @context
+    [
+      "final"
+      "static"
+    ] @context)
   type: [
     (boolean_type)
     (integral_type)
@@ -417,61 +423,79 @@
   (#not-eq? @error "serialVersionUID")
   (#set! name "invalid-primitive-constant")
   (#set! title "Invalid constant name: `{node.text}`")
-  (#set! label "Constant")
-  (#set! context.label "Immutable")
+  (#set! label "Field")
+  (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; String constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers
+    [
+      "static"
+      "final"
+    ] @context
+    [
+      "final"
+      "static"
+    ] @context)
   type: (type_identifier) @_type @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "[a-z]")
   (#eq? @_type "String")
-  (#match? @_modifiers "static")
-  (#match? @_modifiers "final")
   (#set! name "invalid-string-constant")
   (#set! title "Invalid constant name: `{node.text}`")
-  (#set! label "Constant")
-  (#set! context.label "Immutable")
+  (#set! label "Field")
+  (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; Null constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers
+    [
+      "static"
+      "final"
+    ] @context
+    [
+      "final"
+      "static"
+    ] @context)
   declarator: (variable_declarator
     name: (identifier) @error
     value: (null_literal) @context)
   (#match? @error "[a-z]")
-  (#match? @_modifiers "static")
-  (#match? @_modifiers "final")
   (#set! name "invalid-null-constant")
   (#set! title "Invalid constant name: `{node.text}`")
-  (#set! label "Constant")
-  (#set! context.label "Immutable")
+  (#set! label "Field")
+  (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
 ; Empty array constants should be UPPER_SNAKE_CASE
 ; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers
+    [
+      "static"
+      "final"
+    ] @context
+    [
+      "final"
+      "static"
+    ] @context)
   declarator: (variable_declarator
     name: (identifier) @error
     value: (array_initializer) @_array @context)
   (#match? @error "[a-z]")
   (#match? @_array "^[{]\\s*[}]$")
-  (#match? @_modifiers "static")
-  (#match? @_modifiers "final")
   (#set! name "invalid-array-constant")
   (#set! title "Invalid constant name: `{node.text}`")
-  (#set! label "Constant")
-  (#set! context.label "Immutable")
+  (#set! label "Field")
+  (#set! context.label "Immutable constant")
   (#set! note "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "error"))
 
@@ -479,20 +503,21 @@
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   . ; no modifiers
-  type: (_)
+  type: (_) @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-field-name")
   (#set! title "Uppercase field name: `{node.text}`")
-  (#set! label "Uppercase")
+  (#set! label "Field")
+  (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers) @_modifiers @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
@@ -500,37 +525,40 @@
   (#not-match? @_modifiers "static")
   (#set! name "uppercase-field-name")
   (#set! title "Uppercase field name: `{node.text}`")
-  (#set! label "Uppercase")
+  (#set! label "Field")
+  (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers
+    "static") @_modifiers @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#match? @_modifiers "static")
   (#not-match? @_modifiers "final")
   (#set! name "uppercase-static-field-name")
   (#set! title "Uppercase field name: `{node.text}`")
-  (#set! label "Uppercase")
+  (#set! label "Field")
+  (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
 ; non-constants should be lowerCamelCase
 ; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers) @_modifiers
+  (modifiers
+    "final") @_modifiers @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "static")
-  (#match? @_modifiers "final")
   (#set! name "uppercase-final-field-name")
   (#set! title "Uppercase field name: `{node.text}`")
-  (#set! label "Uppercase")
+  (#set! label "Field")
+  (#set! context.label "Not `static final`")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error"))
 
@@ -541,7 +569,7 @@
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-param")
   (#set! title "Uppercase parameter name: `{node.text}`")
-  (#set! label "Uppercase")
+  (#set! label "Parameter")
   (#set! note "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "error")) @visible
 
@@ -553,7 +581,7 @@
     (#match? @error "^[A-Z]")
     (#set! name "uppercase-vararg")
     (#set! title "Uppercase vararg name: `{node.text}`")
-    (#set! label "Uppercase")
+    (#set! label "Vararg parameter")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error"))) @visible
 
@@ -567,7 +595,7 @@
     (#match? @error "^[A-Z]")
     (#set! name "uppercase-local")
     (#set! title "Uppercase local variable name: `{node.text}`")
-    (#set! label "Uppercase")
+    (#set! label "Local variable")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error")))
 
@@ -575,14 +603,15 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
-  (modifiers) @context ; 'final' implicit: only modifier for a local variable
+  (modifiers
+    "final") @context
   declarator: (variable_declarator
     name: (identifier) @error
     (#match? @error "^[A-Z]")
     (#set! name "uppercase-final-local")
     (#set! title "Uppercase local variable name: `{node.text}`")
-    (#set! label "Uppercase")
-    (#set! context.label "Not a `static final` constant")
+    (#set! label "Local variable")
+    (#set! context.label "Not `static final`")
     (#set! note "Rename `{node.text}` using lowerCamelCase")
     (#set! severity "error")))
 
@@ -593,7 +622,7 @@
   (#match? @error "^[a-z]")
   (#set! name "lowercase-type")
   (#set! title "Lowercase type parameter name: `{node.text}`")
-  (#set! label "Lowercase")
+  (#set! label "Type parameter")
   (#set! note "Rename `{node.text}` using UpperCamelCase")
   (#set! severity "error")) @visible
 
@@ -610,7 +639,7 @@
   (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! name "swallowed-exception")
   (#set! title "Unhandled caught exception: `{node.text}`")
-  (#set! label "Exception ignored")
+  (#set! label "Exception")
   (#set! note "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
   (#set! severity "error")) @visible ; body is small (empty)
 
@@ -626,6 +655,6 @@
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
   (#set! name "finalizer-used")
   (#set! title "Finalizer used: `{node.text}`")
-  (#set! label "Overrides Object.finalize()")
+  (#set! label "Finalizer")
   (#set! note "Migrate to other resource management such as try-with-resources or cleaners")
   (#set! severity "error"))
