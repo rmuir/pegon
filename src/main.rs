@@ -14,6 +14,7 @@ use crate::cli::{Commands, parse};
 use crate::lint::Linter;
 
 static COUNT: AtomicU32 = AtomicU32::new(0);
+static ERRORS: AtomicU32 = AtomicU32::new(0);
 
 fn lint(files: &[PathBuf]) -> Result<(), Error> {
     let mut paths = files.to_vec();
@@ -54,15 +55,27 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         if res == "foobar" {
                             println!("bogus: {}", res);
                         }
-                        let errors = linter.lint(entry.path(), data).unwrap();
-                        if errors > 0 {
-                            COUNT.fetch_add(errors, Ordering::Relaxed);
+                        let result = linter.lint(entry.path(), data);
+                        match result {
+                            Ok(errors) => {
+                                if errors > 0 {
+                                    COUNT.fetch_add(errors, Ordering::Relaxed);
+                                }
+                            }
+                            Err(error) => {
+                                println!(
+                                    "error parsing {}: {}",
+                                    entry.path().to_string_lossy(),
+                                    error
+                                );
+                                ERRORS.fetch_add(1, Ordering::Relaxed);
+                            }
                         }
                     }
                 }
                 Err(err) => {
-                    println!("error: {}", err);
-                    COUNT.fetch_add(1, Ordering::Relaxed);
+                    println!("file error: {}", err);
+                    ERRORS.fetch_add(1, Ordering::Relaxed);
                 }
             }
             WalkState::Continue

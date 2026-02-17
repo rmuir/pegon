@@ -97,6 +97,9 @@ impl Linter {
     pub fn lint(&mut self, path: &Path, data: Vec<u8>) -> Result<u32, Error> {
         self.parser.reset();
         let tree = self.parser.parse(&data, None).unwrap();
+        if tree.root_node().has_error() {
+            return Err(anyhow::anyhow!("syntax error"));
+        }
         let mut errors = 0;
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());

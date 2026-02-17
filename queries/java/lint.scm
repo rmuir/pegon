@@ -26,22 +26,6 @@
 ;  * /usr/lib/treesitter (e.g. `yay -S tree-sitter-java` from Arch AUR)
 ;  * nvim-treesitter installation (in case you use neovim and have it already)
 ;
-; TS parsing error
-((ERROR) @error
-  (#set! name "parse-error")
-  (#set! title "Parse Error")
-  (#set! label "Syntax problem")
-  (#set! help "Correct the invalid Java syntax")
-  (#set! severity "hint"))
-
-; TS parsing error
-((MISSING) @error
-  (#set! name "parse-error")
-  (#set! title "Parse Error")
-  (#set! label "Missing {node.kind}")
-  (#set! help "Correct the invalid Java syntax")
-  (#set! severity "hint"))
-
 ; Whitespace other than ASCII horizontal space inside a literal.
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.1-whitespace-characters
 ([
