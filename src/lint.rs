@@ -49,6 +49,40 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
     None
 }
 
+pub(crate) struct Lint {
+    /// Primary matching error node range
+    pub(crate) range: Range<usize>,
+    /// Text describing the matching error range
+    #[allow(dead_code)]
+    pub(crate) label: String,
+    /// Name of matching lint
+    pub(crate) name: String,
+    /// URL for more information on name
+    pub(crate) url: String,
+    /// Severity of problem
+    pub(crate) severity: String,
+    /// Title of lint
+    pub(crate) title: String,
+    /// optional automatic fix
+    #[allow(dead_code)]
+    pub(crate) fix: Option<String>,
+    /// instructions to address the issue
+    #[allow(dead_code)]
+    pub(crate) help: String,
+    /// ranges that should be visible
+    #[allow(dead_code)]
+    pub(crate) visible: Vec<Range<usize>>,
+    /// ranges that provide additional information
+    #[allow(dead_code)]
+    pub(crate) context: Vec<Range<usize>>,
+    /// describes context ranges (applied to first one)
+    #[allow(dead_code)]
+    pub(crate) context_label: Option<String>,
+    /// computed top context (e.g. what function you are in)
+    #[allow(dead_code)]
+    pub(crate) top_context: Option<Range<usize>>,
+}
+
 static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
         &tree_sitter_java::LANGUAGE.into(),
@@ -92,6 +126,95 @@ impl Linter {
             .set_language(&tree_sitter_java::LANGUAGE.into())
             .unwrap();
         Linter { parser }
+    }
+
+    pub fn lintnew(&mut self, data: Vec<u8>) -> Result<Vec<Lint>, Error> {
+        self.parser.reset();
+        let tree = self.parser.parse(&data, None).unwrap();
+        if tree.root_node().has_error() {
+            return Err(anyhow::anyhow!("syntax error"));
+        }
+        let mut errors = Vec::new();
+        let mut cursor = QueryCursor::new();
+        let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
+        while let Some(hit) = matches.next() {
+            let props = JAVA_ERROR_QUERY.property_settings(hit.pattern_index);
+            let mut prop_name: Option<Box<str>> = None;
+            let mut prop_title: Option<Box<str>> = None;
+            let mut prop_severity: Option<Box<str>> = None;
+            let mut prop_label: Option<Box<str>> = None;
+            let mut prop_help: Option<Box<str>> = None;
+            let mut prop_fix: Option<Box<str>> = None;
+            let mut prop_context_label: Option<Box<str>> = None;
+            for prop in props {
+                let name = &*prop.key;
+                if name == "name" {
+                    prop_name = prop.value.clone();
+                } else if name == "title" {
+                    prop_title = prop.value.clone();
+                } else if name == "severity" {
+                    prop_severity = prop.value.clone();
+                } else if name == "label" {
+                    prop_label = prop.value.clone();
+                } else if name == "help" {
+                    prop_help = prop.value.clone();
+                } else if name == "fix" {
+                    prop_fix = prop.value.clone();
+                } else if name == "context.label" {
+                    prop_context_label = prop.value.clone();
+                }
+            }
+            let name = prop_name.unwrap().to_string();
+            let prop_url = format!("https://github.com/rmuir/pegon/wiki/lints#{}", name);
+
+            let node = hit
+                .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
+                .next()
+                .unwrap();
+
+            let node_text = node.utf8_text(&data).unwrap_or_default();
+            let node_kind = node.kind();
+            let replacements = [node_text, node_kind];
+            let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
+            let label = TEMPLATE_ENGINE.replace_all(&prop_label.unwrap_or_default(), &replacements);
+            let help = TEMPLATE_ENGINE.replace_all(&prop_help.unwrap_or_default(), &replacements);
+
+            let range = node.byte_range();
+
+            let context_label = prop_context_label.unwrap_or_default().to_string();
+            let mut visible = Vec::new();
+            let mut context = Vec::new();
+
+            // explicitly marked context in the query
+            for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+                context.push(context_node.byte_range());
+            }
+
+            // explicitly marked visible in the query
+            for visible_node in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
+                visible.push(visible_node.byte_range());
+            }
+
+            // top context: e.g. what function are you in
+            let top = top_context(&node);
+
+            let severity = prop_severity.unwrap().to_string();
+            errors.push(Lint {
+                range,
+                label,
+                name,
+                url: prop_url,
+                severity,
+                title,
+                fix: Some(prop_fix.unwrap_or_default().to_string()),
+                help,
+                visible,
+                context,
+                context_label: Some(context_label), // TODO
+                top_context: top,
+            });
+        }
+        Ok(errors)
     }
 
     pub fn lint(&mut self, path: &Path, data: Vec<u8>) -> Result<u32, Error> {

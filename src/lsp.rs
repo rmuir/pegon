@@ -1,7 +1,17 @@
 use ropey::Rope;
 use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::*;
+use tower_lsp::lsp_types::{
+    CodeDescription, Diagnostic, DiagnosticSeverity, DidChangeConfigurationParams,
+    DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    InitializeParams, InitializeResult, InitializedParams, NumberOrString, OneOf, Position,
+    SaveOptions, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
+};
 use tower_lsp::{Client, LanguageServer, LspService, Server};
+
+use crate::lint::{Lint, Linter};
 
 #[derive(Debug)]
 struct Backend {
@@ -80,26 +90,35 @@ pub(crate) async fn run() {
     Server::new(stdin, stdout, socket).serve(service).await;
 }
 
-fn compile(_: &str) -> Vec<Diagnostic> {
-    Vec::new()
+// TODO: so inefficient
+fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
+    Linter::new().lintnew(str.as_bytes().to_vec())
 }
 
 impl Backend {
     async fn on_change(&self, item: TextDocumentChange<'_>) {
         let rope = Rope::from_str(item.text);
-        let compile_result = compile(item.text);
-        let diagnostics = compile_result
+        let diagnostics = diagnose(item.text)
+            .unwrap_or_default()
             .iter()
             .filter_map(|diagnostic| {
-                let start = offset_to_position(diagnostic.range.start.character as usize, &rope)?;
-                let end = offset_to_position(diagnostic.range.end.character as usize, &rope)?;
+                let start = offset_to_position(diagnostic.range.start, &rope)?;
+                let end = offset_to_position(diagnostic.range.end, &rope)?;
+                let lsp_severity = match diagnostic.severity.as_str() {
+                    "warn" => DiagnosticSeverity::WARNING,
+                    "info" => DiagnosticSeverity::INFORMATION,
+                    "hint" => DiagnosticSeverity::HINT,
+                    _ => DiagnosticSeverity::ERROR,
+                };
                 let diag = Diagnostic {
-                    range: Range::new(start, end),
-                    severity: None,
-                    code: None,
-                    code_description: None,
-                    source: None,
-                    message: format!("{:?}", diagnostic.message),
+                    range: tower_lsp::lsp_types::Range::new(start, end),
+                    severity: Some(lsp_severity),
+                    code: Some(NumberOrString::String(diagnostic.name.clone())),
+                    code_description: Some(CodeDescription {
+                        href: Url::parse(&diagnostic.url).unwrap(),
+                    }),
+                    source: Some("pegon".to_string()),
+                    message: diagnostic.title.clone(),
                     related_information: None,
                     tags: None,
                     data: None,
