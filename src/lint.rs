@@ -67,16 +67,13 @@ pub(crate) struct Lint {
     #[allow(dead_code)]
     pub(crate) fix: Option<String>,
     /// instructions to address the issue
-    #[allow(dead_code)]
     pub(crate) help: String,
     /// ranges that should be visible
     #[allow(dead_code)]
     pub(crate) visible: Vec<Range<usize>>,
     /// ranges that provide additional information
-    #[allow(dead_code)]
     pub(crate) context: Vec<Range<usize>>,
     /// describes context ranges (applied to first one)
-    #[allow(dead_code)]
     pub(crate) context_label: Option<String>,
     /// computed top context (e.g. what function you are in)
     #[allow(dead_code)]
