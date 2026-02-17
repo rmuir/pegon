@@ -53,7 +53,6 @@ pub(crate) struct Lint {
     /// Primary matching error node range
     pub(crate) range: Range<usize>,
     /// Text describing the matching error range
-    #[allow(dead_code)]
     pub(crate) label: String,
     /// Name of matching lint
     pub(crate) name: String,
@@ -68,13 +67,15 @@ pub(crate) struct Lint {
     pub(crate) fix: Option<String>,
     /// instructions to address the issue
     pub(crate) help: String,
-    /// ranges that should be visible
-    #[allow(dead_code)]
-    pub(crate) visible: Vec<Range<usize>>,
     /// ranges that provide additional information
     pub(crate) context: Vec<Range<usize>>,
     /// describes context ranges (applied to first one)
     pub(crate) context_label: Option<String>,
+
+    // CLI only features that can't translate to LSP
+    /// ranges that should be visible
+    #[allow(dead_code)]
+    pub(crate) visible: Vec<Range<usize>>,
     /// computed top context (e.g. what function you are in)
     #[allow(dead_code)]
     pub(crate) top_context: Option<Range<usize>>,
