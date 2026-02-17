@@ -115,7 +115,7 @@ impl Backend {
                     "hint" => DiagnosticSeverity::HINT,
                     _ => DiagnosticSeverity::ERROR,
                 };
-                let related_information = diagnostic
+                let mut related_information = diagnostic
                     .context
                     .iter()
                     .filter_map(|context| {
@@ -131,6 +131,13 @@ impl Backend {
                         Some(related)
                     })
                     .collect::<Vec<_>>();
+                related_information.push(DiagnosticRelatedInformation {
+                    location: Location {
+                        uri: uri.clone(),
+                        range: tower_lsp::lsp_types::Range::new(start, end),
+                    },
+                    message: diagnostic.help.clone(),
+                });
                 let diag = Diagnostic {
                     range: tower_lsp::lsp_types::Range::new(start, end),
                     severity: Some(lsp_severity),
