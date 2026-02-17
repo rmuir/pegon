@@ -33,6 +33,9 @@ pub(crate) enum Commands {
         #[arg(long, short)]
         check: bool,
     },
+
+    /// Start Language Server
+    Lsp,
 }
 
 const CLI_STYLES: Styles = Styles::styled()

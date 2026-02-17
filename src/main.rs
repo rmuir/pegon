@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod lint;
+pub mod lsp;
 
 use std::{
     fs,
@@ -96,5 +97,9 @@ async fn main() -> Result<(), Error> {
     match &cli.command {
         Commands::Check { files, fix: _ } => lint(files),
         Commands::Format { files: _, check: _ } => todo!(),
+        Commands::Lsp => {
+            lsp::run().await;
+            Ok(())
+        }
     }
 }

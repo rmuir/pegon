@@ -38,9 +38,7 @@ impl LanguageServer for Backend {
         })
     }
 
-    async fn initialized(&self, _: InitializedParams) {
-        println!("initialized!");
-    }
+    async fn initialized(&self, _: InitializedParams) {}
 
     async fn shutdown(&self) -> Result<()> {
         Ok(())
@@ -62,29 +60,18 @@ impl LanguageServer for Backend {
         .await;
     }
 
-    async fn did_save(&self, _params: DidSaveTextDocumentParams) {
-        println!("file saved!");
-    }
+    async fn did_save(&self, _params: DidSaveTextDocumentParams) {}
 
-    async fn did_close(&self, _: DidCloseTextDocumentParams) {
-        println!("file closed!");
-    }
+    async fn did_close(&self, _: DidCloseTextDocumentParams) {}
 
-    async fn did_change_configuration(&self, _: DidChangeConfigurationParams) {
-        println!("configuration changed!");
-    }
+    async fn did_change_configuration(&self, _: DidChangeConfigurationParams) {}
 
-    async fn did_change_workspace_folders(&self, _: DidChangeWorkspaceFoldersParams) {
-        println!("workspace folders changed!");
-    }
+    async fn did_change_workspace_folders(&self, _: DidChangeWorkspaceFoldersParams) {}
 
-    async fn did_change_watched_files(&self, _: DidChangeWatchedFilesParams) {
-        println!("watched files have changed!");
-    }
+    async fn did_change_watched_files(&self, _: DidChangeWatchedFilesParams) {}
 }
 
-#[tokio::main]
-async fn main() {
+pub(crate) async fn run() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
@@ -93,30 +80,31 @@ async fn main() {
     Server::new(stdin, stdout, socket).serve(service).await;
 }
 
+fn compile(_: &str) -> Vec<Diagnostic> {
+    Vec::new()
+}
+
 impl Backend {
     async fn on_change(&self, item: TextDocumentChange<'_>) {
         let rope = Rope::from_str(item.text);
         let compile_result = compile(item.text);
-        let mut diagnostics = compile_result
-            .diagnostics
+        let diagnostics = compile_result
             .iter()
-            .flat_map(|d| {
-                d.labels.iter().filter_map(|label| {
-                    let start = offset_to_position(label.range.start, &rope)?;
-                    let end = offset_to_position(label.range.end, &rope)?;
-                    let diag = Diagnostic {
-                        range: Range::new(start, end),
-                        severity: None,
-                        code: None,
-                        code_description: None,
-                        source: None,
-                        message: format!("{:?}", d.message),
-                        related_information: None,
-                        tags: None,
-                        data: None,
-                    };
-                    Some(diag)
-                })
+            .filter_map(|diagnostic| {
+                let start = offset_to_position(diagnostic.range.start.character as usize, &rope)?;
+                let end = offset_to_position(diagnostic.range.end.character as usize, &rope)?;
+                let diag = Diagnostic {
+                    range: Range::new(start, end),
+                    severity: None,
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: format!("{:?}", diagnostic.message),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                };
+                Some(diag)
             })
             .collect::<Vec<_>>();
 
@@ -138,10 +126,4 @@ fn offset_to_position(offset: usize, rope: &Rope) -> Option<Position> {
     let first_char_of_line = rope.try_line_to_char(line).ok()?;
     let column = offset - first_char_of_line;
     Some(Position::new(line as u32, column as u32))
-}
-
-fn position_to_offset(position: Position, rope: &Rope) -> Option<usize> {
-    let line_char_offset = rope.try_line_to_char(position.line as usize).ok()?;
-    let slice = rope.slice(0..line_char_offset + position.character as usize);
-    Some(slice.len_bytes())
 }
