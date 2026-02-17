@@ -90,7 +90,8 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
     }
 }
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let cli = parse();
     match &cli.command {
         Commands::Check { files, fix: _ } => lint(files),
