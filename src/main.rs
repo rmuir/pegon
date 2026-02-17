@@ -97,7 +97,7 @@ async fn main() -> Result<(), Error> {
     match &cli.command {
         Commands::Check { files, fix: _ } => lint(files),
         Commands::Format { files: _, check: _ } => todo!(),
-        Commands::Lsp => {
+        Commands::Server => {
             lsp::run().await;
             Ok(())
         }
