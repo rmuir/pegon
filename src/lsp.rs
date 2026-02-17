@@ -13,7 +13,6 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 use crate::lint::{Lint, Linter};
 
-#[derive(Debug)]
 struct Backend {
     client: Client,
 }
@@ -131,6 +130,15 @@ impl Backend {
                         Some(related)
                     })
                     .collect::<Vec<_>>();
+                if !diagnostic.label.is_empty() {
+                    related_information.push(DiagnosticRelatedInformation {
+                        location: Location {
+                            uri: uri.clone(),
+                            range: tower_lsp::lsp_types::Range::new(start, end),
+                        },
+                        message: diagnostic.label.clone(),
+                    });
+                }
                 related_information.push(DiagnosticRelatedInformation {
                     location: Location {
                         uri: uri.clone(),
