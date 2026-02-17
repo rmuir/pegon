@@ -1,13 +1,13 @@
 use ropey::Rope;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::{
-    CodeDescription, Diagnostic, DiagnosticSeverity, DidChangeConfigurationParams,
-    DidChangeTextDocumentParams, DidChangeWatchedFilesParams, DidChangeWorkspaceFoldersParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-    InitializeParams, InitializeResult, InitializedParams, NumberOrString, OneOf, Position,
-    SaveOptions, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
+    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
+    DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams, Location,
+    NumberOrString, OneOf, Position, SaveOptions, ServerCapabilities, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
 };
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
@@ -26,6 +26,8 @@ impl LanguageServer for Backend {
             offset_encoding: None,
 
             capabilities: ServerCapabilities {
+                // TODO: negotiate more efficient UTF-8 encoding
+                position_encoding: None,
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         open_close: Some(true),
@@ -97,6 +99,9 @@ fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
 
 impl Backend {
     async fn on_change(&self, item: TextDocumentChange<'_>) {
+        let uri =
+            Url::parse(&item.uri).unwrap_or_else(|_| Url::from_directory_path(&item.uri).unwrap());
+
         let rope = Rope::from_str(item.text);
         let diagnostics = diagnose(item.text)
             .unwrap_or_default()
@@ -110,6 +115,22 @@ impl Backend {
                     "hint" => DiagnosticSeverity::HINT,
                     _ => DiagnosticSeverity::ERROR,
                 };
+                let related_information = diagnostic
+                    .context
+                    .iter()
+                    .filter_map(|context| {
+                        let related_start = offset_to_position(context.start, &rope)?;
+                        let related_end = offset_to_position(context.end, &rope)?;
+                        let related = DiagnosticRelatedInformation {
+                            location: Location {
+                                uri: uri.clone(),
+                                range: tower_lsp::lsp_types::Range::new(related_start, related_end),
+                            },
+                            message: diagnostic.context_label.clone().unwrap_or_default(),
+                        };
+                        Some(related)
+                    })
+                    .collect::<Vec<_>>();
                 let diag = Diagnostic {
                     range: tower_lsp::lsp_types::Range::new(start, end),
                     severity: Some(lsp_severity),
@@ -119,7 +140,7 @@ impl Backend {
                     }),
                     source: Some("pegon".to_string()),
                     message: diagnostic.title.clone(),
-                    related_information: None,
+                    related_information: Some(related_information),
                     tags: None,
                     data: None,
                 };
@@ -127,8 +148,6 @@ impl Backend {
             })
             .collect::<Vec<_>>();
 
-        let uri =
-            Url::parse(&item.uri).unwrap_or_else(|_| Url::from_directory_path(&item.uri).unwrap());
         self.client
             .publish_diagnostics(uri, diagnostics, None)
             .await;
@@ -141,8 +160,9 @@ struct TextDocumentChange<'a> {
 }
 
 fn offset_to_position(offset: usize, rope: &Rope) -> Option<Position> {
-    let line = rope.try_char_to_line(offset).ok()?;
-    let first_char_of_line = rope.try_line_to_char(line).ok()?;
-    let column = offset - first_char_of_line;
-    Some(Position::new(line as u32, column as u32))
+    let line_number = rope.try_byte_to_line(offset).ok()?;
+    let first_char_of_line = rope.try_line_to_byte(line_number).ok()?;
+    let line = rope.byte_slice(first_char_of_line..offset);
+    let column_number = line.len_utf16_cu();
+    Some(Position::new(line_number as u32, column_number as u32))
 }
