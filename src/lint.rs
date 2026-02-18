@@ -32,6 +32,7 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
             | "interface_declaration"
             | "enum_declaration"
             | "record_declaration" => {
+                // keep traversing upwards until we find a node not on the same line.
                 if let Some(name) = node.child_by_field_name("name")
                     && name.start_position().row != error_node.start_position().row
                 {
