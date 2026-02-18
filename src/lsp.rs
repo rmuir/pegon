@@ -7,9 +7,10 @@ use tower_lsp_server::ls_types::{
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
     DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams, Location,
-    NumberOrString, OneOf, Position, SaveOptions, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Uri,
-    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    NumberOrString, OneOf, Position, SaveOptions, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    TextDocumentSyncSaveOptions, Uri, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
 };
 use tower_lsp_server::{Client, LanguageServer, LspService, Server};
 
@@ -22,7 +23,10 @@ struct Backend {
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
-            server_info: None,
+            server_info: Some(ServerInfo {
+                name: "pegon".into(),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
+            }),
             offset_encoding: None,
 
             capabilities: ServerCapabilities {
