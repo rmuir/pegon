@@ -259,7 +259,6 @@ impl Linter {
             let level = match diagnostic.severity.as_str() {
                 "warn" => Level::WARNING,
                 "info" => Level::INFO,
-                "note" => Level::NOTE,
                 "hint" => Level::HELP,
                 _ => Level::ERROR,
             };
@@ -281,13 +280,16 @@ impl Linter {
                 && !fix.is_empty()
             {
                 report.push(
-                    Level::HELP
+                    Level::NOTE
+                        .with_name("help")
                         .secondary_title(diagnostic.help)
                         .element(Snippet::source(source).patch(Patch::new(diagnostic.range, fix))),
                 );
             } else {
                 report.push(Group::with_title(
-                    Level::HELP.secondary_title(diagnostic.help),
+                    Level::NOTE
+                        .with_name("help")
+                        .secondary_title(diagnostic.help),
                 ));
             }
             anstream::println!("{}\n", RENDERER.render(&report))
