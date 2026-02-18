@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod console;
 pub mod lint;
 pub mod lsp;
 
@@ -56,11 +57,12 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         if res == "foobar" {
                             println!("bogus: {}", res);
                         }
-                        let result = linter.lint(entry.path(), data);
+                        let result = linter.lintnew(&data);
                         match result {
                             Ok(errors) => {
-                                if errors > 0 {
-                                    COUNT.fetch_add(errors, Ordering::Relaxed);
+                                if !errors.is_empty() {
+                                    COUNT.fetch_add(errors.len() as u32, Ordering::Relaxed);
+                                    console::render(entry.path(), data, errors).unwrap(); // TODO
                                 }
                             }
                             Err(error) => {
