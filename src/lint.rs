@@ -117,7 +117,7 @@ impl Linter {
         Linter { parser }
     }
 
-    pub fn lintnew(&mut self, data: &Vec<u8>) -> Result<Vec<Lint>, Error> {
+    pub fn lint(&mut self, data: &Vec<u8>) -> Result<Vec<Lint>, Error> {
         self.parser.reset();
         let tree = self.parser.parse(data, None).unwrap();
         if tree.root_node().has_error() {

@@ -57,7 +57,7 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         if res == "foobar" {
                             println!("bogus: {}", res);
                         }
-                        let result = linter.lintnew(&data);
+                        let result = linter.lint(&data);
                         match result {
                             Ok(errors) => {
                                 if !errors.is_empty() {
