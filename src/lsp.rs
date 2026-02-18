@@ -135,13 +135,13 @@ impl Backend {
                         Some(related)
                     })
                     .collect::<Vec<_>>();
-                if !diagnostic.label.is_empty() {
+                if let Some(label) = &diagnostic.label {
                     related_information.push(DiagnosticRelatedInformation {
                         location: Location {
                             uri: item.uri.clone(),
                             range: tower_lsp_server::ls_types::Range::new(start, end),
                         },
-                        message: diagnostic.label.clone(),
+                        message: label.clone(),
                     });
                 }
                 related_information.push(DiagnosticRelatedInformation {

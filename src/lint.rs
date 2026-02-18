@@ -49,7 +49,7 @@ pub(crate) struct Lint {
     /// Primary matching error node range
     pub(crate) range: Range<usize>,
     /// Text describing the matching error range
-    pub(crate) label: String,
+    pub(crate) label: Option<String>,
     /// Name of matching lint
     pub(crate) name: String,
     /// URL for more information on name
@@ -173,12 +173,12 @@ impl Linter {
             let node_kind = node.kind();
             let replacements = [node_text, node_kind];
             let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
-            let label = TEMPLATE_ENGINE.replace_all(&prop_label.unwrap_or_default(), &replacements);
+            let label = prop_label.map(|s| TEMPLATE_ENGINE.replace_all(&s, &replacements));
             let help = TEMPLATE_ENGINE.replace_all(&prop_help.unwrap_or_default(), &replacements);
 
             let range = node.byte_range();
 
-            let context_label = prop_context_label.unwrap_or_default().to_string();
+            let context_label = prop_context_label.map(|s| s.to_string());
             let mut visible = Vec::new();
             let mut context = Vec::new();
 
@@ -203,11 +203,11 @@ impl Linter {
                 url: prop_url,
                 severity,
                 title,
-                fix: Some(prop_fix.unwrap_or_default().to_string()),
+                fix: prop_fix.map(|s| s.to_string()),
                 help,
                 visible,
                 context,
-                context_label: Some(context_label), // TODO
+                context_label,
                 top_context: top,
             });
         }

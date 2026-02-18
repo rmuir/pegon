@@ -71,9 +71,7 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
                         .annotations(annotations),
                 ),
         );
-        if let Some(fix) = diagnostic.fix
-            && !fix.is_empty()
-        {
+        if let Some(fix) = diagnostic.fix {
             report.push(
                 Level::NOTE
                     .with_name("help")
