@@ -232,6 +232,20 @@ repos:
             - "**/*.rs"
             - "README.*"
 
+      - id: cargo-deny
+        name: Check Rust dependencies
+        priority: 0
+        language: system
+        entry: cargo
+        args: ["deny", "check"]
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - Cargo.toml
+            - Cargo.lock
+
       - id: cargo-fix
         name: Fix Rust problems
         language: system
