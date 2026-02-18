@@ -93,7 +93,7 @@ pub(crate) async fn run() {
 
 // TODO: so inefficient
 fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
-    Linter::new().lintnew(str.as_bytes().to_vec())
+    Linter::new().lintnew(&str.as_bytes().to_vec())
 }
 
 impl Backend {

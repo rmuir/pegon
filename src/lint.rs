@@ -126,9 +126,9 @@ impl Linter {
         Linter { parser }
     }
 
-    pub fn lintnew(&mut self, data: Vec<u8>) -> Result<Vec<Lint>, Error> {
+    pub fn lintnew(&mut self, data: &Vec<u8>) -> Result<Vec<Lint>, Error> {
         self.parser.reset();
-        let tree = self.parser.parse(&data, None).unwrap();
+        let tree = self.parser.parse(data, None).unwrap();
         if tree.root_node().has_error() {
             return Err(anyhow::anyhow!("syntax error"));
         }
@@ -170,7 +170,7 @@ impl Linter {
                 .next()
                 .unwrap();
 
-            let node_text = node.utf8_text(&data).unwrap_or_default();
+            let node_text = node.utf8_text(data).unwrap_or_default();
             let node_kind = node.kind();
             let replacements = [node_text, node_kind];
             let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
@@ -216,119 +216,79 @@ impl Linter {
     }
 
     pub fn lint(&mut self, path: &Path, data: Vec<u8>) -> Result<u32, Error> {
-        self.parser.reset();
-        let tree = self.parser.parse(&data, None).unwrap();
-        if tree.root_node().has_error() {
-            return Err(anyhow::anyhow!("syntax error"));
-        }
         let mut errors = 0;
-        let mut cursor = QueryCursor::new();
-        let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
-        while let Some(hit) = matches.next() {
+        for diagnostic in self.lintnew(&data)? {
             errors += 1;
-            let props = JAVA_ERROR_QUERY.property_settings(hit.pattern_index);
-            let mut prop_name: Option<Box<str>> = None;
-            let mut prop_title: Option<Box<str>> = None;
-            let mut prop_severity: Option<Box<str>> = None;
-            let mut prop_label: Option<Box<str>> = None;
-            let mut prop_help: Option<Box<str>> = None;
-            let mut prop_fix: Option<Box<str>> = None;
-            let mut prop_context_label: Option<Box<str>> = None;
-            for prop in props {
-                let name = &*prop.key;
-                if name == "name" {
-                    prop_name = prop.value.clone();
-                } else if name == "title" {
-                    prop_title = prop.value.clone();
-                } else if name == "severity" {
-                    prop_severity = prop.value.clone();
-                } else if name == "label" {
-                    prop_label = prop.value.clone();
-                } else if name == "help" {
-                    prop_help = prop.value.clone();
-                } else if name == "fix" {
-                    prop_fix = prop.value.clone();
-                } else if name == "context.label" {
-                    prop_context_label = prop.value.clone();
-                }
-            }
-            let name = prop_name.unwrap().to_string();
-            let prop_url = format!("https://github.com/rmuir/pegon/wiki/lints#{}", name);
-
-            let node = hit
-                .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
-                .next()
-                .unwrap();
-
-            let node_text = node.utf8_text(&data).unwrap_or_default();
-            let node_kind = node.kind();
-            let replacements = [node_text, node_kind];
-            let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
-            let label = TEMPLATE_ENGINE.replace_all(&prop_label.unwrap_or_default(), &replacements);
-            let help = TEMPLATE_ENGINE.replace_all(&prop_help.unwrap_or_default(), &replacements);
-
             let mut annotations: Vec<Annotation> = Vec::new();
 
             // primary error annotation: as precise of a range as possible
-            annotations.push(AnnotationKind::Primary.span(node.byte_range()).label(label));
+            annotations.push(
+                AnnotationKind::Primary
+                    .span(diagnostic.range.clone())
+                    .label(diagnostic.label),
+            );
 
-            let context_label = prop_context_label.unwrap_or_default().to_string();
             // only write context label a single time, colors will coordinate
             let mut label_written = false;
 
             // explicitly marked context in the query
-            for visible in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+            for context in diagnostic.context {
                 if label_written {
-                    annotations.push(AnnotationKind::Context.span(visible.byte_range()));
+                    annotations.push(AnnotationKind::Context.span(context));
                 } else {
                     annotations.push(
                         AnnotationKind::Context
-                            .span(visible.byte_range())
-                            .label(&context_label),
+                            .span(context)
+                            .label(diagnostic.context_label.clone()),
                     );
                     label_written = true
                 }
             }
 
             // explicitly marked visible in the query
-            for visible in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
-                annotations.push(AnnotationKind::Visible.span(visible.byte_range()));
+            for visible in diagnostic.visible {
+                annotations.push(AnnotationKind::Visible.span(visible));
             }
 
             // top context: e.g. what function are you in
-            if let Some(ctx) = top_context(&node) {
+            if let Some(ctx) = diagnostic.top_context {
                 annotations.push(AnnotationKind::Visible.span(ctx));
             }
 
             let source = str::from_utf8(&data)?;
-
-            let severity = prop_severity.unwrap().to_string();
-            let level = match severity.as_str() {
-                "error" => Level::ERROR,
+            let level = match diagnostic.severity.as_str() {
                 "warn" => Level::WARNING,
                 "info" => Level::INFO,
-                "hint" => Level::NOTE,
+                "note" => Level::NOTE,
+                "hint" => Level::HELP,
                 _ => Level::ERROR,
             };
+
             let mut report = Vec::new();
             report.push(
                 level
-                    .with_name(severity)
-                    .primary_title(title)
-                    .id(name)
-                    .id_url(prop_url)
+                    .with_name(diagnostic.severity)
+                    .primary_title(diagnostic.title)
+                    .id(diagnostic.name)
+                    .id_url(diagnostic.url)
                     .element(
                         Snippet::source(source)
                             .path(path.to_str())
                             .annotations(annotations),
                     ),
             );
-            if let Some(fix) = prop_fix {
-                report.push(Level::HELP.secondary_title(help).element(
-                    Snippet::source(source).patch(Patch::new(node.byte_range(), fix.to_string())),
-                ));
+            if let Some(fix) = diagnostic.fix
+                && !fix.is_empty()
+            {
+                report.push(
+                    Level::HELP
+                        .secondary_title(diagnostic.help)
+                        .element(Snippet::source(source).patch(Patch::new(diagnostic.range, fix))),
+                );
             } else {
-                report.push(Group::with_title(Level::HELP.secondary_title(help)));
+                report.push(Group::with_title(
+                    Level::HELP.secondary_title(diagnostic.help),
+                ));
             }
             anstream::println!("{}\n", RENDERER.render(&report))
         }
