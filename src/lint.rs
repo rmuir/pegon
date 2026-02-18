@@ -136,21 +136,29 @@ impl Linter {
             let mut prop_fix: Option<Box<str>> = None;
             let mut prop_context_label: Option<Box<str>> = None;
             for prop in props {
-                let name = &*prop.key;
-                if name == "name" {
-                    prop_name = prop.value.clone();
-                } else if name == "title" {
-                    prop_title = prop.value.clone();
-                } else if name == "severity" {
-                    prop_severity = prop.value.clone();
-                } else if name == "label" {
-                    prop_label = prop.value.clone();
-                } else if name == "help" {
-                    prop_help = prop.value.clone();
-                } else if name == "fix" {
-                    prop_fix = prop.value.clone();
-                } else if name == "context.label" {
-                    prop_context_label = prop.value.clone();
+                match &*prop.key {
+                    "name" => {
+                        prop_name = prop.value.clone();
+                    }
+                    "title" => {
+                        prop_title = prop.value.clone();
+                    }
+                    "severity" => {
+                        prop_severity = prop.value.clone();
+                    }
+                    "label" => {
+                        prop_label = prop.value.clone();
+                    }
+                    "help" => {
+                        prop_help = prop.value.clone();
+                    }
+                    "fix" => {
+                        prop_fix = prop.value.clone();
+                    }
+                    "context.label" => {
+                        prop_context_label = prop.value.clone();
+                    }
+                    _ => {}
                 }
             }
             let name = prop_name.unwrap().to_string();
