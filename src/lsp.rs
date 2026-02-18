@@ -1,15 +1,17 @@
+use std::str::FromStr;
+
 use ropey::Rope;
-use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::{
+use tower_lsp_server::jsonrpc::Result;
+use tower_lsp_server::ls_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
     DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DidSaveTextDocumentParams, InitializeParams, InitializeResult, InitializedParams, Location,
     NumberOrString, OneOf, Position, SaveOptions, ServerCapabilities, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Url,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Uri,
     WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
 };
-use tower_lsp::{Client, LanguageServer, LspService, Server};
+use tower_lsp_server::{Client, LanguageServer, LspService, Server};
 
 use crate::lint::{Lint, Linter};
 
@@ -17,7 +19,6 @@ struct Backend {
     client: Client,
 }
 
-#[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
@@ -57,7 +58,7 @@ impl LanguageServer for Backend {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         self.on_change(TextDocumentChange {
-            uri: params.text_document.uri.to_string(),
+            uri: params.text_document.uri,
             text: &params.text_document.text,
         })
         .await;
@@ -66,7 +67,7 @@ impl LanguageServer for Backend {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         self.on_change(TextDocumentChange {
             text: &params.content_changes[0].text,
-            uri: params.text_document.uri.to_string(),
+            uri: params.text_document.uri,
         })
         .await;
     }
@@ -98,9 +99,6 @@ fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
 
 impl Backend {
     async fn on_change(&self, item: TextDocumentChange<'_>) {
-        let uri =
-            Url::parse(&item.uri).unwrap_or_else(|_| Url::from_directory_path(&item.uri).unwrap());
-
         let rope = Rope::from_str(item.text);
         let diagnostics = diagnose(item.text)
             .unwrap_or_default()
@@ -122,8 +120,11 @@ impl Backend {
                         let related_end = offset_to_position(context.end, &rope)?;
                         let related = DiagnosticRelatedInformation {
                             location: Location {
-                                uri: uri.clone(),
-                                range: tower_lsp::lsp_types::Range::new(related_start, related_end),
+                                uri: item.uri.clone(),
+                                range: tower_lsp_server::ls_types::Range::new(
+                                    related_start,
+                                    related_end,
+                                ),
                             },
                             message: diagnostic.context_label.clone().unwrap_or_default(),
                         };
@@ -133,25 +134,25 @@ impl Backend {
                 if !diagnostic.label.is_empty() {
                     related_information.push(DiagnosticRelatedInformation {
                         location: Location {
-                            uri: uri.clone(),
-                            range: tower_lsp::lsp_types::Range::new(start, end),
+                            uri: item.uri.clone(),
+                            range: tower_lsp_server::ls_types::Range::new(start, end),
                         },
                         message: diagnostic.label.clone(),
                     });
                 }
                 related_information.push(DiagnosticRelatedInformation {
                     location: Location {
-                        uri: uri.clone(),
-                        range: tower_lsp::lsp_types::Range::new(start, end),
+                        uri: item.uri.clone(),
+                        range: tower_lsp_server::ls_types::Range::new(start, end),
                     },
                     message: diagnostic.help.clone(),
                 });
                 let diag = Diagnostic {
-                    range: tower_lsp::lsp_types::Range::new(start, end),
+                    range: tower_lsp_server::ls_types::Range::new(start, end),
                     severity: Some(lsp_severity),
                     code: Some(NumberOrString::String(diagnostic.name.clone())),
                     code_description: Some(CodeDescription {
-                        href: Url::parse(&diagnostic.url).unwrap(),
+                        href: Uri::from_str(&diagnostic.url).unwrap(),
                     }),
                     source: Some("pegon".to_string()),
                     message: diagnostic.title.clone(),
@@ -164,13 +165,13 @@ impl Backend {
             .collect::<Vec<_>>();
 
         self.client
-            .publish_diagnostics(uri, diagnostics, None)
+            .publish_diagnostics(item.uri, diagnostics, None)
             .await;
     }
 }
 
 struct TextDocumentChange<'a> {
-    uri: String,
+    uri: Uri,
     text: &'a str,
 }
 
