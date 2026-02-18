@@ -13,6 +13,10 @@ static RENDERER: Renderer = Renderer::styled()
     .line_num(Style::new().dimmed());
 
 pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<(), Error> {
+    if errors.is_empty() {
+        return Ok(());
+    }
+    let source = str::from_utf8(&data)?;
     for diagnostic in errors {
         let mut annotations: Vec<Annotation> = Vec::new();
 
@@ -50,7 +54,6 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
             annotations.push(AnnotationKind::Visible.span(ctx));
         }
 
-        let source = str::from_utf8(&data)?;
         let level = match diagnostic.severity.as_str() {
             "warn" => Level::WARNING,
             "info" => Level::INFO,
