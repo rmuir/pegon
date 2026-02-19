@@ -35,6 +35,7 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Options(
                     TextDocumentSyncOptions {
                         open_close: Some(true),
+                        // TODO: delta updates
                         change: Some(TextDocumentSyncKind::FULL),
                         save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
                             include_text: Some(true),
@@ -70,13 +71,19 @@ impl LanguageServer for Backend {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         self.on_change(TextDocumentChange {
-            text: &params.content_changes[0].text,
             uri: params.text_document.uri,
+            text: &params.content_changes[0].text,
         })
         .await;
     }
 
-    async fn did_save(&self, _params: DidSaveTextDocumentParams) {}
+    async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        self.on_change(TextDocumentChange {
+            uri: params.text_document.uri,
+            text: &params.text.unwrap_or_default(),
+        })
+        .await;
+    }
 
     async fn did_close(&self, _: DidCloseTextDocumentParams) {}
 
@@ -117,6 +124,7 @@ impl Backend {
                     Severity::Hint => DiagnosticSeverity::HINT,
                     Severity::Error => DiagnosticSeverity::ERROR,
                 };
+                // all the context ranges are related information
                 let mut related_information = diagnostic
                     .context
                     .iter()
@@ -136,6 +144,7 @@ impl Backend {
                         Some(related)
                     })
                     .collect::<Vec<_>>();
+                // optional label maps to related information at node's position
                 if let Some(label) = &diagnostic.label {
                     related_information.push(DiagnosticRelatedInformation {
                         location: Location {
@@ -145,6 +154,7 @@ impl Backend {
                         message: label.clone(),
                     });
                 }
+                // help text maps to related information at node's position
                 related_information.push(DiagnosticRelatedInformation {
                     location: Location {
                         uri: item.uri.clone(),
@@ -152,7 +162,7 @@ impl Backend {
                     },
                     message: diagnostic.help.clone(),
                 });
-                let diag = Diagnostic {
+                Some(Diagnostic {
                     range: tower_lsp_server::ls_types::Range::new(start, end),
                     severity: Some(lsp_severity),
                     code: Some(NumberOrString::String(rule.name.clone())),
@@ -164,8 +174,7 @@ impl Backend {
                     related_information: Some(related_information),
                     tags: None,
                     data: None,
-                };
-                Some(diag)
+                })
             })
             .collect::<Vec<_>>();
 
@@ -180,10 +189,11 @@ struct TextDocumentChange<'a> {
     text: &'a str,
 }
 
+/// Convert a UTF-8 byte offset to a UTF-16 LSP position
 fn offset_to_position(offset: usize, rope: &Rope) -> Option<Position> {
-    let line_number = rope.try_byte_to_line(offset).ok()?;
-    let first_char_of_line = rope.try_line_to_byte(line_number).ok()?;
-    let line = rope.byte_slice(first_char_of_line..offset);
-    let column_number = line.len_utf16_cu();
-    Some(Position::new(line_number as u32, column_number as u32))
+    let line = rope.try_byte_to_line(offset).ok()?;
+    let first_char_of_line = rope.try_line_to_byte(line).ok()?;
+    let line_data = rope.byte_slice(first_char_of_line..offset);
+    let character = line_data.len_utf16_cu();
+    Some(Position::new(line as u32, character as u32))
 }
