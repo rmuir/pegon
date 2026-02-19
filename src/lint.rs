@@ -46,35 +46,50 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
     None
 }
 
-pub(crate) struct Lint {
-    /// Primary matching error node range
-    pub(crate) range: Range<usize>,
-    /// Text describing the matching error range
-    pub(crate) label: Option<String>,
+pub(crate) enum Severity {
+    Error,
+    Warn,
+    Info,
+    Hint,
+}
+
+pub(crate) struct Rule {
     /// Name of matching lint
     pub(crate) name: String,
-    /// URL for more information on name
-    pub(crate) url: String,
-    /// Severity of problem
-    pub(crate) severity: String,
     /// Title of lint
     pub(crate) title: String,
-    /// optional automatic fix
-    #[allow(dead_code)]
-    pub(crate) fix: Option<String>,
+    /// Severity of problem
+    pub(crate) severity: Severity,
     /// instructions to address the issue
     pub(crate) help: String,
-    /// ranges that provide additional information
-    pub(crate) context: Vec<Range<usize>>,
+    /// url with more information
+    pub(crate) url: String,
+    /// Text describing the matching error range
+    pub(crate) label: Option<String>,
     /// describes context ranges (applied to first one)
     pub(crate) context_label: Option<String>,
+    /// optional automatic fix
+    pub(crate) fix: Option<String>,
+}
+
+pub(crate) struct Lint {
+    /// Matched rule
+    pub(crate) rule_id: usize,
+    /// Primary matching error node range
+    pub(crate) range: Range<usize>,
+    /// Formatted title of problem
+    pub(crate) title: String,
+    /// Formatted instructions to address the issue
+    pub(crate) help: String,
+    /// Formatted Text describing the matching error range
+    pub(crate) label: Option<String>,
+    /// ranges that provide additional information
+    pub(crate) context: Vec<Range<usize>>,
 
     // CLI only features that can't translate to LSP
     /// ranges that should be visible
-    #[allow(dead_code)]
     pub(crate) visible: Vec<Range<usize>>,
     /// computed top context (e.g. what function you are in)
-    #[allow(dead_code)]
     pub(crate) top_context: Option<Range<usize>>,
 }
 
@@ -87,6 +102,70 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .unwrap()
+});
+
+static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
+    let count = JAVA_ERROR_QUERY.pattern_count();
+    let mut rules = Vec::with_capacity(count);
+    for index in 0..count {
+        let mut name: Option<String> = None;
+        let mut title: Option<String> = None;
+        let mut severity: Option<Severity> = None;
+        let mut help: Option<String> = None;
+        let mut label: Option<String> = None;
+        let mut context_label: Option<String> = None;
+        let mut fix: Option<String> = None;
+        let props = JAVA_ERROR_QUERY.property_settings(index);
+        for prop in props {
+            let value = prop.value.clone().unwrap().to_string();
+            match &*prop.key {
+                "name" => {
+                    name = Some(value);
+                }
+                "title" => {
+                    title = Some(value);
+                }
+                "severity" => {
+                    severity = match value.as_str() {
+                        "error" => Some(Severity::Error),
+                        "warn" => Some(Severity::Warn),
+                        "info" => Some(Severity::Info),
+                        "hint" => Some(Severity::Hint),
+                        _ => {
+                            panic!("invalid severity");
+                        }
+                    }
+                }
+                "help" => {
+                    help = Some(value);
+                }
+                "label" => {
+                    label = Some(value);
+                }
+                "context.label" => {
+                    context_label = Some(value);
+                }
+                "fix" => {
+                    fix = Some(value);
+                }
+                _ => {}
+            }
+        }
+        rules.push(Rule {
+            name: name.clone().unwrap(),
+            title: title.unwrap(),
+            severity: severity.unwrap(),
+            help: help.unwrap(),
+            label,
+            context_label,
+            fix,
+            url: format!(
+                "https://github.com/rmuir/pegon/wiki/lints#{}",
+                name.unwrap()
+            ),
+        });
+    }
+    rules
 });
 
 static JAVA_ERROR_CAPTURE: LazyLock<u32> =
@@ -104,6 +183,10 @@ static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
         .build(["{node.text}", "{node.kind}"])
         .unwrap()
 });
+
+pub(crate) fn rule(index: usize) -> &'static Rule {
+    &RULES[index]
+}
 
 pub(crate) struct Linter {
     parser: tree_sitter::Parser,
@@ -128,42 +211,7 @@ impl Linter {
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
         while let Some(hit) = matches.next() {
-            let props = JAVA_ERROR_QUERY.property_settings(hit.pattern_index);
-            let mut prop_name: Option<Box<str>> = None;
-            let mut prop_title: Option<Box<str>> = None;
-            let mut prop_severity: Option<Box<str>> = None;
-            let mut prop_label: Option<Box<str>> = None;
-            let mut prop_help: Option<Box<str>> = None;
-            let mut prop_fix: Option<Box<str>> = None;
-            let mut prop_context_label: Option<Box<str>> = None;
-            for prop in props {
-                match &*prop.key {
-                    "name" => {
-                        prop_name = prop.value.clone();
-                    }
-                    "title" => {
-                        prop_title = prop.value.clone();
-                    }
-                    "severity" => {
-                        prop_severity = prop.value.clone();
-                    }
-                    "label" => {
-                        prop_label = prop.value.clone();
-                    }
-                    "help" => {
-                        prop_help = prop.value.clone();
-                    }
-                    "fix" => {
-                        prop_fix = prop.value.clone();
-                    }
-                    "context.label" => {
-                        prop_context_label = prop.value.clone();
-                    }
-                    _ => {}
-                }
-            }
-            let name = prop_name.unwrap().to_string();
-            let prop_url = format!("https://github.com/rmuir/pegon/wiki/lints#{}", name);
+            let rule = rule(hit.pattern_index);
 
             let node = hit
                 .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
@@ -173,20 +221,23 @@ impl Linter {
             let node_text = node.utf8_text(data).unwrap_or_default();
             let node_kind = node.kind();
             let replacements = [node_text, node_kind];
-            let title = TEMPLATE_ENGINE.replace_all(&prop_title.unwrap(), &replacements);
-            let label = prop_label.map(|s| TEMPLATE_ENGINE.replace_all(&s, &replacements));
-            let help = TEMPLATE_ENGINE.replace_all(&prop_help.unwrap_or_default(), &replacements);
+            let title = TEMPLATE_ENGINE.replace_all(&rule.title, &replacements);
+            let label = rule
+                .label
+                .as_ref()
+                .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
+            let help = TEMPLATE_ENGINE.replace_all(&rule.help, &replacements);
 
             let range = node.byte_range();
 
-            let context_label = prop_context_label.map(|s| s.to_string());
-            let mut visible = Vec::new();
             let mut context = Vec::new();
 
             // explicitly marked context in the query
             for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
                 context.push(context_node.byte_range());
             }
+
+            let mut visible = Vec::new();
 
             // explicitly marked visible in the query
             for visible_node in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
@@ -196,19 +247,14 @@ impl Linter {
             // top context: e.g. what function are you in
             let top = top_context(&node);
 
-            let severity = prop_severity.unwrap().to_string();
             errors.push(Lint {
+                rule_id: hit.pattern_index,
                 range,
                 label,
-                name,
-                url: prop_url,
-                severity,
                 title,
-                fix: prop_fix.map(|s| s.to_string()),
                 help,
                 visible,
                 context,
-                context_label,
                 top_context: top,
             });
         }

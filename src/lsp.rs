@@ -14,7 +14,7 @@ use tower_lsp_server::ls_types::{
 };
 use tower_lsp_server::{Client, LanguageServer, LspService, Server};
 
-use crate::lint::{Lint, Linter};
+use crate::lint::{Lint, Linter, Severity, rule};
 
 struct Backend {
     client: Client,
@@ -108,13 +108,14 @@ impl Backend {
             .unwrap_or_default()
             .iter()
             .filter_map(|diagnostic| {
+                let rule = rule(diagnostic.rule_id);
                 let start = offset_to_position(diagnostic.range.start, &rope)?;
                 let end = offset_to_position(diagnostic.range.end, &rope)?;
-                let lsp_severity = match diagnostic.severity.as_str() {
-                    "warn" => DiagnosticSeverity::WARNING,
-                    "info" => DiagnosticSeverity::INFORMATION,
-                    "hint" => DiagnosticSeverity::HINT,
-                    _ => DiagnosticSeverity::ERROR,
+                let lsp_severity = match rule.severity {
+                    Severity::Warn => DiagnosticSeverity::WARNING,
+                    Severity::Info => DiagnosticSeverity::INFORMATION,
+                    Severity::Hint => DiagnosticSeverity::HINT,
+                    Severity::Error => DiagnosticSeverity::ERROR,
                 };
                 let mut related_information = diagnostic
                     .context
@@ -130,7 +131,7 @@ impl Backend {
                                     related_end,
                                 ),
                             },
-                            message: diagnostic.context_label.clone().unwrap_or_default(),
+                            message: rule.context_label.clone().unwrap_or_default(),
                         };
                         Some(related)
                     })
@@ -154,9 +155,9 @@ impl Backend {
                 let diag = Diagnostic {
                     range: tower_lsp_server::ls_types::Range::new(start, end),
                     severity: Some(lsp_severity),
-                    code: Some(NumberOrString::String(diagnostic.name.clone())),
+                    code: Some(NumberOrString::String(rule.name.clone())),
                     code_description: Some(CodeDescription {
-                        href: Uri::from_str(&diagnostic.url).unwrap(),
+                        href: Uri::from_str(&rule.url).unwrap(),
                     }),
                     source: Some("pegon".to_string()),
                     message: diagnostic.title.clone(),

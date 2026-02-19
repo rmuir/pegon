@@ -3,14 +3,28 @@ use annotate_snippets::{
     renderer::{DecorStyle, Style},
 };
 use anyhow::Error;
-use std::path::Path;
+use std::{
+    fmt::{Display, Formatter},
+    path::Path,
+};
 
-use crate::lint::Lint;
+use crate::lint::{Lint, Severity, rule};
 
 static RENDERER: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
     .context(Style::new().dimmed())
     .line_num(Style::new().dimmed());
+
+impl Display for Severity {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Severity::Error => write!(f, "error"),
+            Severity::Warn => write!(f, "warn"),
+            Severity::Info => write!(f, "info"),
+            Severity::Hint => write!(f, "hint"),
+        }
+    }
+}
 
 pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<(), Error> {
     if errors.is_empty() {
@@ -19,6 +33,7 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
     let source = str::from_utf8(&data)?;
     for diagnostic in errors {
         let mut annotations: Vec<Annotation> = Vec::new();
+        let rule = rule(diagnostic.rule_id);
 
         // primary error annotation: as precise of a range as possible
         annotations.push(
@@ -38,7 +53,7 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
                 annotations.push(
                     AnnotationKind::Context
                         .span(context)
-                        .label(diagnostic.context_label.clone()),
+                        .label(rule.context_label.clone()),
                 );
                 label_written = true
             }
@@ -54,27 +69,27 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
             annotations.push(AnnotationKind::Visible.span(ctx));
         }
 
-        let level = match diagnostic.severity.as_str() {
-            "warn" => Level::WARNING,
-            "info" => Level::INFO,
-            "hint" => Level::HELP,
-            _ => Level::ERROR,
+        let level = match rule.severity {
+            Severity::Warn => Level::WARNING,
+            Severity::Error => Level::ERROR,
+            Severity::Info => Level::INFO,
+            Severity::Hint => Level::HELP,
         };
 
         let mut report = Vec::new();
         report.push(
             level
-                .with_name(diagnostic.severity)
+                .with_name(rule.severity.to_string())
                 .primary_title(diagnostic.title)
-                .id(diagnostic.name)
-                .id_url(diagnostic.url)
+                .id(&rule.name)
+                .id_url(&rule.url)
                 .element(
                     Snippet::source(source)
                         .path(path.to_str())
                         .annotations(annotations),
                 ),
         );
-        if let Some(fix) = diagnostic.fix {
+        if let Some(fix) = &rule.fix {
             report.push(
                 Level::NOTE
                     .with_name("help")
