@@ -207,7 +207,7 @@ impl Linter {
         if tree.root_node().has_error() {
             return Err(anyhow::anyhow!("syntax error"));
         }
-        let mut errors = Vec::new();
+        let mut lints = Vec::new();
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
         while let Some(hit) = matches.next() {
@@ -218,46 +218,35 @@ impl Linter {
                 .next()
                 .unwrap();
 
-            let node_text = node.utf8_text(data).unwrap_or_default();
-            let node_kind = node.kind();
-            let replacements = [node_text, node_kind];
-            let title = TEMPLATE_ENGINE.replace_all(&rule.title, &replacements);
+            let replacements = [node.utf8_text(data)?, node.kind()];
             let label = rule
                 .label
                 .as_ref()
                 .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
-            let help = TEMPLATE_ENGINE.replace_all(&rule.help, &replacements);
-
-            let range = node.byte_range();
-
-            let mut context = Vec::new();
-
-            // explicitly marked context in the query
-            for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
-                context.push(context_node.byte_range());
-            }
-
-            let mut visible = Vec::new();
 
             // explicitly marked visible in the query
+            let mut visible = Vec::new();
             for visible_node in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
                 visible.push(visible_node.byte_range());
             }
 
-            // top context: e.g. what function are you in
-            let top = top_context(&node);
+            // explicitly marked context in the query
+            let mut context = Vec::new();
+            for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+                context.push(context_node.byte_range());
+            }
 
-            errors.push(Lint {
+            lints.push(Lint {
                 rule_id: hit.pattern_index,
-                range,
+                range: node.byte_range(),
+                title: TEMPLATE_ENGINE.replace_all(&rule.title, &replacements),
+                help: TEMPLATE_ENGINE.replace_all(&rule.help, &replacements),
                 label,
-                title,
-                help,
                 visible,
                 context,
-                top_context: top,
+                top_context: top_context(&node),
             });
         }
-        Ok(errors)
+        Ok(lints)
     }
 }
