@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use ropey::Rope;
+use line_index::{LineIndex, TextSize, WideEncoding};
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::ls_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
@@ -110,14 +110,14 @@ fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
 
 impl Backend {
     async fn on_change(&self, item: TextDocumentChange<'_>) {
-        let rope = Rope::from_str(item.text);
+        let line_index = LineIndex::new(item.text);
         let diagnostics = diagnose(item.text)
             .unwrap_or_default()
             .iter()
             .filter_map(|diagnostic| {
                 let rule = rule(diagnostic.rule_id);
-                let start = offset_to_position(diagnostic.range.start, &rope)?;
-                let end = offset_to_position(diagnostic.range.end, &rope)?;
+                let start = offset_to_position(diagnostic.range.start, &line_index)?;
+                let end = offset_to_position(diagnostic.range.end, &line_index)?;
                 let lsp_severity = match rule.severity {
                     Severity::Warn => DiagnosticSeverity::WARNING,
                     Severity::Info => DiagnosticSeverity::INFORMATION,
@@ -129,8 +129,8 @@ impl Backend {
                     .context
                     .iter()
                     .filter_map(|context| {
-                        let related_start = offset_to_position(context.start, &rope)?;
-                        let related_end = offset_to_position(context.end, &rope)?;
+                        let related_start = offset_to_position(context.start, &line_index)?;
+                        let related_end = offset_to_position(context.end, &line_index)?;
                         let related = DiagnosticRelatedInformation {
                             location: Location {
                                 uri: item.uri.clone(),
@@ -190,10 +190,8 @@ struct TextDocumentChange<'a> {
 }
 
 /// Convert a UTF-8 byte offset to a UTF-16 LSP position
-fn offset_to_position(offset: usize, rope: &Rope) -> Option<Position> {
-    let line = rope.try_byte_to_line(offset).ok()?;
-    let first_char_of_line = rope.try_line_to_byte(line).ok()?;
-    let line_data = rope.byte_slice(first_char_of_line..offset);
-    let character = line_data.len_utf16_cu();
-    Some(Position::new(line as u32, character as u32))
+fn offset_to_position(offset: usize, line_index: &LineIndex) -> Option<Position> {
+    let position = line_index.try_line_col(TextSize::from(offset as u32))?;
+    let wide = line_index.to_wide(WideEncoding::Utf16, position)?;
+    Some(Position::new(wide.line, wide.col))
 }

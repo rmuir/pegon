@@ -36,8 +36,7 @@ blake3 = "1.8.3"
 clap = { version = "4.5.58", features = ["derive"] }
 # Traversing directories, respecting ignore files
 ignore = "0.4.25"
-# language server (encoding conversion?)
-ropey = "1.6.1"
+line-index = "0.1.2"
 # language server
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros", "io-std"] }
 # language server
