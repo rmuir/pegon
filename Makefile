@@ -16,7 +16,7 @@ wheel: ## Create python package
 .PHONY: lint
 lint: ## Lint, format, test
 	# run checks on all files
-	uv run --frozen --only-dev prek --all-files
+	uv run --frozen --only-dev prek --all-files --stage pre-push
 
 .PHONY: bench
 bench: ## Run micro-benchmarks

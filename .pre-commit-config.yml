@@ -3,8 +3,10 @@
 minimum_prek_version: 0.2.29
 default_install_hook_types:
   - pre-commit
+  - pre-push
 default_stages:
   - pre-commit
+  - pre-push
 # define priority: 0 for linters that don't modify sources
 # leave fixers with priority: null so they run sequentially
 repos:
@@ -161,6 +163,7 @@ repos:
 
       - id: cargo-check
         name: Check Rust compilation
+        stages: [pre-push]
         priority: 0
         language: system
         entry: cargo
@@ -179,6 +182,7 @@ repos:
 
       - id: cargo-clippy
         name: Check Rust lints
+        stages: [pre-push]
         priority: 0
         language: system
         entry: cargo
@@ -197,6 +201,7 @@ repos:
 
       - id: cargo-test
         name: Check Rust tests
+        stages: [pre-push]
         priority: 0
         language: system
         entry: cargo
@@ -215,6 +220,7 @@ repos:
 
       - id: cargo-rustdoc
         name: Check Rust documentation
+        stages: [pre-push]
         priority: 0
         language: system
         entry: cargo
