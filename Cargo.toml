@@ -67,4 +67,3 @@ cargo = { level = "deny", priority = -1 }
 #significant_drop_tightening = "allow"
 cast-possible-truncation = "allow"
 multiple_crate_versions = "allow"
-todo = "allow"
