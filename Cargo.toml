@@ -13,9 +13,13 @@ keywords = ["java", "linter", "formatter", "language-server", "static-analysis"]
 categories = ["command-line-utilities", "development-tools", "text-editors"]
 
 [profile.release]
-lto = true
-codegen-units = 1
+lto = "thin"
+codegen-units = 4
 strip = true
+
+[profile.dev]
+debug = "line-tables-only"
+lto = "off"
 
 [dependencies]
 # Templates diagnostic errors
