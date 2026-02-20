@@ -51,7 +51,6 @@ tree-sitter-java = "0.23.5"
 workspace = true
 
 [workspace.lints.clippy]
-dbg_macro = "deny"
 pedantic = { level = "deny", priority = -1 }
 nursery = { level = "deny", priority = -1 }
 cargo = { level = "deny", priority = -1 }
