@@ -254,6 +254,7 @@ repos:
 
       - id: cargo-fix
         name: Fix Rust problems
+        stages: [pre-push]
         language: system
         pass_filenames: false
         require_serial: true

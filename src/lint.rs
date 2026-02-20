@@ -41,7 +41,7 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
             }
             _ => {}
         }
-        parent = node.parent()
+        parent = node.parent();
     }
     None
 }
@@ -198,10 +198,10 @@ impl Linter {
         parser
             .set_language(&tree_sitter_java::LANGUAGE.into())
             .unwrap();
-        Linter { parser }
+        Self { parser }
     }
 
-    pub fn lint(&mut self, data: &Vec<u8>) -> Result<Vec<Lint>, Error> {
+    pub fn lint(&mut self, data: &[u8]) -> Result<Vec<Lint>, Error> {
         self.parser.reset();
         let tree = self.parser.parse(data, None).unwrap();
         if tree.root_node().has_error() {
@@ -209,7 +209,7 @@ impl Linter {
         }
         let mut lints = Vec::new();
         let mut cursor = QueryCursor::new();
-        let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data.as_slice());
+        let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data);
         while let Some(hit) = matches.next() {
             let rule = rule(hit.pattern_index);
 

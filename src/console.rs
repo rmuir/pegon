@@ -18,19 +18,19 @@ static RENDERER: Renderer = Renderer::styled()
 impl Display for Severity {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Severity::Error => write!(f, "error"),
-            Severity::Warn => write!(f, "warn"),
-            Severity::Info => write!(f, "info"),
-            Severity::Hint => write!(f, "hint"),
+            Self::Error => write!(f, "error"),
+            Self::Warn => write!(f, "warn"),
+            Self::Info => write!(f, "info"),
+            Self::Hint => write!(f, "hint"),
         }
     }
 }
 
-pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<(), Error> {
+pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> {
     if errors.is_empty() {
         return Ok(());
     }
-    let source = str::from_utf8(&data)?;
+    let source = str::from_utf8(data)?;
     for diagnostic in errors {
         let mut annotations: Vec<Annotation> = Vec::new();
         let rule = rule(diagnostic.rule_id);
@@ -55,7 +55,7 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
                         .span(context)
                         .label(rule.context_label.clone()),
                 );
-                label_written = true
+                label_written = true;
             }
         }
 
@@ -103,7 +103,7 @@ pub(crate) fn render(path: &Path, data: Vec<u8>, errors: Vec<Lint>) -> Result<()
                     .secondary_title(diagnostic.help),
             ));
         }
-        anstream::println!("{}\n", RENDERER.render(&report))
+        anstream::println!("{}\n", RENDERER.render(&report));
     }
     Ok(())
 }

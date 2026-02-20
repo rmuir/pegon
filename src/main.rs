@@ -35,7 +35,7 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
     overrides.add("!**/UAX29URLEmailTokenizerImpl.java")?;
     overrides.add("!**/WikipediaTokenizerImpl.java")?;
     overrides.add("!**/WordBreakTestUnicode_12_1_0.java")?;
-    let mut builder = WalkBuilder::new(paths.pop().unwrap_or(PathBuf::from(".")));
+    let mut builder = WalkBuilder::new(paths.pop().unwrap_or_else(|| PathBuf::from(".")));
     for remaining in paths {
         builder.add(remaining);
     }
@@ -55,14 +55,14 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         let hash = blake3::hash(data.as_slice());
                         let res = hash.to_hex().to_string();
                         if res == "foobar" {
-                            println!("bogus: {}", res);
+                            println!("bogus: {res}");
                         }
                         let result = linter.lint(&data);
                         match result {
                             Ok(errors) => {
                                 if !errors.is_empty() {
                                     COUNT.fetch_add(errors.len() as u32, Ordering::Relaxed);
-                                    console::render(entry.path(), data, errors).unwrap(); // TODO
+                                    console::render(entry.path(), &data, errors).unwrap(); // TODO
                                 }
                             }
                             Err(error) => {
@@ -77,7 +77,7 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                     }
                 }
                 Err(err) => {
-                    println!("file error: {}", err);
+                    println!("file error: {err}");
                     ERRORS.fetch_add(1, Ordering::Relaxed);
                 }
             }
@@ -86,7 +86,7 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
     });
     let violations = COUNT.load(Ordering::Relaxed);
     if violations > 0 {
-        Err(anyhow::anyhow!("Found {} diagnostics", violations))
+        Err(anyhow::anyhow!("Found {violations} diagnostics"))
     } else {
         println!("All checks passed!");
         Ok(())
