@@ -93,15 +93,11 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
     let cli = parse();
     match &cli.command {
         Commands::Check { files, fix: _ } => lint(files),
         Commands::Format { files: _, check: _ } => todo!(),
-        Commands::Server => {
-            lsp::run().await;
-            Ok(())
-        }
+        Commands::Server => lsp::main(),
     }
 }
