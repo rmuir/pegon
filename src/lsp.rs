@@ -1,29 +1,22 @@
-use std::str::FromStr;
-
 use anyhow::{Error, Result};
-use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
-    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, InitializeParams, InitializeResult, Location, NumberOrString, OneOf,
-    PublishDiagnosticsParams, Range, SaveOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions, Uri, WorkspaceFoldersServerCapabilities,
+    DidSaveTextDocumentParams, InitializeParams, InitializeResult, OneOf, SaveOptions,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
-        Notification, PublishDiagnostics,
+        Notification,
     },
     request::{Formatting, Request},
 };
 use rustc_hash::FxHashMap;
 
-use crate::{
-    lint::{Linter, Severity, rule},
-    lsp::encoding::Encoding,
-};
+use crate::{lint::Linter, lsp::diagnostics::push_diagnostics, lsp::encoding::Encoding};
 
+mod diagnostics;
 mod encoding;
 
 // =====================================================================
@@ -128,14 +121,14 @@ fn handle_notification(
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             docs.insert(uri.to_string(), params.text_document.text);
-            diagnostics(client, &uri, docs, linter)?;
+            push_diagnostics(client, &uri, docs, linter)?;
         }
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             if let Some(change) = params.content_changes.into_iter().next() {
                 let uri = params.text_document.uri;
                 docs.insert(uri.to_string(), change.text);
-                diagnostics(client, &uri, docs, linter)?;
+                push_diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidSaveTextDocument::METHOD => {
@@ -143,7 +136,7 @@ fn handle_notification(
             let uri = params.text_document.uri;
             if let Some(text) = params.text {
                 docs.insert(uri.to_string(), text);
-                diagnostics(client, &uri, docs, linter)?;
+                push_diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidCloseTextDocument::METHOD => {
@@ -174,97 +167,6 @@ fn handle_request(
             "unhandled method",
         )?,
     }
-    Ok(())
-}
-
-/// publish diagnostics
-fn diagnostics(
-    client: &Client,
-    uri: &Uri,
-    docs: &FxHashMap<String, String>,
-    linter: &mut Linter,
-) -> Result<()> {
-    let text = docs.get(&uri.to_string()).unwrap();
-    let encoding = &client.encoding;
-
-    let line_index = LineIndex::new(text);
-    let diagnostics = linter
-        .lint(text.as_bytes())
-        .unwrap_or_default()
-        .iter()
-        .filter_map(|diagnostic| {
-            let rule = rule(diagnostic.rule_id);
-            let start = encoding.to_position(diagnostic.range.start, &line_index)?;
-            let end = encoding.to_position(diagnostic.range.end, &line_index)?;
-            let lsp_severity = match rule.severity {
-                Severity::Warn => DiagnosticSeverity::WARNING,
-                Severity::Info => DiagnosticSeverity::INFORMATION,
-                Severity::Hint => DiagnosticSeverity::HINT,
-                Severity::Error => DiagnosticSeverity::ERROR,
-            };
-            // all the context ranges are related information
-            let mut related_information = diagnostic
-                .context
-                .iter()
-                .filter_map(|context| {
-                    let related_start = encoding.to_position(context.start, &line_index)?;
-                    let related_end = encoding.to_position(context.end, &line_index)?;
-                    let related = DiagnosticRelatedInformation {
-                        location: Location {
-                            uri: uri.clone(),
-                            range: Range::new(related_start, related_end),
-                        },
-                        message: rule.context_label.clone().unwrap_or_default(),
-                    };
-                    Some(related)
-                })
-                .collect::<Vec<_>>();
-            // optional label maps to related information at node's position
-            if let Some(label) = &diagnostic.label {
-                related_information.push(DiagnosticRelatedInformation {
-                    location: Location {
-                        uri: uri.clone(),
-                        range: Range::new(start, end),
-                    },
-                    message: label.clone(),
-                });
-            }
-            // help text maps to related information at node's position
-            related_information.push(DiagnosticRelatedInformation {
-                location: Location {
-                    uri: uri.clone(),
-                    range: Range::new(start, end),
-                },
-                message: diagnostic.help.clone(),
-            });
-            Some(Diagnostic {
-                range: Range::new(start, end),
-                severity: Some(lsp_severity),
-                code: Some(NumberOrString::String(rule.name.clone())),
-                code_description: Some(CodeDescription {
-                    href: Uri::from_str(&rule.url).unwrap(),
-                }),
-                source: Some("pegon".to_string()),
-                message: diagnostic.title.clone(),
-                related_information: Some(related_information),
-                tags: None,
-                data: None,
-            })
-        })
-        .collect::<Vec<_>>();
-
-    let params = PublishDiagnosticsParams {
-        diagnostics,
-        uri: uri.clone(),
-        version: None,
-    };
-    client
-        .connection
-        .sender
-        .send(Message::Notification(lsp_server::Notification::new(
-            PublishDiagnostics::METHOD.to_owned(),
-            params,
-        )))?;
     Ok(())
 }
 
