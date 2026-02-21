@@ -4,34 +4,13 @@ use anyhow::{Error, Result};
 use line_index::{LineIndex, TextSize, WideEncoding};
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
-    CodeDescription,
-    Diagnostic,
-    DiagnosticRelatedInformation,
-    DiagnosticSeverity,
-    DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams,
-    // core
-    InitializeParams,
-    InitializeResult,
-    Location,
-    NumberOrString,
-    OneOf,
-    Position,
-    PublishDiagnosticsParams,
-    Range,
-    SaveOptions,
-    ServerCapabilities,
-    ServerInfo,
-    TextDocumentSyncCapability,
-    TextDocumentSyncKind,
-    TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions,
-    Uri,
-    WorkspaceFoldersServerCapabilities,
+    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, InitializeParams, InitializeResult, Location, NumberOrString, OneOf,
+    Position, PositionEncodingKind, PublishDiagnosticsParams, Range, SaveOptions,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Uri, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
-    // notifications
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
         Notification, PublishDiagnostics,
@@ -53,17 +32,18 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     // get the client capabilities
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
+    // TODO: negotiate more efficient UTF-8 encoding
+    let encoding = PositionEncodingKind::UTF16;
 
     let result = serde_json::json!(InitializeResult {
         server_info: Some(ServerInfo {
             name: "pegon".into(),
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
-        offset_encoding: None,
+        offset_encoding: Some(encoding.as_str().to_string()),
 
         capabilities: ServerCapabilities {
-            // TODO: negotiate more efficient UTF-8 encoding
-            position_encoding: None,
+            position_encoding: Some(encoding),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
                     open_close: Some(true),
@@ -289,6 +269,13 @@ fn send_err(
 // TODO: so inefficient
 fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
     Linter::new().lint(str.as_bytes())
+}
+
+struct Client {
+    connection: Connection,
+    init_params: InitializeParams,
+    encoding: PositionEncodingKind,
+    docs: FxHashMap<String, String>,
 }
 
 /// Convert a UTF-8 byte offset to a UTF-16 LSP position
