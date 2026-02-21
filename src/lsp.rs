@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anyhow::{Error, Result};
 use line_index::{LineIndex, TextSize, WideEncoding};
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
@@ -26,7 +28,7 @@ use lsp_types::{
     TextDocumentSyncKind,
     TextDocumentSyncOptions,
     TextDocumentSyncSaveOptions,
-    Url,
+    Uri,
     WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
     // notifications
@@ -98,7 +100,7 @@ fn main_loop(
     connection: &Connection,
     _params: &InitializeParams,
 ) -> std::result::Result<(), Error> {
-    let mut docs: FxHashMap<Url, String> = FxHashMap::default();
+    let mut docs: FxHashMap<String, String> = FxHashMap::default();
 
     for msg in &connection.receiver {
         match msg {
@@ -128,20 +130,20 @@ fn main_loop(
 fn handle_notification(
     conn: &Connection,
     note: &lsp_server::Notification,
-    docs: &mut FxHashMap<Url, String>,
+    docs: &mut FxHashMap<String, String>,
 ) -> Result<()> {
     match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
             let p: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = p.text_document.uri;
-            docs.insert(uri.clone(), p.text_document.text);
+            docs.insert(uri.to_string(), p.text_document.text);
             diagnostics(conn, docs, &uri)?;
         }
         DidChangeTextDocument::METHOD => {
             let p: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             if let Some(change) = p.content_changes.into_iter().next() {
                 let uri = p.text_document.uri;
-                docs.insert(uri.clone(), change.text);
+                docs.insert(uri.to_string(), change.text);
                 diagnostics(conn, docs, &uri)?;
             }
         }
@@ -149,14 +151,14 @@ fn handle_notification(
             let p: DidSaveTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = p.text_document.uri;
             if let Some(text) = p.text {
-                docs.insert(uri.clone(), text);
+                docs.insert(uri.to_string(), text);
                 diagnostics(conn, docs, &uri)?;
             }
         }
         DidCloseTextDocument::METHOD => {
             let p: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = p.text_document.uri;
-            docs.remove(&uri);
+            docs.remove(&uri.to_string());
         }
         _ => {}
     }
@@ -167,10 +169,12 @@ fn handle_notification(
 fn handle_request(
     conn: &Connection,
     req: &ServerRequest,
-    _docs: &mut FxHashMap<Url, String>,
+    _docs: &mut FxHashMap<String, String>,
 ) -> Result<()> {
     match req.method.as_str() {
-        Formatting::METHOD => {}
+        Formatting::METHOD => {
+            todo!()
+        }
         _ => send_err(
             conn,
             req.id.clone(),
@@ -182,8 +186,8 @@ fn handle_request(
 }
 
 /// publish diagnostics
-fn diagnostics(conn: &Connection, docs: &FxHashMap<Url, String>, uri: &Url) -> Result<()> {
-    let text = docs.get(uri).unwrap();
+fn diagnostics(conn: &Connection, docs: &FxHashMap<String, String>, uri: &Uri) -> Result<()> {
+    let text = docs.get(&uri.to_string()).unwrap();
 
     let line_index = LineIndex::new(text);
     let diagnostics = diagnose(text)
@@ -239,7 +243,7 @@ fn diagnostics(conn: &Connection, docs: &FxHashMap<Url, String>, uri: &Url) -> R
                 severity: Some(lsp_severity),
                 code: Some(NumberOrString::String(rule.name.clone())),
                 code_description: Some(CodeDescription {
-                    href: Url::parse(&rule.url).unwrap(),
+                    href: Uri::from_str(&rule.url).unwrap(),
                 }),
                 source: Some("pegon".to_string()),
                 message: diagnostic.title.clone(),

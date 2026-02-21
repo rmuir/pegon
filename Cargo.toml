@@ -39,7 +39,7 @@ ignore = "0.4.25"
 # LSP support
 lsp-server = "0.7.9"
 # LSP data structures
-lsp-types = { version = "=0.95", features = ["proposed"] }
+lsp-types = { version = "0.97", features = ["proposed"] }
 # serialization
 serde = "1.0.228"
 # json serialization
