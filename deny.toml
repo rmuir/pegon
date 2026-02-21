@@ -11,9 +11,6 @@ confidence-threshold = 1.0
 [bans]
 multiple-versions = "deny"
 wildcards = "deny"
-skip = [
-    "hashbrown:0.14.5",
-]
 
 [sources]
 unknown-registry = "deny"
