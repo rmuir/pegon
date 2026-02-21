@@ -1,16 +1,16 @@
 use std::str::FromStr;
 
 use anyhow::{Error, Result};
-use line_index::{LineIndex, TextSize, WideEncoding};
+use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
-    ClientCapabilities, CodeDescription, Diagnostic, DiagnosticRelatedInformation,
-    DiagnosticSeverity, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializeParams, InitializeResult,
-    Location, NumberOrString, OneOf, Position, PositionEncodingKind, PublishDiagnosticsParams,
-    Range, SaveOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Uri,
-    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, InitializeParams, InitializeResult, Location, NumberOrString, OneOf,
+    PublishDiagnosticsParams, Range, SaveOptions, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    TextDocumentSyncSaveOptions, Uri, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
         Notification, PublishDiagnostics,
@@ -19,7 +19,12 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 
-use crate::lint::{Linter, Severity, rule}; // for METHOD consts
+use crate::{
+    lint::{Linter, Severity, rule},
+    lsp::encoding::Encoding,
+};
+
+mod encoding;
 
 // =====================================================================
 // main
@@ -33,8 +38,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
 
-    let encoding =
-        Encoding::preferred(&init_params.capabilities).unwrap_or(PositionEncodingKind::UTF16);
+    let encoding = Encoding::preferred(&init_params.capabilities);
 
     let result = serde_json::json!(InitializeResult {
         server_info: Some(ServerInfo {
@@ -287,51 +291,4 @@ struct Client {
     #[allow(dead_code)]
     init_params: InitializeParams,
     encoding: Encoding,
-}
-
-enum Encoding {
-    Utf8,
-    Utf16,
-    Utf32,
-}
-
-impl Encoding {
-    fn preferred(capabilities: &ClientCapabilities) -> Option<PositionEncodingKind> {
-        if let Some(general) = &capabilities.general
-            && let Some(encodings) = &general.position_encodings
-            && let Some(preferred) = encodings.first()
-        {
-            Some(preferred.clone())
-        } else {
-            None
-        }
-    }
-
-    fn to_position(&self, offset: usize, line_index: &LineIndex) -> Option<Position> {
-        let position = line_index.try_line_col(TextSize::from(offset as u32))?;
-        match self {
-            Self::Utf8 => Some(Position::new(position.line, position.col)),
-            Self::Utf16 => {
-                let wide = line_index.to_wide(WideEncoding::Utf16, position)?;
-                Some(Position::new(wide.line, wide.col))
-            }
-            Self::Utf32 => {
-                let wide = line_index.to_wide(WideEncoding::Utf32, position)?;
-                Some(Position::new(wide.line, wide.col))
-            }
-        }
-    }
-}
-
-impl TryFrom<PositionEncodingKind> for Encoding {
-    type Error = ();
-
-    fn try_from(value: PositionEncodingKind) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "utf-8" => Ok(Self::Utf8),
-            "utf-16" => Ok(Self::Utf16),
-            "utf-32" => Ok(Self::Utf32),
-            _ => Err(()),
-        }
-    }
 }
