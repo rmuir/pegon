@@ -251,6 +251,7 @@ repos:
           glob:
             - Cargo.toml
             - Cargo.lock
+            - deny.toml
 
       - id: cargo-fix
         name: Fix Rust problems
