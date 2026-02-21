@@ -4,13 +4,13 @@ use anyhow::{Error, Result};
 use line_index::{LineIndex, TextSize, WideEncoding};
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
-    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, InitializeParams, InitializeResult, Location, NumberOrString, OneOf,
-    Position, PositionEncodingKind, PublishDiagnosticsParams, Range, SaveOptions,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Uri, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    ClientCapabilities, CodeDescription, Diagnostic, DiagnosticRelatedInformation,
+    DiagnosticSeverity, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializeParams, InitializeResult,
+    Location, NumberOrString, OneOf, Position, PositionEncodingKind, PublishDiagnosticsParams,
+    Range, SaveOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions, Uri,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
         Notification, PublishDiagnostics,
@@ -19,7 +19,7 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 
-use crate::lint::{Lint, Linter, Severity, rule}; // for METHOD consts
+use crate::lint::{Linter, Severity, rule}; // for METHOD consts
 
 // =====================================================================
 // main
@@ -32,18 +32,19 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     // get the client capabilities
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
-    // TODO: negotiate more efficient UTF-8 encoding
-    let encoding = PositionEncodingKind::UTF16;
+
+    let encoding =
+        preferred_encoding(&init_params.capabilities).unwrap_or(PositionEncodingKind::UTF16);
 
     let result = serde_json::json!(InitializeResult {
         server_info: Some(ServerInfo {
             name: "pegon".into(),
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
-        offset_encoding: Some(encoding.as_str().to_string()),
+        offset_encoding: None,
 
         capabilities: ServerCapabilities {
-            position_encoding: Some(encoding),
+            position_encoding: Some(encoding.clone()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
                     open_close: Some(true),
@@ -67,33 +68,47 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     });
 
     connection.initialize_finish(id, result)?;
-    main_loop(&connection, &init_params)?;
+    let client = Client {
+        connection,
+        init_params,
+        encoding: encoding.try_into().unwrap(),
+    };
+    main_loop(&client)?;
     io_thread.join()?;
     Ok(())
+}
+
+fn preferred_encoding(capabilities: &ClientCapabilities) -> Option<PositionEncodingKind> {
+    if let Some(general) = &capabilities.general
+        && let Some(encodings) = &general.position_encodings
+        && let Some(preferred) = encodings.first()
+    {
+        Some(preferred.clone())
+    } else {
+        None
+    }
 }
 
 // =====================================================================
 // event loop
 // =====================================================================
 
-fn main_loop(
-    connection: &Connection,
-    _params: &InitializeParams,
-) -> std::result::Result<(), Error> {
+fn main_loop(client: &Client) -> Result<(), Error> {
     let mut docs: FxHashMap<String, String> = FxHashMap::default();
+    let mut linter = Linter::new();
 
-    for msg in &connection.receiver {
+    for msg in &client.connection.receiver {
         match msg {
             Message::Request(req) => {
-                if connection.handle_shutdown(&req)? {
+                if client.connection.handle_shutdown(&req)? {
                     break;
                 }
-                if let Err(_err) = handle_request(connection, &req, &mut docs) {
+                if let Err(_err) = handle_request(client, &req, &mut docs, &mut linter) {
                     //log::error!("[lsp] request {} failed: {err}", &req.method);
                 }
             }
             Message::Notification(note) => {
-                if let Err(_err) = handle_notification(connection, &note, &mut docs) {
+                if let Err(_err) = handle_notification(client, &note, &mut docs, &mut linter) {
                     //log::error!("[lsp] notification {} failed: {err}", note.method);
                 }
             }
@@ -108,23 +123,24 @@ fn main_loop(
 // =====================================================================
 
 fn handle_notification(
-    conn: &Connection,
+    client: &Client,
     note: &lsp_server::Notification,
     docs: &mut FxHashMap<String, String>,
+    linter: &mut Linter,
 ) -> Result<()> {
     match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
             let p: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = p.text_document.uri;
             docs.insert(uri.to_string(), p.text_document.text);
-            diagnostics(conn, docs, &uri)?;
+            diagnostics(client, &uri, docs, linter)?;
         }
         DidChangeTextDocument::METHOD => {
             let p: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             if let Some(change) = p.content_changes.into_iter().next() {
                 let uri = p.text_document.uri;
                 docs.insert(uri.to_string(), change.text);
-                diagnostics(conn, docs, &uri)?;
+                diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidSaveTextDocument::METHOD => {
@@ -132,7 +148,7 @@ fn handle_notification(
             let uri = p.text_document.uri;
             if let Some(text) = p.text {
                 docs.insert(uri.to_string(), text);
-                diagnostics(conn, docs, &uri)?;
+                diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidCloseTextDocument::METHOD => {
@@ -147,16 +163,17 @@ fn handle_notification(
 
 /// currently no requests are supported
 fn handle_request(
-    conn: &Connection,
+    client: &Client,
     req: &ServerRequest,
     _docs: &mut FxHashMap<String, String>,
+    _linter: &mut Linter,
 ) -> Result<()> {
     match req.method.as_str() {
         Formatting::METHOD => {
             todo!()
         }
         _ => send_err(
-            conn,
+            &client.connection,
             req.id.clone(),
             lsp_server::ErrorCode::MethodNotFound,
             "unhandled method",
@@ -166,17 +183,23 @@ fn handle_request(
 }
 
 /// publish diagnostics
-fn diagnostics(conn: &Connection, docs: &FxHashMap<String, String>, uri: &Uri) -> Result<()> {
+fn diagnostics(
+    client: &Client,
+    uri: &Uri,
+    docs: &FxHashMap<String, String>,
+    linter: &mut Linter,
+) -> Result<()> {
     let text = docs.get(&uri.to_string()).unwrap();
 
     let line_index = LineIndex::new(text);
-    let diagnostics = diagnose(text)
+    let diagnostics = linter
+        .lint(text.as_bytes())
         .unwrap_or_default()
         .iter()
         .filter_map(|diagnostic| {
             let rule = rule(diagnostic.rule_id);
-            let start = offset_to_position(diagnostic.range.start, &line_index)?;
-            let end = offset_to_position(diagnostic.range.end, &line_index)?;
+            let start = client.to_position(diagnostic.range.start, &line_index)?;
+            let end = client.to_position(diagnostic.range.end, &line_index)?;
             let lsp_severity = match rule.severity {
                 Severity::Warn => DiagnosticSeverity::WARNING,
                 Severity::Info => DiagnosticSeverity::INFORMATION,
@@ -188,8 +211,8 @@ fn diagnostics(conn: &Connection, docs: &FxHashMap<String, String>, uri: &Uri) -
                 .context
                 .iter()
                 .filter_map(|context| {
-                    let related_start = offset_to_position(context.start, &line_index)?;
-                    let related_end = offset_to_position(context.end, &line_index)?;
+                    let related_start = client.to_position(context.start, &line_index)?;
+                    let related_end = client.to_position(context.end, &line_index)?;
                     let related = DiagnosticRelatedInformation {
                         location: Location {
                             uri: uri.clone(),
@@ -239,7 +262,9 @@ fn diagnostics(conn: &Connection, docs: &FxHashMap<String, String>, uri: &Uri) -
         uri: uri.clone(),
         version: None,
     };
-    conn.sender
+    client
+        .connection
+        .sender
         .send(Message::Notification(lsp_server::Notification::new(
             PublishDiagnostics::METHOD.to_owned(),
             params,
@@ -266,21 +291,46 @@ fn send_err(
     Ok(())
 }
 
-// TODO: so inefficient
-fn diagnose(str: &str) -> std::result::Result<Vec<Lint>, anyhow::Error> {
-    Linter::new().lint(str.as_bytes())
-}
-
 struct Client {
     connection: Connection,
+    // TODO!
+    #[allow(dead_code)]
     init_params: InitializeParams,
-    encoding: PositionEncodingKind,
-    docs: FxHashMap<String, String>,
+    encoding: Encoding,
 }
 
-/// Convert a UTF-8 byte offset to a UTF-16 LSP position
-fn offset_to_position(offset: usize, line_index: &LineIndex) -> Option<Position> {
-    let position = line_index.try_line_col(TextSize::from(offset as u32))?;
-    let wide = line_index.to_wide(WideEncoding::Utf16, position)?;
-    Some(Position::new(wide.line, wide.col))
+impl Client {
+    fn to_position(&self, offset: usize, line_index: &LineIndex) -> Option<Position> {
+        let position = line_index.try_line_col(TextSize::from(offset as u32))?;
+        match self.encoding {
+            Encoding::Utf8 => Some(Position::new(position.line, position.col)),
+            Encoding::Utf16 => {
+                let wide = line_index.to_wide(WideEncoding::Utf16, position)?;
+                Some(Position::new(wide.line, wide.col))
+            }
+            Encoding::Utf32 => {
+                let wide = line_index.to_wide(WideEncoding::Utf32, position)?;
+                Some(Position::new(wide.line, wide.col))
+            }
+        }
+    }
+}
+
+enum Encoding {
+    Utf8,
+    Utf16,
+    Utf32,
+}
+
+impl TryFrom<PositionEncodingKind> for Encoding {
+    type Error = ();
+
+    fn try_from(value: PositionEncodingKind) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "utf-8" => Ok(Self::Utf8),
+            "utf-16" => Ok(Self::Utf16),
+            "utf-32" => Ok(Self::Utf32),
+            _ => Err(()),
+        }
+    }
 }
