@@ -1,10 +1,6 @@
 use line_index::{LineIndex, TextSize, WideEncoding};
 use lsp_server::Connection;
-use lsp_types::{
-    ClientCapabilities, InitializeParams, OneOf, Position, PositionEncodingKind, SaveOptions,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
-};
+use lsp_types::{ClientCapabilities, InitializeParams, Position, PositionEncodingKind};
 
 pub struct Client {
     pub(crate) connection: Connection,
@@ -36,6 +32,10 @@ impl Client {
                 Some(Position::new(wide.line, wide.col))
             }
         }
+    }
+
+    pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {
+        self.encoding.into()
     }
 
     pub(crate) fn related_information_support(&self) -> bool {
@@ -77,31 +77,6 @@ impl Client {
                 .version_support
         })()
         .unwrap_or_default()
-    }
-
-    pub(crate) fn server_capabilities(&self) -> ServerCapabilities {
-        ServerCapabilities {
-            position_encoding: Some(self.encoding.into()),
-            text_document_sync: Some(TextDocumentSyncCapability::Options(
-                TextDocumentSyncOptions {
-                    open_close: Some(true),
-                    // TODO: delta updates
-                    change: Some(TextDocumentSyncKind::FULL),
-                    save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
-                        include_text: Some(true),
-                    })),
-                    ..Default::default()
-                },
-            )),
-            workspace: Some(WorkspaceServerCapabilities {
-                workspace_folders: Some(WorkspaceFoldersServerCapabilities {
-                    supported: Some(true),
-                    change_notifications: Some(OneOf::Left(true)),
-                }),
-                file_operations: None,
-            }),
-            ..ServerCapabilities::default()
-        }
     }
 }
 

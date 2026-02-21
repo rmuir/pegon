@@ -2,7 +2,10 @@ use anyhow::{Error, Result};
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, InitializeParams, InitializeResult, ServerInfo,
+    DidSaveTextDocumentParams, InitializeParams, InitializeResult, OneOf, SaveOptions,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
         Notification,
@@ -35,7 +38,28 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
         offset_encoding: None,
-        capabilities: client.server_capabilities()
+        capabilities: ServerCapabilities {
+            position_encoding: Some(client.negotiated_encoding()),
+            text_document_sync: Some(TextDocumentSyncCapability::Options(
+                TextDocumentSyncOptions {
+                    open_close: Some(true),
+                    // TODO: delta updates
+                    change: Some(TextDocumentSyncKind::FULL),
+                    save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
+                        include_text: Some(true),
+                    })),
+                    ..Default::default()
+                },
+            )),
+            workspace: Some(WorkspaceServerCapabilities {
+                workspace_folders: Some(WorkspaceFoldersServerCapabilities {
+                    supported: Some(true),
+                    change_notifications: Some(OneOf::Left(true)),
+                }),
+                file_operations: None,
+            }),
+            ..ServerCapabilities::default()
+        }
     });
 
     client.connection.initialize_finish(id, result)?;
