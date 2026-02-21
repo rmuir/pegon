@@ -1,22 +1,21 @@
 use anyhow::{Error, Result};
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, InitializeParams, InitializeResult, OneOf, SaveOptions,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
+    InitializeParams, InitializeResult, OneOf, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
-        Notification,
+        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
     },
-    request::{Formatting, Request},
+    request::{DocumentDiagnosticRequest, Formatting, Request},
 };
 use rustc_hash::FxHashMap;
 
 use crate::{
-    lint::Linter, lsp::client::Client, lsp::diagnostics::push_clear,
-    lsp::diagnostics::push_diagnostics,
+    lint::Linter, lsp::client::Client, lsp::diagnostics::pull_diagnostics,
+    lsp::diagnostics::push_clear, lsp::diagnostics::push_diagnostics,
 };
 
 mod client;
@@ -39,15 +38,16 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
         }),
         offset_encoding: None,
         capabilities: ServerCapabilities {
+            diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                identifier: Some("pegon".into()),
+                ..Default::default()
+            })),
             position_encoding: Some(client.negotiated_encoding()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
                     open_close: Some(true),
                     // TODO: delta updates
                     change: Some(TextDocumentSyncKind::FULL),
-                    save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
-                        include_text: Some(true),
-                    })),
                     ..Default::default()
                 },
             )),
@@ -105,22 +105,17 @@ fn handle_notification(
         DidOpenTextDocument::METHOD => {
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
+            //let version = params.text_document.version;
             docs.insert(uri.to_string(), params.text_document.text);
             push_diagnostics(client, &uri, docs, linter)?;
         }
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
+            // TODO: loop
             if let Some(change) = params.content_changes.into_iter().next() {
                 let uri = params.text_document.uri;
+                //let version = params.text_document.version;
                 docs.insert(uri.to_string(), change.text);
-                push_diagnostics(client, &uri, docs, linter)?;
-            }
-        }
-        DidSaveTextDocument::METHOD => {
-            let params: DidSaveTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = params.text_document.uri;
-            if let Some(text) = params.text {
-                docs.insert(uri.to_string(), text);
                 push_diagnostics(client, &uri, docs, linter)?;
             }
         }
@@ -135,16 +130,21 @@ fn handle_notification(
     Ok(())
 }
 
-/// currently no requests are supported
 fn handle_request(
     client: &Client,
     req: &ServerRequest,
-    _docs: &mut FxHashMap<String, String>,
-    _linter: &mut Linter,
+    docs: &mut FxHashMap<String, String>,
+    linter: &mut Linter,
 ) -> Result<()> {
     match req.method.as_str() {
         Formatting::METHOD => {
             todo!()
+        }
+        DocumentDiagnosticRequest::METHOD => {
+            let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
+            let uri = params.text_document.uri;
+            let response = pull_diagnostics(client, &uri, docs, linter)?;
+            send_ok(&client.connection, req.id.clone(), &response)?;
         }
         _ => send_err(
             &client.connection,
@@ -153,6 +153,16 @@ fn handle_request(
             "unhandled method",
         )?,
     }
+    Ok(())
+}
+
+fn send_ok<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
+    let resp = Response {
+        id,
+        result: Some(serde_json::to_value(result)?),
+        error: None,
+    };
+    conn.sender.send(Message::Response(resp))?;
     Ok(())
 }
 

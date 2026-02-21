@@ -2,8 +2,9 @@ use anyhow::Result;
 use line_index::LineIndex;
 use lsp_server::Message;
 use lsp_types::{
-    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, Location,
-    NumberOrString, PublishDiagnosticsParams, Range, Uri,
+    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
+    DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location, NumberOrString,
+    PublishDiagnosticsParams, Range, Uri,
     notification::{Notification, PublishDiagnostics},
 };
 use rustc_hash::FxHashMap;
@@ -26,13 +27,59 @@ impl From<Severity> for DiagnosticSeverity {
     }
 }
 
-/// publish diagnostics
+/// diagnostics request (pull)
+pub fn pull_diagnostics(
+    client: &Client,
+    uri: &Uri,
+    docs: &FxHashMap<String, String>,
+    linter: &mut Linter,
+) -> Result<DocumentDiagnosticReportKind> {
+    let Some(_) = docs.get(&uri.to_string()) else {
+        // TODO: change to real LSP error
+        return Err(anyhow::anyhow!("document does not exist"));
+    };
+    let diagnostics = diagnostics(client, uri, docs, linter)?;
+    let result = FullDocumentDiagnosticReport {
+        items: diagnostics,
+        ..Default::default()
+    };
+
+    Ok(DocumentDiagnosticReportKind::Full(result))
+}
+
+/// publish diagnostics (push)
 pub fn push_diagnostics(
     client: &Client,
     uri: &Uri,
     docs: &FxHashMap<String, String>,
     linter: &mut Linter,
 ) -> Result<()> {
+    if client.pull_diagnostics_support() {
+        return Ok(());
+    }
+    let diagnostics = diagnostics(client, uri, docs, linter)?;
+    let params = PublishDiagnosticsParams {
+        diagnostics,
+        uri: uri.clone(),
+        version: None,
+    };
+    client
+        .connection
+        .sender
+        .send(Message::Notification(lsp_server::Notification::new(
+            PublishDiagnostics::METHOD.to_owned(),
+            params,
+        )))?;
+    Ok(())
+}
+
+/// return diagnostics
+fn diagnostics(
+    client: &Client,
+    uri: &Uri,
+    docs: &FxHashMap<String, String>,
+    linter: &mut Linter,
+) -> Result<Vec<Diagnostic>> {
     let text = docs.get(&uri.to_string()).unwrap();
 
     let line_index = LineIndex::new(text);
@@ -103,23 +150,14 @@ pub fn push_diagnostics(
             })
         })
         .collect::<Vec<_>>();
-
-    let params = PublishDiagnosticsParams {
-        diagnostics,
-        uri: uri.clone(),
-        version: None,
-    };
-    client
-        .connection
-        .sender
-        .send(Message::Notification(lsp_server::Notification::new(
-            PublishDiagnostics::METHOD.to_owned(),
-            params,
-        )))?;
-    Ok(())
+    Ok(diagnostics)
 }
 
+// for push clients, clear diagnostic space, e.g. on document close
 pub fn push_clear(client: &Client, uri: &Uri) -> Result<()> {
+    if client.pull_diagnostics_support() {
+        return Ok(());
+    }
     client
         .connection
         .sender

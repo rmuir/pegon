@@ -38,6 +38,18 @@ impl Client {
         self.encoding.into()
     }
 
+    pub(crate) fn pull_diagnostics_support(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .diagnostic
+                .as_ref()
+        })()
+        .is_some()
+    }
+
     pub(crate) fn related_information_support(&self) -> bool {
         (|| -> _ {
             self.init_params
