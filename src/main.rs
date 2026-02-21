@@ -6,7 +6,7 @@ pub mod lsp;
 use std::{
     fs,
     path::PathBuf,
-    sync::atomic::{AtomicU32, Ordering},
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use anyhow::Error;
@@ -15,8 +15,8 @@ use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBui
 use crate::cli::{Commands, parse};
 use crate::lint::Linter;
 
-static COUNT: AtomicU32 = AtomicU32::new(0);
-static ERRORS: AtomicU32 = AtomicU32::new(0);
+static COUNT: AtomicUsize = AtomicUsize::new(0);
+static ERRORS: AtomicUsize = AtomicUsize::new(0);
 
 fn lint(files: &[PathBuf]) -> Result<(), Error> {
     let mut paths = files.to_vec();
@@ -61,7 +61,7 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         match result {
                             Ok(errors) => {
                                 if !errors.is_empty() {
-                                    COUNT.fetch_add(errors.len() as u32, Ordering::Relaxed);
+                                    COUNT.fetch_add(errors.len(), Ordering::Relaxed);
                                     console::render(entry.path(), &data, errors).unwrap(); // TODO
                                 }
                             }

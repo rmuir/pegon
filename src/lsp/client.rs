@@ -23,6 +23,7 @@ impl Client {
     }
 
     pub(crate) fn to_position(&self, offset: usize, line_index: &LineIndex) -> Option<Position> {
+        #[allow(clippy::cast_possible_truncation)]
         let position = line_index.try_line_col(TextSize::from(offset as u32))?;
         match self.encoding {
             Encoding::Utf8 => Some(Position::new(position.line, position.col)),

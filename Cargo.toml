@@ -60,5 +60,3 @@ workspace = true
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
-
-cast-possible-truncation = "allow"
