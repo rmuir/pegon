@@ -48,7 +48,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
         offset_encoding: None,
 
         capabilities: ServerCapabilities {
-            position_encoding: Some(encoding.clone()),
+            position_encoding: Some(encoding.clone().into()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
                     open_close: Some(true),
@@ -75,7 +75,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     let client = Client {
         connection,
         init_params,
-        encoding: encoding.try_into().unwrap(),
+        encoding,
     };
     main_loop(&client)?;
     io_thread.join()?;
