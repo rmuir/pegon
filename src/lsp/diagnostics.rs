@@ -38,7 +38,7 @@ pub fn pull_diagnostics(
         // TODO: change to real LSP error
         return Err(anyhow::anyhow!("document does not exist"));
     };
-    let diagnostics = diagnostics(client, uri, docs, linter)?;
+    let diagnostics = diagnostics(client, uri, docs, linter);
     let result = FullDocumentDiagnosticReport {
         items: diagnostics,
         ..Default::default()
@@ -57,7 +57,7 @@ pub fn push_diagnostics(
     if client.pull_diagnostics_support() {
         return Ok(());
     }
-    let diagnostics = diagnostics(client, uri, docs, linter)?;
+    let diagnostics = diagnostics(client, uri, docs, linter);
     let params = PublishDiagnosticsParams {
         diagnostics,
         uri: uri.clone(),
@@ -79,11 +79,12 @@ fn diagnostics(
     uri: &Uri,
     docs: &FxHashMap<String, String>,
     linter: &mut Linter,
-) -> Result<Vec<Diagnostic>> {
+) -> Vec<Diagnostic> {
     let text = docs.get(&uri.to_string()).unwrap();
 
     let line_index = LineIndex::new(text);
-    let diagnostics = linter
+
+    linter
         .lint(text.as_bytes())
         .unwrap_or_default()
         .iter()
@@ -149,8 +150,7 @@ fn diagnostics(
                 data: None,
             })
         })
-        .collect::<Vec<_>>();
-    Ok(diagnostics)
+        .collect::<Vec<_>>()
 }
 
 // for push clients, clear diagnostic space, e.g. on document close
