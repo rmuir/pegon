@@ -34,7 +34,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     let init_params: InitializeParams = serde_json::from_value(params)?;
 
     let encoding =
-        preferred_encoding(&init_params.capabilities).unwrap_or(PositionEncodingKind::UTF16);
+        Encoding::preferred(&init_params.capabilities).unwrap_or(PositionEncodingKind::UTF16);
 
     let result = serde_json::json!(InitializeResult {
         server_info: Some(ServerInfo {
@@ -76,17 +76,6 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     main_loop(&client)?;
     io_thread.join()?;
     Ok(())
-}
-
-fn preferred_encoding(capabilities: &ClientCapabilities) -> Option<PositionEncodingKind> {
-    if let Some(general) = &capabilities.general
-        && let Some(encodings) = &general.position_encodings
-        && let Some(preferred) = encodings.first()
-    {
-        Some(preferred.clone())
-    } else {
-        None
-    }
 }
 
 // =====================================================================
@@ -190,6 +179,7 @@ fn diagnostics(
     linter: &mut Linter,
 ) -> Result<()> {
     let text = docs.get(&uri.to_string()).unwrap();
+    let encoding = &client.encoding;
 
     let line_index = LineIndex::new(text);
     let diagnostics = linter
@@ -198,8 +188,8 @@ fn diagnostics(
         .iter()
         .filter_map(|diagnostic| {
             let rule = rule(diagnostic.rule_id);
-            let start = client.to_position(diagnostic.range.start, &line_index)?;
-            let end = client.to_position(diagnostic.range.end, &line_index)?;
+            let start = encoding.to_position(diagnostic.range.start, &line_index)?;
+            let end = encoding.to_position(diagnostic.range.end, &line_index)?;
             let lsp_severity = match rule.severity {
                 Severity::Warn => DiagnosticSeverity::WARNING,
                 Severity::Info => DiagnosticSeverity::INFORMATION,
@@ -211,8 +201,8 @@ fn diagnostics(
                 .context
                 .iter()
                 .filter_map(|context| {
-                    let related_start = client.to_position(context.start, &line_index)?;
-                    let related_end = client.to_position(context.end, &line_index)?;
+                    let related_start = encoding.to_position(context.start, &line_index)?;
+                    let related_end = encoding.to_position(context.end, &line_index)?;
                     let related = DiagnosticRelatedInformation {
                         location: Location {
                             uri: uri.clone(),
@@ -299,27 +289,38 @@ struct Client {
     encoding: Encoding,
 }
 
-impl Client {
+enum Encoding {
+    Utf8,
+    Utf16,
+    Utf32,
+}
+
+impl Encoding {
+    fn preferred(capabilities: &ClientCapabilities) -> Option<PositionEncodingKind> {
+        if let Some(general) = &capabilities.general
+            && let Some(encodings) = &general.position_encodings
+            && let Some(preferred) = encodings.first()
+        {
+            Some(preferred.clone())
+        } else {
+            None
+        }
+    }
+
     fn to_position(&self, offset: usize, line_index: &LineIndex) -> Option<Position> {
         let position = line_index.try_line_col(TextSize::from(offset as u32))?;
-        match self.encoding {
-            Encoding::Utf8 => Some(Position::new(position.line, position.col)),
-            Encoding::Utf16 => {
+        match self {
+            Self::Utf8 => Some(Position::new(position.line, position.col)),
+            Self::Utf16 => {
                 let wide = line_index.to_wide(WideEncoding::Utf16, position)?;
                 Some(Position::new(wide.line, wide.col))
             }
-            Encoding::Utf32 => {
+            Self::Utf32 => {
                 let wide = line_index.to_wide(WideEncoding::Utf32, position)?;
                 Some(Position::new(wide.line, wide.col))
             }
         }
     }
-}
-
-enum Encoding {
-    Utf8,
-    Utf16,
-    Utf32,
 }
 
 impl TryFrom<PositionEncodingKind> for Encoding {
