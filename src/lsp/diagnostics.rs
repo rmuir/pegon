@@ -118,3 +118,18 @@ pub fn push_diagnostics(
         )))?;
     Ok(())
 }
+
+pub fn push_clear(client: &Client, uri: &Uri) -> Result<()> {
+    client
+        .connection
+        .sender
+        .send(Message::Notification(lsp_server::Notification::new(
+            PublishDiagnostics::METHOD.to_owned(),
+            PublishDiagnosticsParams {
+                diagnostics: vec![],
+                uri: uri.clone(),
+                version: None,
+            },
+        )))?;
+    Ok(())
+}

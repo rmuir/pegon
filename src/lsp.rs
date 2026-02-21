@@ -11,7 +11,10 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 
-use crate::{lint::Linter, lsp::client::Client, lsp::diagnostics::push_diagnostics};
+use crate::{
+    lint::Linter, lsp::client::Client, lsp::diagnostics::push_clear,
+    lsp::diagnostics::push_diagnostics,
+};
 
 mod client;
 mod diagnostics;
@@ -101,6 +104,7 @@ fn handle_notification(
             let params: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             docs.remove(&uri.to_string());
+            push_clear(client, &uri)?;
         }
         _ => {}
     }
