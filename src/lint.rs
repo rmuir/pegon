@@ -46,6 +46,7 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
     None
 }
 
+#[derive(Copy, Clone)]
 pub(crate) enum Severity {
     Error,
     Warn,

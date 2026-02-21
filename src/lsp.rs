@@ -48,7 +48,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
         offset_encoding: None,
 
         capabilities: ServerCapabilities {
-            position_encoding: Some(encoding.clone().into()),
+            position_encoding: Some(encoding.into()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
                     open_close: Some(true),
@@ -96,16 +96,18 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                 if client.connection.handle_shutdown(&req)? {
                     break;
                 }
-                if let Err(_err) = handle_request(client, &req, &mut docs, &mut linter) {
-                    //log::error!("[lsp] request {} failed: {err}", &req.method);
+                if let Err(err) = handle_request(client, &req, &mut docs, &mut linter) {
+                    eprintln!("[lsp] request {} failed: {err}", &req.method);
                 }
             }
             Message::Notification(note) => {
-                if let Err(_err) = handle_notification(client, &note, &mut docs, &mut linter) {
-                    //log::error!("[lsp] notification {} failed: {err}", note.method);
+                if let Err(err) = handle_notification(client, &note, &mut docs, &mut linter) {
+                    eprintln!("[lsp] notification {} failed: {err}", note.method);
                 }
             }
-            Message::Response(_resp) => {} //log::error!("[lsp] response: {resp:?}"),
+            Message::Response(resp) => {
+                eprintln!("[lsp] response: {resp:?}");
+            }
         }
     }
     Ok(())
@@ -123,30 +125,30 @@ fn handle_notification(
 ) -> Result<()> {
     match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
-            let p: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = p.text_document.uri;
-            docs.insert(uri.to_string(), p.text_document.text);
+            let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
+            let uri = params.text_document.uri;
+            docs.insert(uri.to_string(), params.text_document.text);
             diagnostics(client, &uri, docs, linter)?;
         }
         DidChangeTextDocument::METHOD => {
-            let p: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            if let Some(change) = p.content_changes.into_iter().next() {
-                let uri = p.text_document.uri;
+            let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
+            if let Some(change) = params.content_changes.into_iter().next() {
+                let uri = params.text_document.uri;
                 docs.insert(uri.to_string(), change.text);
                 diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidSaveTextDocument::METHOD => {
-            let p: DidSaveTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = p.text_document.uri;
-            if let Some(text) = p.text {
+            let params: DidSaveTextDocumentParams = serde_json::from_value(note.params.clone())?;
+            let uri = params.text_document.uri;
+            if let Some(text) = params.text {
                 docs.insert(uri.to_string(), text);
                 diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidCloseTextDocument::METHOD => {
-            let p: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = p.text_document.uri;
+            let params: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
+            let uri = params.text_document.uri;
             docs.remove(&uri.to_string());
         }
         _ => {}

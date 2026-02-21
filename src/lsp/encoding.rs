@@ -1,7 +1,7 @@
 use line_index::{LineIndex, TextSize, WideEncoding};
 use lsp_types::{ClientCapabilities, Position, PositionEncodingKind};
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub enum Encoding {
     Utf8,
     Utf16,
@@ -20,7 +20,7 @@ impl Encoding {
         }
     }
 
-    pub fn to_position(&self, offset: usize, line_index: &LineIndex) -> Option<Position> {
+    pub fn to_position(self, offset: usize, line_index: &LineIndex) -> Option<Position> {
         let position = line_index.try_line_col(TextSize::from(offset as u32))?;
         match self {
             Self::Utf8 => Some(Position::new(position.line, position.col)),

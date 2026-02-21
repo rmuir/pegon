@@ -16,12 +16,23 @@ static RENDERER: Renderer = Renderer::styled()
     .line_num(Style::new().dimmed());
 
 impl Display for Severity {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
         match self {
-            Self::Error => write!(f, "error"),
-            Self::Warn => write!(f, "warn"),
-            Self::Info => write!(f, "info"),
-            Self::Hint => write!(f, "hint"),
+            Self::Error => write!(formatter, "error"),
+            Self::Warn => write!(formatter, "warn"),
+            Self::Info => write!(formatter, "info"),
+            Self::Hint => write!(formatter, "hint"),
+        }
+    }
+}
+
+impl From<Severity> for Level<'_> {
+    fn from(value: Severity) -> Self {
+        match value {
+            Severity::Error => Self::ERROR,
+            Severity::Warn => Self::WARNING,
+            Severity::Info => Self::INFO,
+            Severity::Hint => Self::HELP,
         }
     }
 }
@@ -69,12 +80,7 @@ pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), 
             annotations.push(AnnotationKind::Visible.span(ctx));
         }
 
-        let level = match rule.severity {
-            Severity::Warn => Level::WARNING,
-            Severity::Error => Level::ERROR,
-            Severity::Info => Level::INFO,
-            Severity::Hint => Level::HELP,
-        };
+        let level: Level = rule.severity.into();
 
         let mut report = Vec::new();
         report.push(
