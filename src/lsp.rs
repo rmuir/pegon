@@ -2,10 +2,7 @@ use anyhow::{Error, Result};
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, InitializeParams, InitializeResult, OneOf, SaveOptions,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    DidSaveTextDocumentParams, InitializeParams, InitializeResult, ServerInfo,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, DidSaveTextDocument,
         Notification,
@@ -14,14 +11,10 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 
-use crate::{lint::Linter, lsp::diagnostics::push_diagnostics, lsp::encoding::Encoding};
+use crate::{lint::Linter, lsp::client::Client, lsp::diagnostics::push_diagnostics};
 
+mod client;
 mod diagnostics;
-mod encoding;
-
-// =====================================================================
-// main
-// =====================================================================
 
 pub(crate) fn main() -> std::result::Result<(), Error> {
     // transport
@@ -31,7 +24,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
 
-    let encoding = Encoding::preferred(&init_params.capabilities);
+    let client = Client::new(connection, init_params);
 
     let result = serde_json::json!(InitializeResult {
         server_info: Some(ServerInfo {
@@ -39,45 +32,14 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
         offset_encoding: None,
-
-        capabilities: ServerCapabilities {
-            position_encoding: Some(encoding.into()),
-            text_document_sync: Some(TextDocumentSyncCapability::Options(
-                TextDocumentSyncOptions {
-                    open_close: Some(true),
-                    // TODO: delta updates
-                    change: Some(TextDocumentSyncKind::FULL),
-                    save: Some(TextDocumentSyncSaveOptions::SaveOptions(SaveOptions {
-                        include_text: Some(true),
-                    })),
-                    ..Default::default()
-                },
-            )),
-            workspace: Some(WorkspaceServerCapabilities {
-                workspace_folders: Some(WorkspaceFoldersServerCapabilities {
-                    supported: Some(true),
-                    change_notifications: Some(OneOf::Left(true)),
-                }),
-                file_operations: None,
-            }),
-            ..ServerCapabilities::default()
-        },
+        capabilities: client.server_capabilities()
     });
 
-    connection.initialize_finish(id, result)?;
-    let client = Client {
-        connection,
-        init_params,
-        encoding,
-    };
+    client.connection.initialize_finish(id, result)?;
     main_loop(&client)?;
     io_thread.join()?;
     Ok(())
 }
-
-// =====================================================================
-// event loop
-// =====================================================================
 
 fn main_loop(client: &Client) -> Result<(), Error> {
     let mut docs: FxHashMap<String, String> = FxHashMap::default();
@@ -105,10 +67,6 @@ fn main_loop(client: &Client) -> Result<(), Error> {
     }
     Ok(())
 }
-
-// =====================================================================
-// notifications
-// =====================================================================
 
 fn handle_notification(
     client: &Client,
@@ -187,53 +145,4 @@ fn send_err(
     };
     conn.sender.send(Message::Response(resp))?;
     Ok(())
-}
-
-struct Client {
-    connection: Connection,
-    init_params: InitializeParams,
-    encoding: Encoding,
-}
-
-impl Client {
-    fn related_information_support(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .related_information
-        })()
-        .unwrap_or_default()
-    }
-
-    fn code_description_support(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .code_description_support
-        })()
-        .unwrap_or_default()
-    }
-
-    /// TODO
-    #[allow(dead_code)]
-    fn version_support(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .version_support
-        })()
-        .unwrap_or_default()
-    }
 }

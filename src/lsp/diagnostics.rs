@@ -34,7 +34,6 @@ pub fn push_diagnostics(
     linter: &mut Linter,
 ) -> Result<()> {
     let text = docs.get(&uri.to_string()).unwrap();
-    let encoding = &client.encoding;
 
     let line_index = LineIndex::new(text);
     let diagnostics = linter
@@ -43,16 +42,16 @@ pub fn push_diagnostics(
         .iter()
         .filter_map(|diagnostic| {
             let rule = rule(diagnostic.rule_id);
-            let start = encoding.to_position(diagnostic.range.start, &line_index)?;
-            let end = encoding.to_position(diagnostic.range.end, &line_index)?;
+            let start = client.to_position(diagnostic.range.start, &line_index)?;
+            let end = client.to_position(diagnostic.range.end, &line_index)?;
             let lsp_severity = rule.severity.into();
             // all the context ranges are related information
             let mut related_information = diagnostic
                 .context
                 .iter()
                 .filter_map(|context| {
-                    let related_start = encoding.to_position(context.start, &line_index)?;
-                    let related_end = encoding.to_position(context.end, &line_index)?;
+                    let related_start = client.to_position(context.start, &line_index)?;
+                    let related_end = client.to_position(context.end, &line_index)?;
                     let related = DiagnosticRelatedInformation {
                         location: Location {
                             uri: uri.clone(),
