@@ -9,7 +9,7 @@ pub enum Encoding {
 }
 
 impl Encoding {
-    pub fn preferred(capabilities: &ClientCapabilities) -> Encoding {
+    pub fn preferred(capabilities: &ClientCapabilities) -> Self {
         if let Some(general) = &capabilities.general
             && let Some(encodings) = &general.position_encodings
             && let Some(preferred) = encodings.first()
