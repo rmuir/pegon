@@ -78,7 +78,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                 if client.connection.handle_shutdown(&req)? {
                     break;
                 }
-                if let Err(err) = handle_request(client, &req, &mut docs, &mut linter) {
+                if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut linter) {
                     eprintln!("[lsp] request {} failed: {err}", &req.method);
                 }
             }
@@ -133,7 +133,7 @@ fn handle_notification(
 fn handle_request(
     client: &Client,
     req: &ServerRequest,
-    docs: &mut FxHashMap<String, String>,
+    docs: & /*mut*/ FxHashMap<String, String>,
     linter: &mut Linter,
 ) -> Result<()> {
     match req.method.as_str() {
