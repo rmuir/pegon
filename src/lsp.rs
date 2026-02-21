@@ -191,8 +191,49 @@ fn send_err(
 
 struct Client {
     connection: Connection,
-    // TODO!
-    #[allow(dead_code)]
     init_params: InitializeParams,
     encoding: Encoding,
+}
+
+impl Client {
+    fn related_information_support(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .publish_diagnostics
+                .as_ref()?
+                .related_information
+        })()
+        .unwrap_or_default()
+    }
+
+    fn code_description_support(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .publish_diagnostics
+                .as_ref()?
+                .code_description_support
+        })()
+        .unwrap_or_default()
+    }
+
+    /// TODO
+    #[allow(dead_code)]
+    fn version_support(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .publish_diagnostics
+                .as_ref()?
+                .version_support
+        })()
+        .unwrap_or_default()
+    }
 }

@@ -85,12 +85,20 @@ pub fn push_diagnostics(
                 range: Range::new(start, end),
                 severity: Some(lsp_severity),
                 code: Some(NumberOrString::String(rule.name.clone())),
-                code_description: Some(CodeDescription {
-                    href: Uri::from_str(&rule.url).unwrap(),
-                }),
+                code_description: if client.code_description_support() {
+                    Some(CodeDescription {
+                        href: Uri::from_str(&rule.url).unwrap(),
+                    })
+                } else {
+                    None
+                },
                 source: Some("pegon".to_string()),
                 message: diagnostic.title.clone(),
-                related_information: Some(related_information),
+                related_information: if client.related_information_support() {
+                    Some(related_information)
+                } else {
+                    None
+                },
                 tags: None,
                 data: None,
             })
