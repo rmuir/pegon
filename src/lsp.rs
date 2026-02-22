@@ -118,7 +118,9 @@ fn handle_notification(
                     version,
                 },
             );
-            push_diagnostics(client, &uri, docs, linter)?;
+            if !client.pull_diagnostics_support() {
+                push_diagnostics(client, &uri, docs, linter)?;
+            }
         }
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
@@ -133,14 +135,18 @@ fn handle_notification(
                         version,
                     },
                 );
-                push_diagnostics(client, &uri, docs, linter)?;
+                if !client.pull_diagnostics_support() {
+                    push_diagnostics(client, &uri, docs, linter)?;
+                }
             }
         }
         DidCloseTextDocument::METHOD => {
             let params: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             docs.remove(&uri.to_string());
-            push_clear(client, &uri)?;
+            if !client.pull_diagnostics_support() {
+                push_clear(client, &uri)?;
+            }
         }
         _ => {}
     }

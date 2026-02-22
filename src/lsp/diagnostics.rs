@@ -54,9 +54,6 @@ pub fn push_diagnostics(
     docs: &FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<()> {
-    if client.pull_diagnostics_support() {
-        return Ok(());
-    }
     let diagnostics = diagnostics(client, uri, docs, linter);
     // FIXME: no
     let doc = docs.get(&uri.to_string()).unwrap();
@@ -157,9 +154,6 @@ fn diagnostics(
 
 // for push clients, clear diagnostic space, e.g. on document close
 pub fn push_clear(client: &Client, uri: &Uri) -> Result<()> {
-    if client.pull_diagnostics_support() {
-        return Ok(());
-    }
     client
         .connection
         .sender
