@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, bail};
 use line_index::LineIndex;
 use lsp_server::Message;
 use lsp_types::{
@@ -34,17 +34,15 @@ pub fn pull_diagnostics(
     docs: &FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<DocumentDiagnosticReportKind> {
-    let Some(_) = docs.get(&uri.to_string()) else {
-        // TODO: change to real LSP error
-        return Err(anyhow::anyhow!("document does not exist"));
-    };
-    let diagnostics = diagnostics(client, uri, docs, linter);
-    let result = FullDocumentDiagnosticReport {
-        items: diagnostics,
-        ..Default::default()
-    };
-
-    Ok(DocumentDiagnosticReportKind::Full(result))
+    if docs.get(&uri.to_string()).is_none() {
+        bail!("unknown doc: {uri:?}");
+    }
+    Ok(DocumentDiagnosticReportKind::Full(
+        FullDocumentDiagnosticReport {
+            items: diagnostics(client, uri, docs, linter),
+            ..Default::default()
+        },
+    ))
 }
 
 /// publish diagnostics (push)
@@ -54,20 +52,23 @@ pub fn push_diagnostics(
     docs: &FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<()> {
-    let diagnostics = diagnostics(client, uri, docs, linter);
-    // FIXME: no
-    let doc = docs.get(&uri.to_string()).unwrap();
-    let params = PublishDiagnosticsParams {
-        diagnostics,
-        uri: uri.clone(),
-        version: Some(doc.version),
+    let Some(doc) = docs.get(&uri.to_string()) else {
+        bail!("unknown doc: {uri:?}");
     };
     client
         .connection
         .sender
         .send(Message::Notification(lsp_server::Notification::new(
             PublishDiagnostics::METHOD.to_owned(),
-            params,
+            PublishDiagnosticsParams {
+                diagnostics: diagnostics(client, uri, docs, linter),
+                uri: uri.clone(),
+                version: if client.version_support() {
+                    Some(doc.version)
+                } else {
+                    None
+                },
+            },
         )))?;
     Ok(())
 }

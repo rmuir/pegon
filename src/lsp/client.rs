@@ -124,8 +124,6 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// TODO
-    #[allow(dead_code)]
     pub(crate) fn version_support(&self) -> bool {
         (|| -> _ {
             self.init_params
