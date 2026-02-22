@@ -1,6 +1,6 @@
 use annotate_snippets::{
     Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
-    renderer::{DecorStyle, Style},
+    renderer::{Ansi256Color, DecorStyle, Style},
 };
 use anyhow::Error;
 use std::{
@@ -10,10 +10,11 @@ use std::{
 
 use crate::lint::{Lint, Severity, rule};
 
+static GREY: Style = Ansi256Color(247).on_default();
 static RENDERER: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
-    .context(Style::new().dimmed())
-    .line_num(Style::new().dimmed());
+    .context(GREY)
+    .line_num(GREY);
 
 impl Display for Severity {
     fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
