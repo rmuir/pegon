@@ -68,6 +68,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     client.connection.initialize_finish(id, result)?;
     main_loop(&client)?;
     io_thread.join()?;
+    eprintln!("[lsp] shutting down");
     Ok(())
 }
 
@@ -82,6 +83,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
         match msg {
             Message::Request(req) => {
                 if client.connection.handle_shutdown(&req)? {
+                    eprintln!("[lsp] we broke");
                     break;
                 }
                 if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut parser) {
@@ -132,10 +134,10 @@ fn handle_notification(
                 if let Some(range) = change.range {
                     let line_index = LineIndex::new(&text);
                     let Some(offsets) = client.decode_range(range, &line_index) else {
-                        bail!("illegal range: {range:?}, uri: {uri:?}, version: {version}");
+                        bail!("[lsp] illegal range: {range:?}, uri: {uri:?}, version: {version}");
                     };
                     if text.get(offsets.clone()).is_none() {
-                        bail!("illegal slice: {range:?}, uri: {uri:?}, version: {version}");
+                        bail!("[lsp] illegal slice: {range:?}, uri: {uri:?}, version: {version}");
                     }
                     text.replace_range(offsets, &change.text);
                 } else {
@@ -156,7 +158,9 @@ fn handle_notification(
                 push_clear(client, &uri)?;
             }
         }
-        _ => {}
+        _ => {
+            eprintln!("[lsp] unhandled notification {note:?}");
+        }
     }
     Ok(())
 }
@@ -177,12 +181,15 @@ fn handle_request(
             let response = pull_diagnostics(client, &uri, docs, parser)?;
             send_ok(&client.connection, req.id.clone(), &response)?;
         }
-        _ => send_err(
-            &client.connection,
-            req.id.clone(),
-            lsp_server::ErrorCode::MethodNotFound,
-            "unhandled method",
-        )?,
+        _ => {
+            eprintln!("[lsp] unhandled request {req:?}");
+            send_err(
+                &client.connection,
+                req.id.clone(),
+                lsp_server::ErrorCode::MethodNotFound,
+                "unhandled request",
+            )?;
+        }
     }
     Ok(())
 }
