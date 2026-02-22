@@ -13,7 +13,7 @@ use std::str::FromStr;
 
 use crate::{
     lint::{Linter, Severity, rule},
-    lsp::Client,
+    lsp::{Client, open_document::OpenDocument},
 };
 
 impl From<Severity> for DiagnosticSeverity {
@@ -31,7 +31,7 @@ impl From<Severity> for DiagnosticSeverity {
 pub fn pull_diagnostics(
     client: &Client,
     uri: &Uri,
-    docs: &FxHashMap<String, String>,
+    docs: &FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<DocumentDiagnosticReportKind> {
     let Some(_) = docs.get(&uri.to_string()) else {
@@ -51,17 +51,19 @@ pub fn pull_diagnostics(
 pub fn push_diagnostics(
     client: &Client,
     uri: &Uri,
-    docs: &FxHashMap<String, String>,
+    docs: &FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<()> {
     if client.pull_diagnostics_support() {
         return Ok(());
     }
     let diagnostics = diagnostics(client, uri, docs, linter);
+    // FIXME: no
+    let doc = docs.get(&uri.to_string()).unwrap();
     let params = PublishDiagnosticsParams {
         diagnostics,
         uri: uri.clone(),
-        version: None,
+        version: Some(doc.version),
     };
     client
         .connection
@@ -77,15 +79,15 @@ pub fn push_diagnostics(
 fn diagnostics(
     client: &Client,
     uri: &Uri,
-    docs: &FxHashMap<String, String>,
+    docs: &FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Vec<Diagnostic> {
-    let text = docs.get(&uri.to_string()).unwrap();
+    let doc = docs.get(&uri.to_string()).unwrap();
 
-    let line_index = LineIndex::new(text);
+    let line_index = LineIndex::new(&doc.text);
 
     linter
-        .lint(text.as_bytes())
+        .lint(doc.text.as_bytes())
         .unwrap_or_default()
         .iter()
         .filter_map(|diagnostic| {

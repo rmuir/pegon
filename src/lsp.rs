@@ -14,12 +14,17 @@ use lsp_types::{
 use rustc_hash::FxHashMap;
 
 use crate::{
-    lint::Linter, lsp::client::Client, lsp::diagnostics::pull_diagnostics,
-    lsp::diagnostics::push_clear, lsp::diagnostics::push_diagnostics,
+    lint::Linter,
+    lsp::{
+        client::Client,
+        diagnostics::{pull_diagnostics, push_clear, push_diagnostics},
+        open_document::OpenDocument,
+    },
 };
 
 mod client;
 mod diagnostics;
+mod open_document;
 
 pub(crate) fn main() -> std::result::Result<(), Error> {
     // transport
@@ -69,7 +74,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
 }
 
 fn main_loop(client: &Client) -> Result<(), Error> {
-    let mut docs: FxHashMap<String, String> = FxHashMap::default();
+    let mut docs: FxHashMap<String, OpenDocument> = FxHashMap::default();
     let mut linter = Linter::new();
 
     for msg in &client.connection.receiver {
@@ -98,15 +103,21 @@ fn main_loop(client: &Client) -> Result<(), Error> {
 fn handle_notification(
     client: &Client,
     note: &lsp_server::Notification,
-    docs: &mut FxHashMap<String, String>,
+    docs: &mut FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<()> {
     match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
-            //let version = params.text_document.version;
-            docs.insert(uri.to_string(), params.text_document.text);
+            let version = params.text_document.version;
+            docs.insert(
+                uri.to_string(),
+                OpenDocument {
+                    text: params.text_document.text,
+                    version,
+                },
+            );
             push_diagnostics(client, &uri, docs, linter)?;
         }
         DidChangeTextDocument::METHOD => {
@@ -114,8 +125,14 @@ fn handle_notification(
             // TODO: loop
             if let Some(change) = params.content_changes.into_iter().next() {
                 let uri = params.text_document.uri;
-                //let version = params.text_document.version;
-                docs.insert(uri.to_string(), change.text);
+                let version = params.text_document.version;
+                docs.insert(
+                    uri.to_string(),
+                    OpenDocument {
+                        text: change.text,
+                        version,
+                    },
+                );
                 push_diagnostics(client, &uri, docs, linter)?;
             }
         }
@@ -133,7 +150,7 @@ fn handle_notification(
 fn handle_request(
     client: &Client,
     req: &ServerRequest,
-    docs: & /*mut*/ FxHashMap<String, String>,
+    docs: & /*mut*/ FxHashMap<String, OpenDocument>,
     linter: &mut Linter,
 ) -> Result<()> {
     match req.method.as_str() {
