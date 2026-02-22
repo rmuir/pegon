@@ -15,7 +15,6 @@ categories = ["command-line-utilities", "development-tools", "text-editors"]
 [profile.release]
 lto = "fat"
 codegen-units = 1
-panic = "abort"
 
 [profile.dev]
 debug = "line-tables-only"

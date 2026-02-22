@@ -1,4 +1,7 @@
-use anyhow::{Error, Result};
+use std::fmt::{Display, Formatter};
+
+use anyhow::{Error, Result, bail};
+use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
     DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
@@ -51,8 +54,7 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
                     open_close: Some(true),
-                    // TODO: delta updates
-                    change: Some(TextDocumentSyncKind::FULL),
+                    change: Some(TextDocumentSyncKind::INCREMENTAL),
                     ..Default::default()
                 },
             )),
@@ -124,20 +126,27 @@ fn handle_notification(
         }
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            // TODO: loop
-            if let Some(change) = params.content_changes.into_iter().next() {
-                let uri = params.text_document.uri;
-                let version = params.text_document.version;
-                docs.insert(
-                    uri.to_string(),
-                    OpenDocument {
-                        text: change.text,
-                        version,
-                    },
-                );
-                if !client.pull_diagnostics_support() {
-                    push_diagnostics(client, &uri, docs, linter)?;
+            let uri = params.text_document.uri;
+            let version = params.text_document.version;
+            let mut text = docs.get(&uri.to_string()).unwrap().text.clone(); // FIXME
+            for change in params.content_changes {
+                if let Some(range) = change.range {
+                    let line_index = LineIndex::new(&text);
+                    let Some(offsets) = client.from_range(range, &line_index) else {
+                        bail!("illegal range: {range:?}, uri: {uri:?}, version: {version}");
+                    };
+                    if text.get(offsets.clone()).is_none() {
+                        bail!("illegal slice: {range:?}, uri: {uri:?}, version: {version}");
+                    }
+                    text.replace_range(offsets, &change.text);
+                } else {
+                    text = change.text;
                 }
+            }
+
+            docs.insert(uri.to_string(), OpenDocument { text, version });
+            if !client.pull_diagnostics_support() {
+                push_diagnostics(client, &uri, docs, linter)?;
             }
         }
         DidCloseTextDocument::METHOD => {

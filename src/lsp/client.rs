@@ -1,4 +1,6 @@
-use line_index::{LineIndex, TextSize, WideEncoding};
+use std::ops::Range;
+
+use line_index::{LineCol, LineIndex, TextSize, WideEncoding};
 use lsp_server::Connection;
 use lsp_types::{ClientCapabilities, InitializeParams, Position, PositionEncodingKind};
 
@@ -30,6 +32,41 @@ impl Client {
             Encoding::Utf32 => {
                 let wide = line_index.to_wide(WideEncoding::Utf32, position)?;
                 Some(Position::new(wide.line, wide.col))
+            }
+        }
+    }
+
+    pub(crate) fn from_range(
+        &self,
+        range: lsp_types::Range,
+        line_index: &LineIndex,
+    ) -> Option<Range<usize>> {
+        if let Some(start) = self.from_position(range.start, line_index)
+            && let Some(end) = self.from_position(range.end, line_index)
+        {
+            Some(start..end)
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn from_position(
+        &self,
+        position: Position,
+        line_index: &LineIndex,
+    ) -> Option<usize> {
+        match self.encoding {
+            Encoding::Utf8 => line_index
+                .offset(LineCol {
+                    line: position.line,
+                    col: position.character,
+                })
+                .map(usize::from),
+            Encoding::Utf16 => {
+                todo!();
+            }
+            Encoding::Utf32 => {
+                todo!();
             }
         }
     }
