@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use anyhow::{Error, Result, bail};
 use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
@@ -8,7 +10,7 @@ use lsp_types::{
     TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
     WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
+        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
     },
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
@@ -68,24 +70,21 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
     client.connection.initialize_finish(id, result)?;
     main_loop(&client)?;
     io_thread.join()?;
-    eprintln!("[lsp] shutting down");
     Ok(())
 }
 
 fn main_loop(client: &Client) -> Result<(), Error> {
     let mut docs: FxHashMap<String, OpenDocument> = FxHashMap::default();
     let mut parser = tree_sitter::Parser::new();
-    parser
-        .set_language(&tree_sitter_java::LANGUAGE.into())
-        .unwrap();
+    parser.set_language(&tree_sitter_java::LANGUAGE.into())?;
 
     for msg in &client.connection.receiver {
         match msg {
             Message::Request(req) => {
-                if client.connection.handle_shutdown(&req)? {
-                    eprintln!("[lsp] we broke");
-                    break;
-                }
+                // try to go down gracefully, but always go down
+                let Ok(false) = client.connection.handle_shutdown(&req) else {
+                    exit(0)
+                };
                 if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut parser) {
                     eprintln!("[lsp] request {} failed: {err}", &req.method);
                 }
@@ -96,7 +95,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                 }
             }
             Message::Response(resp) => {
-                eprintln!("[lsp] response: {resp:?}");
+                eprintln!("[lsp] unexpected response: {resp:?}");
             }
         }
     }
@@ -158,6 +157,8 @@ fn handle_notification(
                 push_clear(client, &uri)?;
             }
         }
+        // doesn't make sense for a single-threaded impl
+        Cancel::METHOD => {}
         _ => {
             eprintln!("[lsp] unhandled notification {note:?}");
         }
