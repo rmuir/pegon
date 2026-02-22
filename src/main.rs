@@ -13,12 +13,12 @@ use anyhow::Error;
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 
 use crate::cli::{Commands, parse};
-use crate::lint::Linter;
+use crate::lint::lint;
 
 static COUNT: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
 
-fn lint(files: &[PathBuf]) -> Result<(), Error> {
+fn check(files: &[PathBuf]) -> Result<(), Error> {
     let mut paths = files.to_vec();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
@@ -43,7 +43,10 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
     builder.overrides(overrides.build()?);
 
     builder.build_parallel().run(|| {
-        let mut linter = Linter::new();
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&tree_sitter_java::LANGUAGE.into())
+            .unwrap();
 
         Box::new(move |result| {
             match result {
@@ -57,7 +60,9 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
                         if res == "foobar" {
                             println!("bogus: {res}");
                         }
-                        let result = linter.lint(&data);
+                        parser.reset();
+                        let tree = parser.parse(&data, None).unwrap();
+                        let result = lint(&tree, &data);
                         match result {
                             Ok(errors) => {
                                 if !errors.is_empty() {
@@ -96,7 +101,7 @@ fn lint(files: &[PathBuf]) -> Result<(), Error> {
 fn main() -> Result<(), Error> {
     let cli = parse();
     match &cli.command {
-        Commands::Check { files, fix: _ } => lint(files),
+        Commands::Check { files, fix: _ } => check(files),
         Commands::Format { files: _, check: _ } => todo!(),
         Commands::Server => lsp::main(),
     }

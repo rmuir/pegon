@@ -8,11 +8,12 @@ use lsp_types::{
     notification::{Notification, PublishDiagnostics},
 };
 use rustc_hash::FxHashMap;
+use tree_sitter::Parser;
 
 use std::str::FromStr;
 
 use crate::{
-    lint::{Linter, Severity, rule},
+    lint::{Severity, lint, rule},
     lsp::{Client, open_document::OpenDocument},
 };
 
@@ -32,14 +33,14 @@ pub fn pull_diagnostics(
     client: &Client,
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
-    linter: &mut Linter,
+    parser: &mut Parser,
 ) -> Result<DocumentDiagnosticReportKind> {
     if docs.get(&uri.to_string()).is_none() {
         bail!("unknown doc: {uri:?}");
     }
     Ok(DocumentDiagnosticReportKind::Full(
         FullDocumentDiagnosticReport {
-            items: diagnostics(client, uri, docs, linter),
+            items: diagnostics(client, uri, docs, parser),
             ..Default::default()
         },
     ))
@@ -50,7 +51,7 @@ pub fn push_diagnostics(
     client: &Client,
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
-    linter: &mut Linter,
+    parser: &mut Parser,
 ) -> Result<()> {
     let Some(doc) = docs.get(&uri.to_string()) else {
         bail!("unknown doc: {uri:?}");
@@ -61,7 +62,7 @@ pub fn push_diagnostics(
         .send(Message::Notification(lsp_server::Notification::new(
             PublishDiagnostics::METHOD.to_owned(),
             PublishDiagnosticsParams {
-                diagnostics: diagnostics(client, uri, docs, linter),
+                diagnostics: diagnostics(client, uri, docs, parser),
                 uri: uri.clone(),
                 version: if client.version_support() {
                     Some(doc.version)
@@ -78,14 +79,16 @@ fn diagnostics(
     client: &Client,
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
-    linter: &mut Linter,
+    parser: &mut Parser,
 ) -> Vec<Diagnostic> {
     let doc = docs.get(&uri.to_string()).unwrap();
 
     let line_index = LineIndex::new(&doc.text);
+    let bytes = doc.text.as_bytes();
+    parser.reset();
+    let tree = parser.parse(bytes, None).unwrap();
 
-    linter
-        .lint(doc.text.as_bytes())
+    lint(&tree, bytes)
         .unwrap_or_default()
         .iter()
         .filter_map(|diagnostic| {

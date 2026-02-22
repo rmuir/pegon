@@ -13,14 +13,12 @@ use lsp_types::{
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
 use rustc_hash::FxHashMap;
+use tree_sitter::Parser;
 
-use crate::{
-    lint::Linter,
-    lsp::{
-        client::Client,
-        diagnostics::{pull_diagnostics, push_clear, push_diagnostics},
-        open_document::OpenDocument,
-    },
+use crate::lsp::{
+    client::Client,
+    diagnostics::{pull_diagnostics, push_clear, push_diagnostics},
+    open_document::OpenDocument,
 };
 
 mod client;
@@ -75,7 +73,10 @@ pub(crate) fn main() -> std::result::Result<(), Error> {
 
 fn main_loop(client: &Client) -> Result<(), Error> {
     let mut docs: FxHashMap<String, OpenDocument> = FxHashMap::default();
-    let mut linter = Linter::new();
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&tree_sitter_java::LANGUAGE.into())
+        .unwrap();
 
     for msg in &client.connection.receiver {
         match msg {
@@ -83,12 +84,12 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                 if client.connection.handle_shutdown(&req)? {
                     break;
                 }
-                if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut linter) {
+                if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut parser) {
                     eprintln!("[lsp] request {} failed: {err}", &req.method);
                 }
             }
             Message::Notification(note) => {
-                if let Err(err) = handle_notification(client, &note, &mut docs, &mut linter) {
+                if let Err(err) = handle_notification(client, &note, &mut docs, &mut parser) {
                     eprintln!("[lsp] notification {} failed: {err}", note.method);
                 }
             }
@@ -104,7 +105,7 @@ fn handle_notification(
     client: &Client,
     note: &lsp_server::Notification,
     docs: &mut FxHashMap<String, OpenDocument>,
-    linter: &mut Linter,
+    parser: &mut Parser,
 ) -> Result<()> {
     match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
@@ -119,7 +120,7 @@ fn handle_notification(
                 },
             );
             if !client.pull_diagnostics_support() {
-                push_diagnostics(client, &uri, docs, linter)?;
+                push_diagnostics(client, &uri, docs, parser)?;
             }
         }
         DidChangeTextDocument::METHOD => {
@@ -144,7 +145,7 @@ fn handle_notification(
 
             docs.insert(uri.to_string(), OpenDocument { text, version });
             if !client.pull_diagnostics_support() {
-                push_diagnostics(client, &uri, docs, linter)?;
+                push_diagnostics(client, &uri, docs, parser)?;
             }
         }
         DidCloseTextDocument::METHOD => {
@@ -164,7 +165,7 @@ fn handle_request(
     client: &Client,
     req: &ServerRequest,
     docs: & /*mut*/ FxHashMap<String, OpenDocument>,
-    linter: &mut Linter,
+    parser: &mut Parser,
 ) -> Result<()> {
     match req.method.as_str() {
         Formatting::METHOD => {
@@ -173,7 +174,7 @@ fn handle_request(
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = params.text_document.uri;
-            let response = pull_diagnostics(client, &uri, docs, linter)?;
+            let response = pull_diagnostics(client, &uri, docs, parser)?;
             send_ok(&client.connection, req.id.clone(), &response)?;
         }
         _ => send_err(

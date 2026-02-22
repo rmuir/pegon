@@ -1,7 +1,7 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::Error;
 use std::{ops::Range, sync::LazyLock};
-use tree_sitter::{Node, Query, QueryCursor, StreamingIterator};
+use tree_sitter::{Node, Query, QueryCursor, StreamingIterator, Tree};
 
 /// Returns optional range of "top context" for the node.
 /// This is typically the containing method or class declaration.
@@ -189,65 +189,49 @@ pub(crate) fn rule(index: usize) -> &'static Rule {
     &RULES[index]
 }
 
-pub(crate) struct Linter {
-    parser: tree_sitter::Parser,
-}
+pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
+    if tree.root_node().has_error() {
+        return Err(anyhow::anyhow!("syntax error"));
+    }
+    let mut lints = Vec::new();
+    let mut cursor = QueryCursor::new();
+    let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data);
+    while let Some(hit) = matches.next() {
+        let rule = rule(hit.pattern_index);
 
-impl Linter {
-    pub fn new() -> Self {
-        let mut parser = tree_sitter::Parser::new();
-        parser
-            .set_language(&tree_sitter_java::LANGUAGE.into())
+        let node = hit
+            .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
+            .next()
             .unwrap();
-        Self { parser }
-    }
 
-    pub fn lint(&mut self, data: &[u8]) -> Result<Vec<Lint>, Error> {
-        self.parser.reset();
-        let tree = self.parser.parse(data, None).unwrap();
-        if tree.root_node().has_error() {
-            return Err(anyhow::anyhow!("syntax error"));
+        let replacements = [node.utf8_text(data)?, node.kind()];
+        let label = rule
+            .label
+            .as_ref()
+            .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
+
+        // explicitly marked visible in the query
+        let mut visible = Vec::new();
+        for visible_node in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
+            visible.push(visible_node.byte_range());
         }
-        let mut lints = Vec::new();
-        let mut cursor = QueryCursor::new();
-        let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data);
-        while let Some(hit) = matches.next() {
-            let rule = rule(hit.pattern_index);
 
-            let node = hit
-                .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
-                .next()
-                .unwrap();
-
-            let replacements = [node.utf8_text(data)?, node.kind()];
-            let label = rule
-                .label
-                .as_ref()
-                .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
-
-            // explicitly marked visible in the query
-            let mut visible = Vec::new();
-            for visible_node in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
-                visible.push(visible_node.byte_range());
-            }
-
-            // explicitly marked context in the query
-            let mut context = Vec::new();
-            for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
-                context.push(context_node.byte_range());
-            }
-
-            lints.push(Lint {
-                rule_id: hit.pattern_index,
-                range: node.byte_range(),
-                title: TEMPLATE_ENGINE.replace_all(&rule.title, &replacements),
-                help: TEMPLATE_ENGINE.replace_all(&rule.help, &replacements),
-                label,
-                visible,
-                context,
-                top_context: top_context(&node),
-            });
+        // explicitly marked context in the query
+        let mut context = Vec::new();
+        for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+            context.push(context_node.byte_range());
         }
-        Ok(lints)
+
+        lints.push(Lint {
+            rule_id: hit.pattern_index,
+            range: node.byte_range(),
+            title: TEMPLATE_ENGINE.replace_all(&rule.title, &replacements),
+            help: TEMPLATE_ENGINE.replace_all(&rule.help, &replacements),
+            label,
+            visible,
+            context,
+            top_context: top_context(&node),
+        });
     }
+    Ok(lints)
 }
