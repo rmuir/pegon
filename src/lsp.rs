@@ -1,5 +1,3 @@
-use std::fmt::{Display, Formatter};
-
 use anyhow::{Error, Result, bail};
 use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
