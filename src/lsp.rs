@@ -136,7 +136,10 @@ fn handle_notification(
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             let version = params.text_document.version;
-            let mut text = docs.get(&uri.to_string()).unwrap().text.clone(); // FIXME
+            let Some(doc) = docs.get(&uri.to_string()) else {
+                bail!("[lsp] document not open: {uri:?}, version: {version}");
+            };
+            let mut text = doc.text.clone();
             for change in params.content_changes {
                 if let Some(range) = change.range {
                     let line_index = LineIndex::new(&text);
