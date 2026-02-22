@@ -93,7 +93,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                         lsp_server::ErrorCode::RequestFailed,
                         err.to_string().as_str(),
                     ) {
-                        eprintln!("[lsp] request {} error delivery failed {err}", &req.method);
+                        bail!("[lsp] request {} error delivery failed {err}", &req.method);
                     }
                 }
             }
