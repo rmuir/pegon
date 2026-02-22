@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use line_index::{LineCol, LineIndex, TextSize, WideEncoding};
+use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use lsp_server::Connection;
 use lsp_types::{ClientCapabilities, InitializeParams, Position, PositionEncodingKind};
 
@@ -20,7 +20,11 @@ impl Client {
         }
     }
 
-    pub(crate) fn to_position(&self, offset: usize, line_index: &LineIndex) -> Option<Position> {
+    pub(crate) fn encode_position(
+        &self,
+        offset: usize,
+        line_index: &LineIndex,
+    ) -> Option<Position> {
         #[allow(clippy::cast_possible_truncation)]
         let position = line_index.try_line_col(TextSize::from(offset as u32))?;
         match self.encoding {
@@ -36,13 +40,13 @@ impl Client {
         }
     }
 
-    pub(crate) fn from_range(
+    pub(crate) fn decode_range(
         &self,
         range: lsp_types::Range,
         line_index: &LineIndex,
     ) -> Option<Range<usize>> {
-        if let Some(start) = self.from_position(range.start, line_index)
-            && let Some(end) = self.from_position(range.end, line_index)
+        if let Some(start) = self.decode_position(range.start, line_index)
+            && let Some(end) = self.decode_position(range.end, line_index)
         {
             Some(start..end)
         } else {
@@ -50,25 +54,32 @@ impl Client {
         }
     }
 
-    pub(crate) fn from_position(
+    pub(crate) fn decode_position(
         &self,
         position: Position,
         line_index: &LineIndex,
     ) -> Option<usize> {
         match self.encoding {
-            Encoding::Utf8 => line_index
-                .offset(LineCol {
+            Encoding::Utf8 => Some(LineCol {
+                line: position.line,
+                col: position.character,
+            }),
+            Encoding::Utf16 => line_index.to_utf8(
+                WideEncoding::Utf16,
+                WideLineCol {
                     line: position.line,
                     col: position.character,
-                })
-                .map(usize::from),
-            Encoding::Utf16 => {
-                todo!();
-            }
-            Encoding::Utf32 => {
-                todo!();
-            }
+                },
+            ),
+            Encoding::Utf32 => line_index.to_utf8(
+                WideEncoding::Utf32,
+                WideLineCol {
+                    line: position.line,
+                    col: position.character,
+                },
+            ),
         }
+        .and_then(|line_col| line_index.offset(line_col).map(usize::from))
     }
 
     pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {

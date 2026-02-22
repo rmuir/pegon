@@ -132,7 +132,7 @@ fn handle_notification(
             for change in params.content_changes {
                 if let Some(range) = change.range {
                     let line_index = LineIndex::new(&text);
-                    let Some(offsets) = client.from_range(range, &line_index) else {
+                    let Some(offsets) = client.decode_range(range, &line_index) else {
                         bail!("illegal range: {range:?}, uri: {uri:?}, version: {version}");
                     };
                     if text.get(offsets.clone()).is_none() {
