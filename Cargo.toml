@@ -20,6 +20,9 @@ codegen-units = 1
 debug = "line-tables-only"
 lto = "off"
 
+[profile.dev.package."*"]
+debug = "none"
+
 [dependencies]
 # Templates diagnostic errors
 aho-corasick = "1.1.4"
