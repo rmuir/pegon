@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use anyhow::{Error, Result, bail};
 use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
@@ -27,7 +25,7 @@ mod client;
 mod diagnostics;
 mod open_document;
 
-pub(crate) fn main() -> std::result::Result<(), Error> {
+pub(crate) fn main() -> Result<(), Error> {
     // transport
     let (connection, io_thread) = Connection::stdio();
 
@@ -82,19 +80,17 @@ fn main_loop(client: &Client) -> Result<(), Error> {
         match msg {
             Message::Request(req) => {
                 // try to go down gracefully, but always go down
-                let Ok(false) = client.connection.handle_shutdown(&req) else {
-                    exit(0)
-                };
+                if client.connection.handle_shutdown(&req)? {
+                    return Ok(());
+                }
                 if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut parser) {
                     eprintln!("[lsp] request {} failed: {err}", &req.method);
-                    if let Err(err) = send_err(
+                    send_err(
                         &client.connection,
                         req.id.clone(),
                         lsp_server::ErrorCode::RequestFailed,
                         err.to_string().as_str(),
-                    ) {
-                        bail!("[lsp] request {} error delivery failed {err}", &req.method);
-                    }
+                    )?;
                 }
             }
             Message::Notification(note) => {
