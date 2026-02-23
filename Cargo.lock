@@ -391,6 +391,7 @@ dependencies = [
  "anyhow",
  "blake3",
  "clap",
+ "crossbeam-channel",
  "ignore",
  "line-index",
  "lsp-server",
