@@ -23,6 +23,9 @@ lto = "off"
 [profile.dev.package."*"]
 debug = "none"
 
+[profile.test.package."*"]
+debug = "none"
+
 [dependencies]
 # Templates diagnostic errors
 aho-corasick = "1.1.4"
