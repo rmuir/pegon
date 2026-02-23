@@ -1,9 +1,7 @@
 use anyhow::{Error, Result, bail};
 use crossbeam_channel::RecvTimeoutError;
 use line_index::LineIndex;
-use lsp_server::{
-    Connection, Message, ProtocolError, Request as ServerRequest, RequestId, Response,
-};
+use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
     DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
@@ -70,7 +68,7 @@ pub(crate) fn main() -> Result<(), Error> {
 
     client.connection.initialize_finish(id, result)?;
     main_loop(&client)?;
-    drop(client);
+    drop(client.connection); // needed for the join to really succeed
     io_thread.join()?;
     Ok(())
 }
@@ -84,10 +82,14 @@ fn main_loop(client: &Client) -> Result<(), Error> {
     loop {
         let msg = match connection
             .receiver
-            .recv_timeout(std::time::Duration::from_secs(1))
+            .recv_timeout(std::time::Duration::from_secs(30))
         {
             Ok(msg) => msg,
             Err(RecvTimeoutError::Timeout) => {
+                // no activity, check that parent is alive
+                if let Some(pid) = client.process_id {
+                    check_parent(pid)?;
+                }
                 continue;
             }
             Err(RecvTimeoutError::Disconnected) => {
@@ -246,4 +248,19 @@ fn send_err(
     };
     conn.sender.send(Message::Response(resp))?;
     Ok(())
+}
+
+#[cfg(unix)]
+fn check_parent(process_id: u32) -> Result<(), Error> {
+    if let Ok(pid) = i32::try_from(process_id)
+        && libc::ESRCH == unsafe { libc::kill(pid, 0) }
+    {
+        bail!("parent process {pid} died");
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn check_parent(pid: u32) -> Result<(), Error> {
+    OK(())
 }

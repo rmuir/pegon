@@ -8,15 +8,18 @@ pub struct Client {
     pub(crate) connection: Connection,
     init_params: InitializeParams,
     encoding: Encoding,
+    pub(crate) process_id: Option<u32>,
 }
 
 impl Client {
     pub(crate) fn new(connection: Connection, init_params: InitializeParams) -> Self {
         let encoding = Encoding::preferred(&init_params.capabilities);
+        let process_id = init_params.process_id;
         Self {
             connection,
             init_params,
             encoding,
+            process_id,
         }
     }
 

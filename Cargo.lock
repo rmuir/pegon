@@ -393,6 +393,7 @@ dependencies = [
  "clap",
  "crossbeam-channel",
  "ignore",
+ "libc",
  "line-index",
  "lsp-server",
  "lsp-types",
