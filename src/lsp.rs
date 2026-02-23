@@ -1,4 +1,4 @@
-use anyhow::{Error, Result, bail};
+use anyhow::{Context, Error, Result, bail};
 use crossbeam_channel::RecvTimeoutError;
 use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
@@ -14,6 +14,7 @@ use lsp_types::{
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
 use rustc_hash::FxHashMap;
+use std::io::ErrorKind;
 use tree_sitter::Parser;
 
 use crate::lsp::{
@@ -151,19 +152,15 @@ fn handle_notification(
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             let version = params.text_document.version;
-            let Some(doc) = docs.get(&uri.to_string()) else {
-                bail!("[lsp] document not open: {uri:?}, version: {version}");
-            };
+            let doc = docs.get(&uri.to_string()).context("document not open")?;
             let mut text = doc.text.clone();
             for change in params.content_changes {
                 if let Some(range) = change.range {
                     let line_index = LineIndex::new(&text);
-                    let Some(offsets) = client.decode_range(range, &line_index) else {
-                        bail!("[lsp] illegal range: {range:?}, uri: {uri:?}, version: {version}");
-                    };
-                    if text.get(offsets.clone()).is_none() {
-                        bail!("[lsp] illegal slice: {range:?}, uri: {uri:?}, version: {version}");
-                    }
+                    let offsets = client
+                        .decode_range(range, &line_index)
+                        .context("illegal range")?;
+                    text.get(offsets.clone()).context("illegal slice")?;
                     text.replace_range(offsets, &change.text);
                 } else {
                     text = change.text;
@@ -251,16 +248,16 @@ fn send_err(
 }
 
 #[cfg(unix)]
-fn check_parent(process_id: u32) -> Result<(), Error> {
+fn check_parent(process_id: u32) -> Result<(), std::io::Error> {
     if let Ok(pid) = i32::try_from(process_id)
         && libc::ESRCH == unsafe { libc::kill(pid, 0) }
     {
-        bail!("parent process {pid} died");
+        return Err(std::io::Error::from(ErrorKind::BrokenPipe));
     }
     Ok(())
 }
 
 #[cfg(not(unix))]
-fn check_parent(pid: u32) -> Result<(), Error> {
-    OK(())
+fn check_parent(process_id: u32) -> Result<(), std::io::Error> {
+    Ok(())
 }
