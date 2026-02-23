@@ -101,7 +101,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                 if connection.handle_shutdown(&req)? {
                     return Ok(());
                 }
-                if let Err(err) = handle_request(client, &req, & /*mut*/ docs, &mut parser) {
+                if let Err(err) = handle_request(client, &req, & /*mut*/ docs) {
                     eprintln!("[lsp] request {} failed: {err}", &req.method);
                     send_err(
                         connection,
@@ -134,15 +134,20 @@ fn handle_notification(
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             let version = params.text_document.version;
+            parser.reset();
+            let tree = parser
+                .parse(&params.text_document.text, None)
+                .context("broken parser setup")?;
             docs.insert(
                 uri.to_string(),
                 OpenDocument {
                     text: params.text_document.text,
                     version,
+                    tree,
                 },
             );
             if !client.pull_diagnostics_support() {
-                push_diagnostics(client, &uri, docs, parser)?;
+                push_diagnostics(client, &uri, docs)?;
             }
         }
         DidChangeTextDocument::METHOD => {
@@ -163,10 +168,20 @@ fn handle_notification(
                     text = change.text;
                 }
             }
+            // TODO: still not incremental
+            parser.reset();
+            let tree = parser.parse(&text, None).context("broken parser setup")?;
 
-            docs.insert(uri.to_string(), OpenDocument { text, version });
+            docs.insert(
+                uri.to_string(),
+                OpenDocument {
+                    text,
+                    version,
+                    tree,
+                },
+            );
             if !client.pull_diagnostics_support() {
-                push_diagnostics(client, &uri, docs, parser)?;
+                push_diagnostics(client, &uri, docs)?;
             }
         }
         DidCloseTextDocument::METHOD => {
@@ -190,7 +205,6 @@ fn handle_request(
     client: &Client,
     req: &ServerRequest,
     docs: & /*mut*/ FxHashMap<String, OpenDocument>,
-    parser: &mut Parser,
 ) -> Result<()> {
     match req.method.as_str() {
         Formatting::METHOD => {
@@ -199,7 +213,7 @@ fn handle_request(
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = params.text_document.uri;
-            let response = pull_diagnostics(client, &uri, docs, parser)?;
+            let response = pull_diagnostics(client, &uri, docs)?;
             send_ok(&client.connection, req.id.clone(), &response)?;
         }
         _ => {
