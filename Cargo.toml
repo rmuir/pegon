@@ -54,10 +54,6 @@ tree-sitter = "0.26.5"
 # Parser for java language
 tree-sitter-java = "0.23.5"
 
-[target.'cfg(unix)'.dependencies]
-# Periodically check 'process_id' according to LSP spec
-libc = "0.2.182"
-
 [lints]
 workspace = true
 
