@@ -14,7 +14,10 @@ use lsp_types::{
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
 use rustc_hash::FxHashMap;
-use std::{io::ErrorKind, time::Duration};
+use std::{
+    io::ErrorKind,
+    time::{Duration, Instant},
+};
 use tree_sitter::Parser;
 
 use crate::lsp::{
@@ -95,6 +98,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
             }
         };
 
+        let start_time = Instant::now();
         match msg {
             Message::Request(req) => {
                 // try to go down gracefully, but always go down
@@ -102,7 +106,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                     return Ok(());
                 }
                 if let Err(err) = handle_request(client, &req, & /*mut*/ docs) {
-                    eprintln!("[lsp] request {} failed: {err}", &req.method);
+                    eprintln!("[lsp] request {} failed: {err}", req.method);
                     send_err(
                         connection,
                         req.id.clone(),
@@ -110,11 +114,21 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                         err.to_string().as_str(),
                     )?;
                 }
+                eprintln!(
+                    "[request] {}: {} ms",
+                    req.method,
+                    start_time.elapsed().as_millis()
+                );
             }
             Message::Notification(note) => {
                 if let Err(err) = handle_notification(client, &note, &mut docs, &mut parser) {
                     eprintln!("[lsp] notification {} failed: {err}", note.method);
                 }
+                eprintln!(
+                    "[notify] {}: {} ms",
+                    note.method,
+                    start_time.elapsed().as_millis()
+                );
             }
             Message::Response(resp) => {
                 eprintln!("[lsp] unexpected response: {resp:?}");
