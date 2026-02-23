@@ -14,7 +14,7 @@ use lsp_types::{
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
 use rustc_hash::FxHashMap;
-use std::io::ErrorKind;
+use std::{io::ErrorKind, time::Duration};
 use tree_sitter::Parser;
 
 use crate::lsp::{
@@ -81,13 +81,10 @@ fn main_loop(client: &Client) -> Result<(), Error> {
 
     let connection = &client.connection;
     loop {
-        let msg = match connection
-            .receiver
-            .recv_timeout(std::time::Duration::from_secs(30))
-        {
+        let msg = match connection.receiver.recv_timeout(Duration::from_secs(30)) {
             Ok(msg) => msg,
             Err(RecvTimeoutError::Timeout) => {
-                // no activity, check that parent is alive
+                // no activity, check that parent is alive, if we were provided the id
                 if let Some(pid) = client.process_id {
                     check_parent(pid)?;
                 }
