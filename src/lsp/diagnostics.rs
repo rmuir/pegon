@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Context, Result};
 use line_index::LineIndex;
 use lsp_server::Message;
 use lsp_types::{
@@ -33,9 +33,7 @@ pub fn pull_diagnostics(
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
 ) -> Result<DocumentDiagnosticReportKind> {
-    if docs.get(&uri.to_string()).is_none() {
-        bail!("unknown doc: {uri:?}");
-    }
+    docs.get(&uri.to_string()).context("unknown doc")?;
     Ok(DocumentDiagnosticReportKind::Full(
         FullDocumentDiagnosticReport {
             items: diagnostics(client, uri, docs),
@@ -50,9 +48,7 @@ pub fn push_diagnostics(
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
 ) -> Result<()> {
-    let Some(doc) = docs.get(&uri.to_string()) else {
-        bail!("unknown doc: {uri:?}");
-    };
+    let doc = docs.get(&uri.to_string()).context("unknown doc")?;
     client
         .connection
         .sender
