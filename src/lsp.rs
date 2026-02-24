@@ -1,5 +1,4 @@
-use anyhow::{Context, Error, Result, bail};
-use crossbeam_channel::RecvTimeoutError;
+use anyhow::{Context, Error, Result};
 use line_index::LineIndex;
 use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
@@ -14,7 +13,7 @@ use lsp_types::{
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
 use rustc_hash::FxHashMap;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tree_sitter::Parser;
 
 use crate::lsp::{
@@ -79,29 +78,18 @@ fn main_loop(client: &Client) -> Result<(), Error> {
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&tree_sitter_java::LANGUAGE.into())?;
 
-    let connection = &client.connection;
-    loop {
-        let msg = match connection.receiver.recv_timeout(Duration::from_secs(30)) {
-            Ok(msg) => msg,
-            Err(RecvTimeoutError::Timeout) => {
-                continue;
-            }
-            Err(RecvTimeoutError::Disconnected) => {
-                bail!("disconnected");
-            }
-        };
-
+    for msg in &client.connection.receiver {
         let start_time = Instant::now();
         match msg {
             Message::Request(req) => {
                 // try to go down gracefully, but always go down
-                if connection.handle_shutdown(&req)? {
+                if client.connection.handle_shutdown(&req)? {
                     return Ok(());
                 }
                 if let Err(err) = handle_request(client, &req, & /*mut*/ docs) {
                     eprintln!("[lsp] request {} failed: {err}", req.method);
                     send_err(
-                        connection,
+                        &client.connection,
                         req.id.clone(),
                         lsp_server::ErrorCode::RequestFailed,
                         err.to_string().as_str(),
@@ -128,6 +116,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
             }
         }
     }
+    Ok(())
 }
 
 fn handle_notification(
