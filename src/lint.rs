@@ -73,6 +73,7 @@ pub(crate) struct Rule {
     pub(crate) fix: Option<String>,
 }
 
+#[derive(Hash)]
 pub(crate) struct Lint {
     /// Matched rule
     pub(crate) rule_id: usize,

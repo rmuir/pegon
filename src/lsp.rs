@@ -209,7 +209,8 @@ fn handle_request(
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = params.text_document.uri;
-            let response = pull_diagnostics(client, &uri, docs)?;
+            let previous_result_id = params.previous_result_id;
+            let response = pull_diagnostics(client, &uri, docs, previous_result_id)?;
             send_ok(&client.connection, req.id.clone(), &response)?;
         }
         _ => {
