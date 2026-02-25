@@ -7,7 +7,6 @@ use lsp_types::{
     PublishDiagnosticsParams, Range, UnchangedDocumentDiagnosticReport, Uri,
     notification::{Notification, PublishDiagnostics},
 };
-use rustc_hash::FxHashMap;
 
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
@@ -34,10 +33,9 @@ impl From<Severity> for DiagnosticSeverity {
 pub fn pull_diagnostics(
     client: &Client,
     uri: &Uri,
-    docs: &FxHashMap<String, OpenDocument>,
+    doc: &OpenDocument,
     previous_result_id: Option<String>,
 ) -> Result<DocumentDiagnosticReportKind> {
-    let doc = docs.get(&uri.to_string()).context("unknown doc")?;
     let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
@@ -60,12 +58,7 @@ pub fn pull_diagnostics(
 }
 
 /// publish diagnostics (push)
-pub fn push_diagnostics(
-    client: &Client,
-    uri: &Uri,
-    docs: &FxHashMap<String, OpenDocument>,
-) -> Result<()> {
-    let doc = docs.get(&uri.to_string()).context("unknown doc")?;
+pub fn push_diagnostics(client: &Client, uri: &Uri, doc: &OpenDocument) -> Result<()> {
     let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;

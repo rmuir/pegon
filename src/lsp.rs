@@ -134,17 +134,18 @@ fn handle_notification(
             let tree = parser
                 .parse(&params.text_document.text, None)
                 .context("broken parser setup")?;
-            docs.insert(
-                uri.to_string(),
-                OpenDocument {
-                    text: params.text_document.text,
-                    version,
-                    tree,
-                },
-            );
-            if !client.pull_diagnostics_support() {
-                push_diagnostics(client, &uri, docs)?;
-            }
+            let doc = OpenDocument {
+                text: params.text_document.text,
+                version,
+                tree,
+            };
+            let diagnosis = if client.pull_diagnostics_support() {
+                Ok(())
+            } else {
+                push_diagnostics(client, &uri, &doc)
+            };
+            docs.insert(uri.to_string(), doc);
+            diagnosis
         }
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
@@ -167,18 +168,19 @@ fn handle_notification(
             // TODO: still not incremental
             parser.reset();
             let tree = parser.parse(&text, None).context("broken parser setup")?;
+            let doc = OpenDocument {
+                text,
+                version,
+                tree,
+            };
 
-            docs.insert(
-                uri.to_string(),
-                OpenDocument {
-                    text,
-                    version,
-                    tree,
-                },
-            );
-            if !client.pull_diagnostics_support() {
-                push_diagnostics(client, &uri, docs)?;
-            }
+            let diagnosis = if client.pull_diagnostics_support() {
+                Ok(())
+            } else {
+                push_diagnostics(client, &uri, &doc)
+            };
+            docs.insert(uri.to_string(), doc);
+            diagnosis
         }
         DidCloseTextDocument::METHOD => {
             let params: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
@@ -187,14 +189,15 @@ fn handle_notification(
             if !client.pull_diagnostics_support() {
                 push_clear(client, &uri)?;
             }
+            Ok(())
         }
         // doesn't make sense for a single-threaded impl
-        Cancel::METHOD => {}
+        Cancel::METHOD => Ok(()),
         _ => {
             eprintln!("[lsp] unhandled notification {note:?}");
+            Ok(())
         }
     }
-    Ok(())
 }
 
 fn handle_request(
@@ -210,7 +213,8 @@ fn handle_request(
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = params.text_document.uri;
             let previous_result_id = params.previous_result_id;
-            let response = pull_diagnostics(client, &uri, docs, previous_result_id)?;
+            let doc = docs.get(&uri.to_string()).context("document not open")?;
+            let response = pull_diagnostics(client, &uri, doc, previous_result_id)?;
             send_ok(&client.connection, req.id.clone(), &response)?;
         }
         _ => {
