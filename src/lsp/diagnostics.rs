@@ -1,11 +1,9 @@
 use anyhow::{Context, Error, Result};
 use line_index::LineIndex;
-use lsp_server::Message;
 use lsp_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location,
     NumberOrString, PublishDiagnosticsParams, Range, UnchangedDocumentDiagnosticReport, Uri,
-    notification::{Notification, PublishDiagnostics},
 };
 
 use std::{
@@ -56,26 +54,22 @@ pub fn pull_diagnostics(
 }
 
 /// publish diagnostics (push)
-pub fn push_diagnostics(client: &Client, doc: &Document, uri: &Uri) -> Result<()> {
+pub fn push_diagnostics(
+    client: &Client,
+    doc: &Document,
+    uri: &Uri,
+) -> Result<PublishDiagnosticsParams> {
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
-
-    client
-        .connection
-        .sender
-        .send(Message::Notification(lsp_server::Notification::new(
-            PublishDiagnostics::METHOD.to_owned(),
-            PublishDiagnosticsParams {
-                diagnostics: encode(client, uri, &doc.line_index, &results)?,
-                uri: uri.clone(),
-                version: if client.version_support() {
-                    Some(doc.version)
-                } else {
-                    None
-                },
-            },
-        )))?;
-    Ok(())
+    Ok(PublishDiagnosticsParams {
+        diagnostics: encode(client, uri, &doc.line_index, &results)?,
+        uri: uri.clone(),
+        version: if client.version_support() {
+            Some(doc.version)
+        } else {
+            None
+        },
+    })
 }
 
 fn hash_items(items: &Vec<Lint>) -> String {
@@ -163,20 +157,4 @@ fn encode(
             })
         })
         .collect()
-}
-
-// for push clients, clear diagnostic space, e.g. on document close
-pub fn push_clear(client: &Client, uri: &Uri) -> Result<()> {
-    client
-        .connection
-        .sender
-        .send(Message::Notification(lsp_server::Notification::new(
-            PublishDiagnostics::METHOD.to_owned(),
-            PublishDiagnosticsParams {
-                diagnostics: vec![],
-                uri: uri.clone(),
-                version: None,
-            },
-        )))?;
-    Ok(())
 }

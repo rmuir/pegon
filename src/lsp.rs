@@ -4,11 +4,12 @@ use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Respo
 use lsp_types::{
     DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
-    InitializeParams, InitializeResult, OneOf, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    InitializeParams, InitializeResult, OneOf, PublishDiagnosticsParams, ServerCapabilities,
+    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
     WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
+        PublishDiagnostics,
     },
     request::{DocumentDiagnosticRequest, Formatting, Request},
 };
@@ -18,7 +19,7 @@ use tree_sitter::Parser;
 
 use crate::lsp::{
     client::Client,
-    diagnostics::{pull_diagnostics, push_clear, push_diagnostics},
+    diagnostics::{pull_diagnostics, push_diagnostics},
     document::Document,
 };
 
@@ -34,7 +35,7 @@ pub(crate) fn main() -> Result<(), Error> {
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
 
-    let client = Client::new(connection, init_params);
+    let client = Client::new(init_params);
 
     let result = serde_json::json!(InitializeResult {
         server_info: Some(ServerInfo {
@@ -65,30 +66,30 @@ pub(crate) fn main() -> Result<(), Error> {
         }
     });
 
-    client.connection.initialize_finish(id, result)?;
-    main_loop(&client)?;
-    drop(client.connection); // needed for the join to really succeed
+    connection.initialize_finish(id, result)?;
+    main_loop(&connection, &client)?;
+    drop(connection);
     io_thread.join()?;
     Ok(())
 }
 
-fn main_loop(client: &Client) -> Result<(), Error> {
+fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
     let mut docs: FxHashMap<String, Document> = FxHashMap::default();
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&tree_sitter_java::LANGUAGE.into())?;
 
-    for msg in &client.connection.receiver {
+    for msg in &connection.receiver {
         let start_time = Instant::now();
         match msg {
             Message::Request(req) => {
                 // try to go down gracefully, but always go down
-                if client.connection.handle_shutdown(&req)? {
+                if connection.handle_shutdown(&req)? {
                     return Ok(());
                 }
-                if let Err(err) = handle_request(client, &req, & /*mut*/ docs) {
+                if let Err(err) = handle_request(connection, client, &req, & /*mut*/ docs) {
                     eprintln!("[lsp] request {} failed: {err}", req.method);
                     send_err(
-                        &client.connection,
+                        connection,
                         req.id.clone(),
                         lsp_server::ErrorCode::RequestFailed,
                         err.to_string().as_str(),
@@ -101,7 +102,9 @@ fn main_loop(client: &Client) -> Result<(), Error> {
                 );
             }
             Message::Notification(note) => {
-                if let Err(err) = handle_notification(client, &note, &mut docs, &mut parser) {
+                if let Err(err) =
+                    handle_notification(connection, client, &note, &mut docs, &mut parser)
+                {
                     eprintln!("[lsp] notification {} failed: {err}", note.method);
                 }
                 eprintln!(
@@ -119,6 +122,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
 }
 
 fn handle_notification(
+    connection: &Connection,
     client: &Client,
     note: &lsp_server::Notification,
     docs: &mut FxHashMap<String, Document>,
@@ -142,7 +146,8 @@ fn handle_notification(
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
             } else {
-                push_diagnostics(client, &doc, &uri)
+                let push = push_diagnostics(client, &doc, &uri)?;
+                send_notify(connection, PublishDiagnostics::METHOD, push)
             };
             docs.insert(uri.to_string(), doc);
             diagnosis
@@ -178,7 +183,8 @@ fn handle_notification(
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
             } else {
-                push_diagnostics(client, &doc, &uri)
+                let push = push_diagnostics(client, &doc, &uri)?;
+                send_notify(connection, PublishDiagnostics::METHOD, push)
             };
             docs.insert(uri.to_string(), doc);
             diagnosis
@@ -188,7 +194,15 @@ fn handle_notification(
             let uri = params.text_document.uri;
             docs.remove(&uri.to_string());
             if !client.pull_diagnostics_support() {
-                push_clear(client, &uri)?;
+                send_notify(
+                    connection,
+                    PublishDiagnostics::METHOD,
+                    PublishDiagnosticsParams {
+                        diagnostics: vec![],
+                        uri,
+                        version: None,
+                    },
+                )?;
             }
             Ok(())
         }
@@ -202,6 +216,7 @@ fn handle_notification(
 }
 
 fn handle_request(
+    connection: &Connection,
     client: &Client,
     req: &ServerRequest,
     docs: & /*mut*/ FxHashMap<String, Document>,
@@ -215,18 +230,24 @@ fn handle_request(
             let uri = &params.text_document.uri;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
             let response = pull_diagnostics(client, doc, &params)?;
-            send_ok(&client.connection, req.id.clone(), &response)?;
+            send_ok(connection, req.id.clone(), &response)?;
         }
         _ => {
             eprintln!("[lsp] unhandled request {req:?}");
             send_err(
-                &client.connection,
+                connection,
                 req.id.clone(),
                 lsp_server::ErrorCode::MethodNotFound,
                 "unhandled request",
             )?;
         }
     }
+    Ok(())
+}
+
+fn send_notify<T: serde::Serialize>(conn: &Connection, method: &str, params: T) -> Result<()> {
+    let note = lsp_server::Notification::new(method.to_string(), params);
+    conn.sender.send(Message::Notification(note))?;
     Ok(())
 }
 

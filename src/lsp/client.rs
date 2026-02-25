@@ -2,20 +2,17 @@ use std::convert::From;
 use std::ops::Range;
 
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
-use lsp_server::Connection;
 use lsp_types::{ClientCapabilities, InitializeParams, Position, PositionEncodingKind};
 
 pub struct Client {
-    pub(crate) connection: Connection,
     init_params: InitializeParams,
     encoding: Encoding,
 }
 
 impl Client {
-    pub(crate) fn new(connection: Connection, init_params: InitializeParams) -> Self {
+    pub(crate) fn new(init_params: InitializeParams) -> Self {
         let encoding = Encoding::preferred(&init_params.capabilities);
         Self {
-            connection,
             init_params,
             encoding,
         }
