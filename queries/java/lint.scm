@@ -294,14 +294,14 @@
     (#set! severity "warn")))
 
 ; One variable per declaration
-; https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
+; @see https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
 (block
   (local_variable_declaration
     (variable_declarator
       name: (identifier) @context)+
     (variable_declarator
       name: (identifier) @error
-      (#set! name "multiple-variable-declaration")
+      (#set! name "multiple-declaration")
       (#set! title "Multiple variable declaration: `{node.text}`")
       (#set! label "Additional variable")
       (#set! context.label "First variable")
@@ -426,7 +426,7 @@
   (#set! severity "warn"))
 
 ; Method names should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
 (method_declaration
   name: (identifier) @error
   (#match? @error "^[A-Z]")
@@ -436,17 +436,17 @@
   (#set! severity "warn"))
 
 ; Method names should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
 (annotation_type_element_declaration
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-annotation-element")
+  (#set! name "uppercase-element")
   (#set! title "Uppercase annotation element: `{node.text}`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "warn"))
 
 ; Enumerated type constants should be UPPER_SNAKE_CASE
-; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (enum_constant
   name: (identifier) @error
   (#match? @error "[a-z]")
@@ -456,7 +456,7 @@
   (#set! severity "info"))
 
 ; Primitive type constants should be UPPER_SNAKE_CASE
-; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
   (modifiers
     [
@@ -476,14 +476,14 @@
     name: (identifier) @error)
   (#match? @error "[a-z]")
   (#not-eq? @error "serialVersionUID")
-  (#set! name "lowercase-constant-field")
+  (#set! name "lowercase-primitive-constant")
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! context.label "Immutable type")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "info"))
 
 ; String constants should be UPPER_SNAKE_CASE
-; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
   (modifiers
     [
@@ -499,14 +499,14 @@
     name: (identifier) @error)
   (#match? @error "[a-z]")
   (#eq? @_type "String")
-  (#set! name "lowercase-constant-field")
+  (#set! name "lowercase-string-constant")
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! context.label "Immutable type")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "info"))
 
 ; Null constants should be UPPER_SNAKE_CASE
-; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
   (modifiers
     [
@@ -521,14 +521,14 @@
     name: (identifier) @error
     value: (null_literal) @context)
   (#match? @error "[a-z]")
-  (#set! name "lowercase-constant-field")
+  (#set! name "lowercase-null-constant")
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! context.label "Immutable")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "info"))
 
 ; Empty array constants should be UPPER_SNAKE_CASE
-; https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
   (modifiers
     [
@@ -544,14 +544,14 @@
     value: (array_initializer) @_array @context)
   (#match? @error "[a-z]")
   (#match? @_array "^[{]\\s*[}]$")
-  (#set! name "lowercase-constant-field")
+  (#set! name "lowercase-array-constant")
   (#set! title "Lowercase in constant field: `{node.text}`")
   (#set! context.label "Immutable")
   (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
   (#set! severity "info"))
 
 ; non-constants should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   . ; no modifiers
   type: (_) @context
@@ -565,7 +565,7 @@
   (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   (modifiers) @_modifiers
   type: (_) @context
@@ -574,14 +574,14 @@
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! name "uppercase-field")
+  (#set! name "uppercase-field-modifiers")
   (#set! title "Uppercase field: `{node.text}`")
   (#set! context.label "Not `static final`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
   (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   (modifiers
     "static" @context) @_modifiers
@@ -596,7 +596,7 @@
   (#set! severity "warn"))
 
 ; non-constants should be lowerCamelCase
-; https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
+; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
   (modifiers
     "final" @context) @_modifiers
