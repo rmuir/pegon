@@ -10,7 +10,7 @@ use std::{
     time::Instant,
 };
 
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use tree_sitter::Parser;
 
@@ -19,7 +19,6 @@ use crate::lint::lint;
 
 static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
-static BYTES: AtomicUsize = AtomicUsize::new(0);
 static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
 
 fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
@@ -37,7 +36,6 @@ fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
         console::render(path, &data, result)?;
     }
     FILES.fetch_add(1, Ordering::Relaxed);
-    BYTES.fetch_add(data.len(), Ordering::Relaxed);
     Ok(())
 }
 
@@ -86,7 +84,7 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
                     }
                 }
                 Err(err) => {
-                    println!("file error: {err}");
+                    eprintln!("file error: {err}");
                     INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
                 }
             }
@@ -96,24 +94,16 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
 
     let errors = ERRORS.load(Ordering::Relaxed);
     let files = FILES.load(Ordering::Relaxed);
-    let bytes = BYTES.load(Ordering::Relaxed);
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
-    #[allow(clippy::cast_precision_loss)]
-    let speed = (bytes as f64 / 1_000_000.0) / elapsed.as_secs_f64();
 
     if errors > 0 {
-        Err(anyhow::anyhow!(
-            "Found {errors} problems across {files} java files in {millis} ms ({speed:.1} MB/s)"
-        ))
+        bail!("Found {errors} problems across {files} java files in {millis} ms");
     } else if files == 0 {
-        Err(anyhow::anyhow!("Found no java files to check"))
-    } else {
-        println!(
-            "Success: no problems found across {files} java files in {millis} ms ({speed:.1} MB/s)"
-        );
-        Ok(())
+        bail!("Found no java files to check");
     }
+    println!("Success: No problems found across {files} java files in {millis} ms");
+    Ok(())
 }
 
 fn main() -> Result<(), Error> {
