@@ -39,16 +39,18 @@ pub fn pull_diagnostics(
 ) -> Result<DocumentDiagnosticReportKind> {
     docs.get(&uri.to_string()).context("unknown doc")?;
     let (result_id, items) = diagnostics(client, uri, docs)?;
-    if let Some(id) = previous_result_id
-        && let Some(id2) = result_id.clone()
-        && id == id2
+    if let Some(previous_id) = previous_result_id
+        && previous_id == result_id
     {
         Ok(DocumentDiagnosticReportKind::Unchanged(
-            UnchangedDocumentDiagnosticReport { result_id: id2 },
+            UnchangedDocumentDiagnosticReport { result_id },
         ))
     } else {
         Ok(DocumentDiagnosticReportKind::Full(
-            FullDocumentDiagnosticReport { items, result_id },
+            FullDocumentDiagnosticReport {
+                items,
+                result_id: Some(result_id),
+            },
         ))
     }
 }
@@ -79,14 +81,10 @@ pub fn push_diagnostics(
     Ok(())
 }
 
-fn hash_items(items: &Vec<Lint>) -> Option<String> {
-    if items.is_empty() {
-        None
-    } else {
-        let mut hasher = DefaultHasher::new();
-        items.hash(&mut hasher);
-        Some(format!("{:016x}", hasher.finish()))
-    }
+fn hash_items(items: &Vec<Lint>) -> String {
+    let mut hasher = DefaultHasher::new();
+    items.hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
 }
 
 /// return diagnostics
@@ -94,7 +92,7 @@ fn diagnostics(
     client: &Client,
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
-) -> Result<(Option<String>, Vec<Diagnostic>)> {
+) -> Result<(String, Vec<Diagnostic>)> {
     let doc = docs
         .get(&uri.to_string())
         .context("document should exist")?;
