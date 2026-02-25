@@ -95,7 +95,7 @@ pub(crate) struct Lint {
     pub(crate) top_context: Option<Range<usize>>,
 }
 
-static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
+static LINT_QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
         &tree_sitter_java::LANGUAGE.into(),
         include_str!(concat!(
@@ -107,7 +107,7 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
 });
 
 static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
-    let count = JAVA_ERROR_QUERY.pattern_count();
+    let count = LINT_QUERY.pattern_count();
     let mut rules = Vec::with_capacity(count);
     for index in 0..count {
         let mut name: Option<&str> = None;
@@ -117,7 +117,7 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
         let mut label: Option<&str> = None;
         let mut context_label: Option<&str> = None;
         let mut fix: Option<&str> = None;
-        let props = JAVA_ERROR_QUERY.property_settings(index);
+        let props = LINT_QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
@@ -171,20 +171,20 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
     rules
 });
 
-static JAVA_ERROR_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    JAVA_ERROR_QUERY
+static ERROR_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    LINT_QUERY
         .capture_index_for_name("error")
         .expect("error capture should exist")
 });
 
-static JAVA_CONTEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    JAVA_ERROR_QUERY
+static CONTEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    LINT_QUERY
         .capture_index_for_name("context")
         .expect("context capture should exist")
 });
 
-static JAVA_VISIBLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    JAVA_ERROR_QUERY
+static VISIBLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    LINT_QUERY
         .capture_index_for_name("visible")
         .expect("visible capture should exist")
 });
@@ -204,12 +204,12 @@ pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     let has_error = tree.root_node().has_error();
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
-    let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data);
+    let mut matches = cursor.matches(&LINT_QUERY, tree.root_node(), data);
     while let Some(hit) = matches.next() {
         let rule = rule(hit.pattern_index);
 
         let node = hit
-            .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
+            .nodes_for_capture_index(*ERROR_CAPTURE)
             .next()
             .context("error capture should exist")?;
 
@@ -221,13 +221,13 @@ pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
 
         // explicitly marked visible in the query
         let mut visible = Vec::new();
-        for visible_node in hit.nodes_for_capture_index(*JAVA_VISIBLE_CAPTURE) {
+        for visible_node in hit.nodes_for_capture_index(*VISIBLE_CAPTURE) {
             visible.push(visible_node.byte_range());
         }
 
         // explicitly marked context in the query
         let mut context = Vec::new();
-        for context_node in hit.nodes_for_capture_index(*JAVA_CONTEXT_CAPTURE) {
+        for context_node in hit.nodes_for_capture_index(*CONTEXT_CAPTURE) {
             context.push(context_node.byte_range());
         }
 
