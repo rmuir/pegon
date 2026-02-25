@@ -51,9 +51,9 @@ lsp-types = { version = "0.97" }
 serde = "1.0.228"
 # json serialization
 serde_json = "1.0.149"
-# convert offets <-> lsp positions
+# convert offsets <-> lsp positions
 line-index = "0.1.2"
-# Hashmap that is fast and not secure-stupid
+# hash map that is fast and not secure-stupid
 rustc-hash = "2.1.1"
 # Parser framework
 tree-sitter = "0.26.5"
