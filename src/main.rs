@@ -18,6 +18,7 @@ use crate::lint::lint;
 
 static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
+static BYTES: AtomicUsize = AtomicUsize::new(0);
 static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
 
 fn check(files: &[PathBuf]) -> Result<(), Error> {
@@ -59,6 +60,7 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
                         && filetype.is_file()
                     {
                         let data = fs::read(entry.path()).unwrap();
+                        BYTES.fetch_add(data.len(), Ordering::Relaxed);
                         let hash = blake3::hash(data.as_slice());
                         let res = hash.to_hex().to_string();
                         if res == "foobar" {
@@ -97,14 +99,22 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
 
     let errors = ERRORS.load(Ordering::Relaxed);
     let files = FILES.load(Ordering::Relaxed);
-    let millis = start_time.elapsed().as_millis();
+    let bytes = BYTES.load(Ordering::Relaxed);
+    let elapsed = start_time.elapsed();
+    let millis = elapsed.as_millis();
+    #[allow(clippy::cast_precision_loss)]
+    let speed = (bytes as f64 / 1_000_000.0) / elapsed.as_secs_f64();
 
     if errors > 0 {
         Err(anyhow::anyhow!(
-            "Found {errors} diagnostics in {files} files ({millis} ms)"
+            "Found {errors} problems across {files} java files in {millis} ms ({speed:.1} MB/s)"
         ))
+    } else if files == 0 {
+        Err(anyhow::anyhow!("Found no java files to check"))
     } else {
-        println!("Success: no problems found in {files} files ({millis} ms)");
+        println!(
+            "Success: no problems found across {files} java files in {millis} ms ({speed:.1} MB/s)"
+        );
         Ok(())
     }
 }
