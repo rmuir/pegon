@@ -60,7 +60,5 @@ jobs:
           cache-dependency-glob: uv.lock
           cache-suffix: check
 
-      - name: Run prek
-        run: uv run --only-dev prek --all-files --show-diff-on-failure
-        env:
-          UV_FROZEN: "1"
+      - name: Run checks
+        run: make lint
