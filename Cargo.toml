@@ -46,7 +46,7 @@ lsp-server = "0.7.9"
 # LSP support
 crossbeam-channel = "0.5.15"
 # LSP data structures
-lsp-types = { version = "0.97" }
+lsp-types = "0.97"
 # serialization
 serde = "1.0.228"
 # json serialization
