@@ -3,8 +3,8 @@ use line_index::LineIndex;
 use lsp_server::Message;
 use lsp_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
-    DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location, NumberOrString,
-    PublishDiagnosticsParams, Range, UnchangedDocumentDiagnosticReport, Uri,
+    DocumentDiagnosticParams, DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location,
+    NumberOrString, PublishDiagnosticsParams, Range, UnchangedDocumentDiagnosticReport, Uri,
     notification::{Notification, PublishDiagnostics},
 };
 
@@ -32,17 +32,16 @@ impl From<Severity> for DiagnosticSeverity {
 /// diagnostics request (pull)
 pub fn pull_diagnostics(
     client: &Client,
-    uri: &Uri,
     doc: &OpenDocument,
-    previous_result_id: Option<String>,
+    params: &DocumentDiagnosticParams,
 ) -> Result<DocumentDiagnosticReportKind> {
     let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
     let result_id = hash_items(&results);
 
-    if let Some(previous_id) = previous_result_id
-        && previous_id == result_id
+    if let Some(previous_id) = &params.previous_result_id
+        && *previous_id == result_id
     {
         Ok(DocumentDiagnosticReportKind::Unchanged(
             UnchangedDocumentDiagnosticReport { result_id },
@@ -50,7 +49,7 @@ pub fn pull_diagnostics(
     } else {
         Ok(DocumentDiagnosticReportKind::Full(
             FullDocumentDiagnosticReport {
-                items: encode(client, uri, &line_index, &results)?,
+                items: encode(client, &params.text_document.uri, &line_index, &results)?,
                 result_id: Some(result_id),
             },
         ))
@@ -58,7 +57,7 @@ pub fn pull_diagnostics(
 }
 
 /// publish diagnostics (push)
-pub fn push_diagnostics(client: &Client, uri: &Uri, doc: &OpenDocument) -> Result<()> {
+pub fn push_diagnostics(client: &Client, doc: &OpenDocument, uri: &Uri) -> Result<()> {
     let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;

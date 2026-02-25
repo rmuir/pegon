@@ -142,7 +142,7 @@ fn handle_notification(
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
             } else {
-                push_diagnostics(client, &uri, &doc)
+                push_diagnostics(client, &doc, &uri)
             };
             docs.insert(uri.to_string(), doc);
             diagnosis
@@ -177,7 +177,7 @@ fn handle_notification(
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
             } else {
-                push_diagnostics(client, &uri, &doc)
+                push_diagnostics(client, &doc, &uri)
             };
             docs.insert(uri.to_string(), doc);
             diagnosis
@@ -211,10 +211,9 @@ fn handle_request(
         }
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
-            let uri = params.text_document.uri;
-            let previous_result_id = params.previous_result_id;
+            let uri = &params.text_document.uri;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
-            let response = pull_diagnostics(client, &uri, doc, previous_result_id)?;
+            let response = pull_diagnostics(client, doc, &params)?;
             send_ok(&client.connection, req.id.clone(), &response)?;
         }
         _ => {
