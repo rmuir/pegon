@@ -41,7 +41,6 @@ pub(crate) fn main() -> Result<(), Error> {
             name: "pegon".into(),
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
-        offset_encoding: None,
         capabilities: ServerCapabilities {
             position_encoding: Some(client.negotiated_encoding()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
