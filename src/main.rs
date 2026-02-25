@@ -5,13 +5,14 @@ pub mod lsp;
 
 use std::{
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::atomic::{AtomicUsize, Ordering},
     time::Instant,
 };
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
+use tree_sitter::Parser;
 
 use crate::cli::{Commands, parse};
 use crate::lint::lint;
@@ -20,6 +21,25 @@ static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
 static BYTES: AtomicUsize = AtomicUsize::new(0);
 static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
+
+fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
+    let data = fs::read(path)?;
+    let hash = blake3::hash(data.as_slice());
+    #[allow(unused_variables)]
+    let res = hash.to_hex().to_string();
+    parser.reset();
+    let tree = parser
+        .parse(&data, None)
+        .context("parser should be setup")?;
+    let result = lint(&tree, &data)?;
+    if !result.is_empty() {
+        ERRORS.fetch_add(result.len(), Ordering::Relaxed);
+        console::render(path, &data, result)?;
+    }
+    FILES.fetch_add(1, Ordering::Relaxed);
+    BYTES.fetch_add(data.len(), Ordering::Relaxed);
+    Ok(())
+}
 
 fn check(files: &[PathBuf]) -> Result<(), Error> {
     let start_time = Instant::now();
@@ -48,7 +68,7 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
 
     // TODO: use parallelvisitor builder
     builder.build_parallel().run(|| {
-        let mut parser = tree_sitter::Parser::new();
+        let mut parser = Parser::new();
         parser
             .set_language(&tree_sitter_java::LANGUAGE.into())
             .unwrap();
@@ -59,37 +79,18 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
                     if let Some(filetype) = entry.file_type()
                         && filetype.is_file()
                     {
-                        let data = fs::read(entry.path()).unwrap();
-                        BYTES.fetch_add(data.len(), Ordering::Relaxed);
-                        let hash = blake3::hash(data.as_slice());
-                        let res = hash.to_hex().to_string();
-                        if res == "foobar" {
-                            println!("bogus: {res}");
-                        }
-                        parser.reset();
-                        let tree = parser.parse(&data, None).unwrap();
-                        let result = lint(&tree, &data);
-                        match result {
-                            Ok(errors) => {
-                                FILES.fetch_add(1, Ordering::Relaxed);
-                                if !errors.is_empty() {
-                                    ERRORS.fetch_add(errors.len(), Ordering::Relaxed);
-                                    console::render(entry.path(), &data, errors).unwrap(); // TODO
-                                }
-                            }
-                            Err(error) => {
-                                eprintln!(
-                                    "internal error processing {}: {}",
-                                    entry.path().to_string_lossy(),
-                                    error
-                                );
-                                INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
-                            }
+                        if let Err(error) = check_file(&mut parser, entry.path()) {
+                            eprintln!(
+                                "internal error processing {}: {}",
+                                entry.path().to_string_lossy(),
+                                error
+                            );
+                            INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
                         }
                     }
                 }
                 Err(err) => {
-                    println!("internal error: {err}");
+                    println!("file error: {err}");
                     INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
                 }
             }
