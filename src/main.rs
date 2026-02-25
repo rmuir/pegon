@@ -78,15 +78,11 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
                 Ok(entry) => {
                     if let Some(filetype) = entry.file_type()
                         && filetype.is_file()
+                        && let Err(error) = check_file(&mut parser, entry.path())
                     {
-                        if let Err(error) = check_file(&mut parser, entry.path()) {
-                            eprintln!(
-                                "internal error processing {}: {}",
-                                entry.path().to_string_lossy(),
-                                error
-                            );
-                            INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
-                        }
+                        let filename = entry.path().to_string_lossy();
+                        eprintln!("internal error: {filename} {error}");
+                        INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
                     }
                 }
                 Err(err) => {
