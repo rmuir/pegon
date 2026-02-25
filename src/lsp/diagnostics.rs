@@ -95,7 +95,9 @@ fn diagnostics(
     uri: &Uri,
     docs: &FxHashMap<String, OpenDocument>,
 ) -> Result<(Option<String>, Vec<Diagnostic>)> {
-    let doc = docs.get(&uri.to_string()).unwrap();
+    let doc = docs
+        .get(&uri.to_string())
+        .context("document should exist")?;
 
     let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
@@ -153,7 +155,7 @@ fn diagnostics(
                     code: Some(NumberOrString::String(rule.name.clone())),
                     code_description: if client.code_description_support() {
                         Some(CodeDescription {
-                            href: Uri::from_str(&rule.url).unwrap(),
+                            href: Uri::from_str(&rule.url).expect("rule url should exist"),
                         })
                     } else {
                         None
