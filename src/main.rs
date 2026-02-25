@@ -7,6 +7,7 @@ use std::{
     fs,
     path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
+    time::Instant,
 };
 
 use anyhow::Error;
@@ -15,10 +16,12 @@ use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBui
 use crate::cli::{Commands, parse};
 use crate::lint::lint;
 
-static COUNT: AtomicUsize = AtomicUsize::new(0);
+static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
+static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
 
 fn check(files: &[PathBuf]) -> Result<(), Error> {
+    let start_time = Instant::now();
     let mut paths = files.to_vec();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
@@ -42,6 +45,7 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
     builder.types(matcher);
     builder.overrides(overrides.build()?);
 
+    // TODO: use parallelvisitor builder
     builder.build_parallel().run(|| {
         let mut parser = tree_sitter::Parser::new();
         parser
@@ -65,35 +69,42 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
                         let result = lint(&tree, &data);
                         match result {
                             Ok(errors) => {
+                                FILES.fetch_add(1, Ordering::Relaxed);
                                 if !errors.is_empty() {
-                                    COUNT.fetch_add(errors.len(), Ordering::Relaxed);
+                                    ERRORS.fetch_add(errors.len(), Ordering::Relaxed);
                                     console::render(entry.path(), &data, errors).unwrap(); // TODO
                                 }
                             }
                             Err(error) => {
-                                println!(
-                                    "error parsing {}: {}",
+                                eprintln!(
+                                    "internal error processing {}: {}",
                                     entry.path().to_string_lossy(),
                                     error
                                 );
-                                ERRORS.fetch_add(1, Ordering::Relaxed);
+                                INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
                             }
                         }
                     }
                 }
                 Err(err) => {
-                    println!("file error: {err}");
-                    ERRORS.fetch_add(1, Ordering::Relaxed);
+                    println!("internal error: {err}");
+                    INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
                 }
             }
             WalkState::Continue
         })
     });
-    let violations = COUNT.load(Ordering::Relaxed);
-    if violations > 0 {
-        Err(anyhow::anyhow!("Found {violations} diagnostics"))
+
+    let errors = ERRORS.load(Ordering::Relaxed);
+    let files = FILES.load(Ordering::Relaxed);
+    let millis = start_time.elapsed().as_millis();
+
+    if errors > 0 {
+        Err(anyhow::anyhow!(
+            "Found {errors} diagnostics in {files} files ({millis} ms)"
+        ))
     } else {
-        println!("All checks passed!");
+        println!("Success: no problems found in {files} files ({millis} ms)");
         Ok(())
     }
 }
