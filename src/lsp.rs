@@ -129,14 +129,13 @@ fn handle_notification(
         DidOpenTextDocument::METHOD => {
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
-            let version = params.text_document.version;
             parser.reset();
             let tree = parser
                 .parse(&params.text_document.text, None)
                 .context("broken parser setup")?;
             let doc = OpenDocument {
                 text: params.text_document.text,
-                version,
+                version: params.text_document.version,
                 tree,
             };
             let diagnosis = if client.pull_diagnostics_support() {
@@ -150,7 +149,6 @@ fn handle_notification(
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
-            let version = params.text_document.version;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
             let mut text = doc.text.clone();
             for change in params.content_changes {
@@ -170,7 +168,7 @@ fn handle_notification(
             let tree = parser.parse(&text, None).context("broken parser setup")?;
             let doc = OpenDocument {
                 text,
-                version,
+                version: params.text_document.version,
                 tree,
             };
 
