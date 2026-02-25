@@ -19,12 +19,12 @@ use tree_sitter::Parser;
 use crate::lsp::{
     client::Client,
     diagnostics::{pull_diagnostics, push_clear, push_diagnostics},
-    open_document::OpenDocument,
+    document::Document,
 };
 
 mod client;
 mod diagnostics;
-mod open_document;
+mod document;
 
 pub(crate) fn main() -> Result<(), Error> {
     // transport
@@ -73,7 +73,7 @@ pub(crate) fn main() -> Result<(), Error> {
 }
 
 fn main_loop(client: &Client) -> Result<(), Error> {
-    let mut docs: FxHashMap<String, OpenDocument> = FxHashMap::default();
+    let mut docs: FxHashMap<String, Document> = FxHashMap::default();
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&tree_sitter_java::LANGUAGE.into())?;
 
@@ -121,7 +121,7 @@ fn main_loop(client: &Client) -> Result<(), Error> {
 fn handle_notification(
     client: &Client,
     note: &lsp_server::Notification,
-    docs: &mut FxHashMap<String, OpenDocument>,
+    docs: &mut FxHashMap<String, Document>,
     parser: &mut Parser,
 ) -> Result<()> {
     match note.method.as_str() {
@@ -133,7 +133,7 @@ fn handle_notification(
                 .parse(&params.text_document.text, None)
                 .context("broken parser setup")?;
             let line_index = LineIndex::new(&params.text_document.text);
-            let doc = OpenDocument {
+            let doc = Document {
                 text: params.text_document.text,
                 version: params.text_document.version,
                 tree,
@@ -168,7 +168,7 @@ fn handle_notification(
             // TODO: still not incremental
             parser.reset();
             let tree = parser.parse(&text, None).context("broken parser setup")?;
-            let doc = OpenDocument {
+            let doc = Document {
                 text,
                 version: params.text_document.version,
                 tree,
@@ -204,7 +204,7 @@ fn handle_notification(
 fn handle_request(
     client: &Client,
     req: &ServerRequest,
-    docs: & /*mut*/ FxHashMap<String, OpenDocument>,
+    docs: & /*mut*/ FxHashMap<String, Document>,
 ) -> Result<()> {
     match req.method.as_str() {
         Formatting::METHOD => {

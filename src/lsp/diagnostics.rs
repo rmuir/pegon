@@ -15,7 +15,7 @@ use std::{
 
 use crate::{
     lint::{Lint, Severity, lint, rule},
-    lsp::{Client, open_document::OpenDocument},
+    lsp::{Client, document::Document},
 };
 
 impl From<Severity> for DiagnosticSeverity {
@@ -32,7 +32,7 @@ impl From<Severity> for DiagnosticSeverity {
 /// diagnostics request (pull)
 pub fn pull_diagnostics(
     client: &Client,
-    doc: &OpenDocument,
+    doc: &Document,
     params: &DocumentDiagnosticParams,
 ) -> Result<DocumentDiagnosticReportKind> {
     let bytes = doc.text.as_bytes();
@@ -56,7 +56,7 @@ pub fn pull_diagnostics(
 }
 
 /// publish diagnostics (push)
-pub fn push_diagnostics(client: &Client, doc: &OpenDocument, uri: &Uri) -> Result<()> {
+pub fn push_diagnostics(client: &Client, doc: &Document, uri: &Uri) -> Result<()> {
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
 
