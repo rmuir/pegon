@@ -110,60 +110,61 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
     let count = JAVA_ERROR_QUERY.pattern_count();
     let mut rules = Vec::with_capacity(count);
     for index in 0..count {
-        let mut name: Option<String> = None;
-        let mut title: Option<String> = None;
+        let mut name: Option<&str> = None;
+        let mut title: Option<&str> = None;
         let mut severity: Option<Severity> = None;
-        let mut help: Option<String> = None;
-        let mut label: Option<String> = None;
-        let mut context_label: Option<String> = None;
-        let mut fix: Option<String> = None;
+        let mut help: Option<&str> = None;
+        let mut label: Option<&str> = None;
+        let mut context_label: Option<&str> = None;
+        let mut fix: Option<&str> = None;
         let props = JAVA_ERROR_QUERY.property_settings(index);
         for prop in props {
-            let value = prop.value.clone().unwrap().to_string();
-            match &*prop.key {
+            let key = prop.key.as_ref();
+            let value = prop.value.as_deref();
+            match key {
                 "name" => {
-                    name = Some(value);
+                    name = value;
                 }
                 "title" => {
-                    title = Some(value);
+                    title = value;
                 }
                 "severity" => {
-                    severity = match value.as_str() {
-                        "error" => Some(Severity::Error),
-                        "warn" => Some(Severity::Warn),
-                        "info" => Some(Severity::Info),
-                        "hint" => Some(Severity::Hint),
+                    severity = match value {
+                        Some("error") => Some(Severity::Error),
+                        Some("warn") => Some(Severity::Warn),
+                        Some("info") => Some(Severity::Info),
+                        Some("hint") => Some(Severity::Hint),
                         _ => {
                             panic!("invalid severity");
                         }
                     }
                 }
                 "help" => {
-                    help = Some(value);
+                    help = value;
                 }
                 "label" => {
-                    label = Some(value);
+                    label = value;
                 }
                 "context.label" => {
-                    context_label = Some(value);
+                    context_label = value;
                 }
                 "fix" => {
-                    fix = Some(value);
+                    fix = value;
                 }
                 _ => {}
             }
         }
         rules.push(Rule {
-            name: name.clone().unwrap(),
-            title: title.unwrap(),
-            severity: severity.unwrap(),
-            help: help.unwrap(),
-            label,
-            context_label,
-            fix,
+            name: name.expect("pattern should have a name").to_string(),
+            title: title.expect("pattern should have a title").to_string(),
+            severity: severity.expect("pattern should have a severity"),
+            help: help.expect("pattern should have a help").to_string(),
+            label: label.map(ToString::to_string),
+            context_label: context_label.map(ToString::to_string),
+            fix: fix.map(ToString::to_string),
             url: format!(
                 "https://github.com/rmuir/pegon/wiki/lints#{}",
-                name.unwrap()
+                name.expect("pattern should have a name")
             ),
         });
     }
