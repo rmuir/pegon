@@ -191,9 +191,7 @@ pub(crate) fn rule(index: usize) -> &'static Rule {
 }
 
 pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
-    if tree.root_node().has_error() {
-        return Err(anyhow::anyhow!("syntax error"));
-    }
+    let has_error = tree.root_node().has_error();
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&JAVA_ERROR_QUERY, tree.root_node(), data);
@@ -233,6 +231,11 @@ pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
             context,
             top_context: top_context(&node),
         });
+        // stop linting the document at the first ERROR or MISSING node
+        // alerts to the issue, but prevents annoying cascade
+        if has_error && hit.pattern_index < 2 {
+            break;
+        }
     }
     Ok(lints)
 }
