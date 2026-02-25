@@ -71,7 +71,7 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
         let mut parser = Parser::new();
         parser
             .set_language(&tree_sitter_java::LANGUAGE.into())
-            .unwrap();
+            .expect("parser should be included in the binary");
 
         Box::new(move |result| {
             match result {
