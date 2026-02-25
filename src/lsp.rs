@@ -133,10 +133,12 @@ fn handle_notification(
             let tree = parser
                 .parse(&params.text_document.text, None)
                 .context("broken parser setup")?;
+            let line_index = LineIndex::new(&params.text_document.text);
             let doc = OpenDocument {
                 text: params.text_document.text,
                 version: params.text_document.version,
                 tree,
+                line_index,
             };
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
@@ -151,14 +153,15 @@ fn handle_notification(
             let uri = params.text_document.uri;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
             let mut text = doc.text.clone();
+            let mut line_index = LineIndex::new(&text);
             for change in params.content_changes {
                 if let Some(range) = change.range {
-                    let line_index = LineIndex::new(&text);
                     let offsets = client
                         .decode_range(range, &line_index)
                         .context("illegal range")?;
                     text.get(offsets.clone()).context("illegal slice")?;
                     text.replace_range(offsets, &change.text);
+                    line_index = LineIndex::new(&text);
                 } else {
                     text = change.text;
                 }
@@ -170,6 +173,7 @@ fn handle_notification(
                 text,
                 version: params.text_document.version,
                 tree,
+                line_index,
             };
 
             let diagnosis = if client.pull_diagnostics_support() {

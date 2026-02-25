@@ -35,7 +35,6 @@ pub fn pull_diagnostics(
     doc: &OpenDocument,
     params: &DocumentDiagnosticParams,
 ) -> Result<DocumentDiagnosticReportKind> {
-    let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
     let result_id = hash_items(&results);
@@ -49,7 +48,7 @@ pub fn pull_diagnostics(
     } else {
         Ok(DocumentDiagnosticReportKind::Full(
             FullDocumentDiagnosticReport {
-                items: encode(client, &params.text_document.uri, &line_index, &results)?,
+                items: encode(client, &params.text_document.uri, &doc.line_index, &results)?,
                 result_id: Some(result_id),
             },
         ))
@@ -58,7 +57,6 @@ pub fn pull_diagnostics(
 
 /// publish diagnostics (push)
 pub fn push_diagnostics(client: &Client, doc: &OpenDocument, uri: &Uri) -> Result<()> {
-    let line_index = LineIndex::new(&doc.text);
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
 
@@ -68,7 +66,7 @@ pub fn push_diagnostics(client: &Client, doc: &OpenDocument, uri: &Uri) -> Resul
         .send(Message::Notification(lsp_server::Notification::new(
             PublishDiagnostics::METHOD.to_owned(),
             PublishDiagnosticsParams {
-                diagnostics: encode(client, uri, &line_index, &results)?,
+                diagnostics: encode(client, uri, &doc.line_index, &results)?,
                 uri: uri.clone(),
                 version: if client.version_support() {
                     Some(doc.version)
