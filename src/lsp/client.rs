@@ -1,3 +1,4 @@
+use std::convert::From;
 use std::ops::Range;
 
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
@@ -25,8 +26,8 @@ impl Client {
         offset: usize,
         line_index: &LineIndex,
     ) -> Option<Position> {
-        #[allow(clippy::cast_possible_truncation)]
-        let position = line_index.try_line_col(TextSize::from(offset as u32))?;
+        let offset = TextSize::try_from(offset).ok()?;
+        let position = line_index.try_line_col(offset)?;
         match self.encoding {
             Encoding::Utf8 => Some(Position::new(position.line, position.col)),
             Encoding::Utf16 => {
