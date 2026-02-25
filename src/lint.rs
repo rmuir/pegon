@@ -1,5 +1,5 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
-use anyhow::Error;
+use anyhow::{Context, Error};
 use std::{ops::Range, sync::LazyLock};
 use tree_sitter::{Node, Query, QueryCursor, StreamingIterator, Tree};
 
@@ -103,7 +103,7 @@ static JAVA_ERROR_QUERY: LazyLock<Query> = LazyLock::new(|| {
             "/queries/java/lint.scm"
         )),
     )
-    .unwrap()
+    .expect("query should compile")
 });
 
 static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
@@ -170,20 +170,29 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
     rules
 });
 
-static JAVA_ERROR_CAPTURE: LazyLock<u32> =
-    LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("error").unwrap());
+static JAVA_ERROR_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    JAVA_ERROR_QUERY
+        .capture_index_for_name("error")
+        .expect("error capture should exist")
+});
 
-static JAVA_CONTEXT_CAPTURE: LazyLock<u32> =
-    LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("context").unwrap());
+static JAVA_CONTEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    JAVA_ERROR_QUERY
+        .capture_index_for_name("context")
+        .expect("context capture should exist")
+});
 
-static JAVA_VISIBLE_CAPTURE: LazyLock<u32> =
-    LazyLock::new(|| JAVA_ERROR_QUERY.capture_index_for_name("visible").unwrap());
+static JAVA_VISIBLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    JAVA_ERROR_QUERY
+        .capture_index_for_name("visible")
+        .expect("visible capture should exist")
+});
 
 static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
     AhoCorasick::builder()
         .kind(AhoCorasickKind::DFA.into())
         .build(["{node.text}", "{node.kind}"])
-        .unwrap()
+        .expect("dfa should build")
 });
 
 pub(crate) fn rule(index: usize) -> &'static Rule {
@@ -201,7 +210,7 @@ pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
         let node = hit
             .nodes_for_capture_index(*JAVA_ERROR_CAPTURE)
             .next()
-            .unwrap();
+            .context("error capture should exist")?;
 
         let replacements = [node.utf8_text(data)?, node.kind()];
         let label = rule
