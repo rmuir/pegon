@@ -43,10 +43,6 @@ pub(crate) fn main() -> Result<(), Error> {
         }),
         offset_encoding: None,
         capabilities: ServerCapabilities {
-            diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-                identifier: Some("pegon".into()),
-                ..Default::default()
-            })),
             position_encoding: Some(client.negotiated_encoding()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
@@ -62,6 +58,10 @@ pub(crate) fn main() -> Result<(), Error> {
                 }),
                 file_operations: None,
             }),
+            diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                identifier: Some("pegon".into()),
+                ..Default::default()
+            })),
             ..ServerCapabilities::default()
         }
     });
