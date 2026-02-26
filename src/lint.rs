@@ -5,29 +5,33 @@ use tree_sitter::{Node, Query, QueryCursor, StreamingIterator, Tree};
 
 /// Single diagnostic result
 #[derive(Hash)]
-pub(crate) struct Lint {
+pub struct Lint {
     /// Matched rule
-    pub(crate) rule_id: usize,
+    pub rule_id: usize,
     /// Primary matching error node range
-    pub(crate) range: Range<usize>,
+    pub range: Range<usize>,
     /// Formatted title of problem
-    pub(crate) title: String,
+    pub title: String,
     /// Formatted instructions to address the issue
-    pub(crate) help: String,
+    pub help: String,
     /// Formatted Text describing the matching error range
-    pub(crate) label: Option<String>,
+    pub label: Option<String>,
     /// Ranges that provide additional information
-    pub(crate) context: Vec<Range<usize>>,
+    pub context: Vec<Range<usize>>,
 
     // CLI only features that can't translate to LSP
     /// Ranges that should be visible
-    pub(crate) visible: Vec<Range<usize>>,
+    pub visible: Vec<Range<usize>>,
     /// Computed top context (e.g. what function you are in)
-    pub(crate) top_context: Option<Range<usize>>,
+    pub top_context: Option<Range<usize>>,
 }
 
 /// Runs lint queries against a parse tree, returning any lints found
-pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
+///
+/// # Errors
+///
+/// This function will return an error if .
+pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     let has_error = tree.root_node().has_error();
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
@@ -78,28 +82,28 @@ pub(crate) fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
 }
 
 // single rule (compiled pattern)
-pub(crate) struct Rule {
+pub struct Rule {
     /// Name such as `[missing-foobar]`
-    pub(crate) name: String,
+    pub name: String,
     /// Template description of problem
-    pub(crate) title: String,
+    pub title: String,
     /// Severity of problem
-    pub(crate) severity: Severity,
+    pub severity: Severity,
     /// Template of instructions to address the issue
-    pub(crate) help: String,
+    pub help: String,
     /// URL with more information
-    pub(crate) url: String,
+    pub url: String,
     /// Template describing the matching error range
-    pub(crate) label: Option<String>,
+    pub label: Option<String>,
     /// Describes context ranges (applied to first one)
-    pub(crate) context_label: Option<String>,
+    pub context_label: Option<String>,
     /// Optional automatic fix
-    pub(crate) fix: Option<String>,
+    pub fix: Option<String>,
 }
 
 /// rule severity
 #[derive(Copy, Clone)]
-pub(crate) enum Severity {
+pub enum Severity {
     /// Serious problem that must be addressed (e.g. invalid code)
     Error,
     /// Problem that should definitely be addressed
@@ -111,7 +115,8 @@ pub(crate) enum Severity {
 }
 
 // Look up rule by pattern index
-pub(crate) fn rule(index: usize) -> &'static Rule {
+#[must_use]
+pub fn rule(index: usize) -> &'static Rule {
     &RULES[index]
 }
 
