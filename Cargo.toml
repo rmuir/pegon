@@ -57,6 +57,10 @@ tree-sitter = "0.26.5"
 # Parser for java language
 tree-sitter-java = "0.23.5"
 
+[dev-dependencies]
+# indented string literals in tests
+indoc = "2.0.7"
+
 [lints]
 workspace = true
 
@@ -64,3 +68,6 @@ workspace = true
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
+
+# useless lint, standardize the tests
+needless_raw_string_hashes = "allow"
