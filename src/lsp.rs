@@ -1,6 +1,6 @@
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Error, Result, bail};
 use line_index::LineIndex;
-use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
+use lsp_server::{Connection, IoThreads, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
     DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
@@ -27,9 +27,12 @@ mod client;
 mod diagnostics;
 mod document;
 
-pub(crate) fn main() -> Result<(), Error> {
+pub(crate) fn start<F>(transport: F) -> Result<(), Error>
+where
+    F: FnOnce() -> Result<(Connection, IoThreads), std::io::Error>,
+{
     // transport
-    let (connection, io_thread) = Connection::stdio();
+    let (connection, io_thread) = transport()?;
 
     // get the client capabilities
     let (id, params) = connection.initialize_start()?;
@@ -88,7 +91,7 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
                 }
                 if let Err(err) = handle_request(connection, client, &req, & /*mut*/ docs) {
                     eprintln!("[lsp] request {} failed: {err}", req.method);
-                    send_err(
+                    send_error(
                         connection,
                         req.id.clone(),
                         lsp_server::ErrorCode::RequestFailed,
@@ -113,9 +116,8 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
                     start_time.elapsed().as_millis()
                 );
             }
-            Message::Response(resp) => {
-                eprintln!("[lsp] unexpected response: {resp:?}");
-            }
+            // since we don't issue any requests, any response must result in connection close
+            Message::Response(resp) => bail!("[lsp] unexpected response: {resp:?}"),
         }
     }
     Ok(())
@@ -146,8 +148,11 @@ fn handle_notification(
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
             } else {
-                let push = push_diagnostics(client, &doc, &uri)?;
-                send_notify(connection, PublishDiagnostics::METHOD, push)
+                send_notify(
+                    connection,
+                    PublishDiagnostics::METHOD,
+                    push_diagnostics(client, &doc, &uri)?,
+                )
             };
             docs.insert(uri.to_string(), doc);
             diagnosis
@@ -183,8 +188,11 @@ fn handle_notification(
             let diagnosis = if client.pull_diagnostics_support() {
                 Ok(())
             } else {
-                let push = push_diagnostics(client, &doc, &uri)?;
-                send_notify(connection, PublishDiagnostics::METHOD, push)
+                send_notify(
+                    connection,
+                    PublishDiagnostics::METHOD,
+                    push_diagnostics(client, &doc, &uri)?,
+                )
             };
             docs.insert(uri.to_string(), doc);
             diagnosis
@@ -193,6 +201,7 @@ fn handle_notification(
             let params: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
             docs.remove(&uri.to_string());
+            // according to LSP spec, we should clear on close if we are pushing
             if !client.pull_diagnostics_support() {
                 send_notify(
                     connection,
@@ -219,7 +228,7 @@ fn handle_request(
     connection: &Connection,
     client: &Client,
     req: &ServerRequest,
-    docs: & /*mut*/ FxHashMap<String, Document>,
+    docs: &FxHashMap<String, Document>,
 ) -> Result<()> {
     match req.method.as_str() {
         Formatting::METHOD => {
@@ -230,11 +239,11 @@ fn handle_request(
             let uri = &params.text_document.uri;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
             let response = pull_diagnostics(client, doc, &params)?;
-            send_ok(connection, req.id.clone(), &response)?;
+            send_response(connection, req.id.clone(), &response)?;
         }
         _ => {
             eprintln!("[lsp] unhandled request {req:?}");
-            send_err(
+            send_error(
                 connection,
                 req.id.clone(),
                 lsp_server::ErrorCode::MethodNotFound,
@@ -251,7 +260,7 @@ fn send_notify<T: serde::Serialize>(conn: &Connection, method: &str, params: T) 
     Ok(())
 }
 
-fn send_ok<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
+fn send_response<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
     let resp = Response {
         id,
         result: Some(serde_json::to_value(result)?),
@@ -261,7 +270,7 @@ fn send_ok<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) ->
     Ok(())
 }
 
-fn send_err(
+fn send_error(
     conn: &Connection,
     id: RequestId,
     code: lsp_server::ErrorCode,

@@ -5,6 +5,7 @@ pub mod lsp;
 
 use std::{
     fs,
+    net::Ipv4Addr,
     path::{Path, PathBuf},
     sync::atomic::{AtomicUsize, Ordering},
     time::Instant,
@@ -12,6 +13,7 @@ use std::{
 
 use anyhow::{Context, Error, bail};
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
+use lsp_server::Connection;
 use tree_sitter::Parser;
 
 use crate::cli::{Commands, parse};
@@ -111,6 +113,16 @@ fn main() -> Result<(), Error> {
     match &cli.command {
         Commands::Check { files, fix: _ } => check(files),
         Commands::Format { files: _, check: _ } => todo!(),
-        Commands::Server => lsp::main(),
+        Commands::Server {
+            stdio: _,
+            socket: None,
+        } => lsp::start(|| Ok(Connection::stdio())),
+        Commands::Server {
+            stdio: _,
+            socket: Some(port),
+        } => {
+            let addr = (Ipv4Addr::LOCALHOST, *port);
+            lsp::start(|| Connection::listen(addr))
+        }
     }
 }

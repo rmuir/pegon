@@ -35,7 +35,16 @@ pub(crate) enum Commands {
     },
 
     /// Run the language server
-    Server,
+    #[group(required = false, multiple = false)]
+    Server {
+        /// Use standard I/O streams (default)
+        #[arg(long)]
+        stdio: bool,
+
+        /// Listen on loopback TCP socket
+        #[arg(long, id = "PORT")]
+        socket: Option<u16>,
+    },
 }
 
 const CLI_STYLES: Styles = Styles::styled()
