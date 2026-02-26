@@ -1,6 +1,6 @@
 use anyhow::{Context, Error, Result, bail};
 use line_index::LineIndex;
-use lsp_server::{Connection, IoThreads, Message, Request as ServerRequest, RequestId, Response};
+use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
 use lsp_types::{
     DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
@@ -27,13 +27,12 @@ mod client;
 mod diagnostics;
 mod document;
 
-pub(crate) fn start<F>(transport: F) -> Result<(), Error>
-where
-    F: FnOnce() -> Result<(Connection, IoThreads), std::io::Error>,
-{
-    // transport
-    let (connection, io_thread) = transport()?;
-
+/// Start lsp server with provided connection
+///
+/// # Errors
+///
+/// This function will return an error if something bad happens
+pub fn start(connection: Connection) -> Result<(), Error> {
     // get the client capabilities
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
@@ -72,7 +71,6 @@ where
     connection.initialize_finish(id, result)?;
     main_loop(&connection, &client)?;
     drop(connection);
-    io_thread.join()?;
     Ok(())
 }
 

@@ -1,3 +1,2 @@
-pub fn foobar() -> u32 {
-    return 5;
-}
+pub mod lint;
+pub mod lsp;

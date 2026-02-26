@@ -116,13 +116,21 @@ fn main() -> Result<(), Error> {
         Commands::Server {
             stdio: _,
             socket: None,
-        } => lsp::start(|| Ok(Connection::stdio())),
+        } => {
+            let (connection, iothreads) = Connection::stdio();
+            let result = lsp::start(connection);
+            iothreads.join()?;
+            result
+        }
         Commands::Server {
             stdio: _,
             socket: Some(port),
         } => {
             let addr = (Ipv4Addr::LOCALHOST, *port);
-            lsp::start(|| Connection::listen(addr))
+            let (connection, iothreads) = Connection::listen(addr)?;
+            let result = lsp::start(connection);
+            iothreads.join()?;
+            result
         }
     }
 }
