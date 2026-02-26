@@ -1,5 +1,6 @@
 use std::{
     cell::{Cell, RefCell},
+    str::FromStr,
     thread::{self, JoinHandle},
     time::Duration,
 };
@@ -8,31 +9,35 @@ use anyhow::{Error, Result};
 use crossbeam_channel::{Receiver, after, select};
 use lsp_server::{Connection, Message, Request as ServerRequest};
 use lsp_types::{
-    InitializeParams, InitializedParams,
-    notification::{Exit, Initialized},
+    DidOpenTextDocumentParams, InitializeParams, InitializedParams, TextDocumentItem, Uri,
+    notification::{DidOpenTextDocument, Exit, Initialized},
     request::{Initialize, Shutdown},
 };
 use pegon::lsp::start;
 use serde::Serialize;
 use serde_json::Value;
 
-struct Server {
+struct Client {
     req_id: Cell<i32>,
     messages: RefCell<Vec<Message>>,
-    client: Connection,
+    conn: Connection,
     #[allow(dead_code)]
     thread: JoinHandle<Result<(), Error>>,
 }
 
-impl Server {
+impl Client {
     fn new() -> Self {
         let (client, server) = Connection::memory();
-        Self {
+        let instance = Self {
             req_id: Cell::new(1),
             messages: RefCell::default(),
-            client,
+            conn: client,
             thread: thread::spawn(move || start(server)),
-        }
+        };
+        let response = instance.request::<Initialize>(InitializeParams::default());
+        assert_ne!(response, Value::Null);
+        instance.notify::<Initialized>(InitializedParams {});
+        instance
     }
 
     pub(crate) fn notify<N>(&self, params: N::Params)
@@ -41,7 +46,7 @@ impl Server {
         N::Params: Serialize,
     {
         let r = lsp_server::Notification::new(N::METHOD.to_owned(), params);
-        self.client.sender.send(Message::Notification(r)).unwrap();
+        self.conn.sender.send(Message::Notification(r)).unwrap();
     }
 
     #[track_caller]
@@ -54,13 +59,13 @@ impl Server {
         self.req_id.set(id.wrapping_add(1));
 
         let r = ServerRequest::new(id.into(), R::METHOD.to_owned(), params);
-        self.send_request_(r)
+        self.send_request_(&r)
     }
 
     #[track_caller]
-    fn send_request_(&self, r: ServerRequest) -> Value {
+    fn send_request_(&self, r: &ServerRequest) -> Value {
         let id = r.id.clone();
-        self.client.sender.send(r.clone().into()).unwrap();
+        self.conn.sender.send(r.clone().into()).unwrap();
         while let Some(msg) = self
             .recv()
             .unwrap_or_else(|Timeout| panic!("timeout: {r:?}"))
@@ -83,7 +88,7 @@ impl Server {
     }
 
     fn recv(&self) -> Result<Option<Message>, Timeout> {
-        let msg = recv_timeout(&self.client.receiver)?;
+        let msg = recv_timeout(&self.conn.receiver)?;
         let msg = msg.inspect(|msg| {
             self.messages.borrow_mut().push(msg.clone());
         });
@@ -94,18 +99,14 @@ impl Server {
 struct Timeout;
 
 fn recv_timeout(receiver: &Receiver<Message>) -> Result<Option<Message>, Timeout> {
-    let timeout = if cfg!(target_os = "macos") {
-        Duration::from_secs(300)
-    } else {
-        Duration::from_secs(120)
-    };
+    let timeout = Duration::from_secs(30);
     select! {
         recv(receiver) -> msg => Ok(msg.ok()),
         recv(after(timeout)) -> _ => Err(Timeout),
     }
 }
 
-impl Drop for Server {
+impl Drop for Client {
     fn drop(&mut self) {
         assert_eq!(Value::Null, self.request::<Shutdown>(()));
         self.notify::<Exit>(());
@@ -114,12 +115,15 @@ impl Drop for Server {
 
 #[test]
 fn test_connect() {
-    let server = Server::new();
-    let value = server.request::<Initialize>(InitializeParams {
-        ..Default::default()
+    let client = Client::new();
+    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+        text_document: TextDocumentItem {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            language_id: "java".into(),
+            version: 0,
+            text: "public class foo {}".into(),
+        },
     });
-    assert_ne!(value, Value::Null);
-    server.notify::<Initialized>(InitializedParams {});
 }
 
 #[test]
