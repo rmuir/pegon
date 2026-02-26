@@ -27,6 +27,14 @@ bench: ## Run micro-benchmarks
 profile: ## Profile queries
 	ts_query_ls profile
 
+export LLVM_COV ?= llvm-cov
+export LLVM_PROFDATA ?= llvm-profdata
+
+.PHONY: coverage
+coverage: ## Run tests with coverage report
+	cargo llvm-cov --text
+	cargo llvm-cov report --summary-only
+
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
