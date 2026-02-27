@@ -168,6 +168,7 @@ fn full_capabilities() -> ClientCapabilities {
     }
 }
 
+/// test diagnostics pull approach, with all features
 #[test]
 fn test_pull_diagnostics() {
     let client = Client::new(InitializeParams {
@@ -250,6 +251,76 @@ fn test_pull_diagnostics() {
             ..Default::default()
         }],
         diagnostics
+    );
+}
+
+/// when the result is the same as the `previous_result_id`, emit unchanged
+/// it can save some serialization and client processing
+#[test]
+fn test_diagnostics_unchanged() {
+    let client = Client::new(InitializeParams {
+        capabilities: full_capabilities(),
+        ..Default::default()
+    });
+    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+        text_document: TextDocumentItem {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            language_id: "java".into(),
+            version: 0,
+            text: indoc! {r#"
+                public class foo {
+                }
+            "#}
+            .into(),
+        },
+    });
+    let result = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
+        text_document: TextDocumentIdentifier {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+        },
+        previous_result_id: None,
+        identifier: None,
+        work_done_progress_params: WorkDoneProgressParams {
+            work_done_token: None,
+        },
+        partial_result_params: PartialResultParams {
+            partial_result_token: None,
+        },
+    });
+
+    let DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(full)) = result
+    else {
+        panic!();
+    };
+
+    let report = full.full_document_diagnostic_report;
+    let result_id = report.result_id.clone();
+    assert_ne!(None, result_id);
+    assert_eq!(1, report.items.len());
+
+    let result = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
+        text_document: TextDocumentIdentifier {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+        },
+        previous_result_id: result_id.clone(),
+        identifier: None,
+        work_done_progress_params: WorkDoneProgressParams {
+            work_done_token: None,
+        },
+        partial_result_params: PartialResultParams {
+            partial_result_token: None,
+        },
+    });
+
+    let DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Unchanged(unchanged)) =
+        result
+    else {
+        panic!();
+    };
+
+    assert_eq!(
+        result_id.unwrap(),
+        unchanged.unchanged_document_diagnostic_report.result_id
     );
 }
 
