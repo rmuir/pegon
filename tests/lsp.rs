@@ -7,13 +7,16 @@ use indoc::indoc;
 use lsp_server::Connection;
 use lsp_types::{
     ClientCapabilities, CodeDescription, Diagnostic, DiagnosticClientCapabilities,
-    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReport,
-    DocumentDiagnosticReportResult, GeneralClientCapabilities, InitializeParams, Location,
-    NumberOrString, PartialResultParams, Position, PositionEncodingKind,
-    PublishDiagnosticsClientCapabilities, Range, TagSupport, TextDocumentClientCapabilities,
-    TextDocumentIdentifier, TextDocumentItem, Uri, WorkDoneProgressParams,
-    notification::{DidCloseTextDocument, DidOpenTextDocument, PublishDiagnostics},
+    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
+    DocumentDiagnosticReport, DocumentDiagnosticReportResult, GeneralClientCapabilities,
+    InitializeParams, Location, NumberOrString, PartialResultParams, Position,
+    PositionEncodingKind, PublishDiagnosticsClientCapabilities, Range, TagSupport,
+    TextDocumentClientCapabilities, TextDocumentContentChangeEvent, TextDocumentIdentifier,
+    TextDocumentItem, Uri, VersionedTextDocumentIdentifier, WorkDoneProgressParams,
+    notification::{
+        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, PublishDiagnostics,
+    },
     request::DocumentDiagnosticRequest,
 };
 use pegon::lsp::start;
@@ -351,6 +354,51 @@ fn test_diagnostics_unchanged() {
         result_id.unwrap(),
         unchanged.unchanged_document_diagnostic_report.result_id
     );
+}
+
+/// modify a document to become problematic
+#[test]
+fn test_diagnostics_on_change() {
+    let client = Client::new(InitializeParams::default());
+    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+        text_document: TextDocumentItem {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            language_id: "java".into(),
+            version: 0,
+            text: indoc! {r#"
+                public class Foo {
+                }
+            "#}
+            .into(),
+        },
+    });
+    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    // no problems
+    assert!(diagnostics.diagnostics.is_empty());
+    client.notify::<DidChangeTextDocument>(DidChangeTextDocumentParams {
+        text_document: VersionedTextDocumentIdentifier {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            version: 1,
+        },
+        content_changes: vec![TextDocumentContentChangeEvent {
+            range: Some(Range {
+                start: Position {
+                    line: 0,
+                    character: 13,
+                },
+                end: Position {
+                    line: 0,
+                    character: 14,
+                },
+            }),
+            range_length: None,
+            text: "f".into(),
+        }],
+    });
+    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    assert_eq!(1, diagnostics.diagnostics.len());
+    let code = Some(NumberOrString::String("lowercase-class".into()));
+    assert_eq!(code, diagnostics.diagnostics[0].code);
 }
 
 /// make sure if the stream disconnects that the error makes it out
