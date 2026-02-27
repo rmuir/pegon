@@ -7,13 +7,13 @@ use indoc::indoc;
 use lsp_server::Connection;
 use lsp_types::{
     ClientCapabilities, CodeDescription, Diagnostic, DiagnosticClientCapabilities,
-    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidOpenTextDocumentParams,
-    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    GeneralClientCapabilities, InitializeParams, Location, NumberOrString, PartialResultParams,
-    Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities, Range, TagSupport,
-    TextDocumentClientCapabilities, TextDocumentIdentifier, TextDocumentItem, Uri,
-    WorkDoneProgressParams,
-    notification::{DidOpenTextDocument, PublishDiagnostics},
+    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReport,
+    DocumentDiagnosticReportResult, GeneralClientCapabilities, InitializeParams, Location,
+    NumberOrString, PartialResultParams, Position, PositionEncodingKind,
+    PublishDiagnosticsClientCapabilities, Range, TagSupport, TextDocumentClientCapabilities,
+    TextDocumentIdentifier, TextDocumentItem, Uri, WorkDoneProgressParams,
+    notification::{DidCloseTextDocument, DidOpenTextDocument, PublishDiagnostics},
     request::DocumentDiagnosticRequest,
 };
 use pegon::lsp::start;
@@ -143,6 +143,35 @@ fn test_diagnostics() {
         }],
         diagnostics.diagnostics
     );
+}
+
+/// push diagnostics should be cleared by the server on close
+#[test]
+fn test_push_clear_on_close() {
+    let client = Client::new(InitializeParams::default());
+    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+        text_document: TextDocumentItem {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            language_id: "java".into(),
+            version: 0,
+            text: indoc! {r#"
+                public class foo {
+                }
+            "#}
+            .into(),
+        },
+    });
+    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    // one problem
+    assert_eq!(1, diagnostics.diagnostics.len());
+    // close the file
+    client.notify::<DidCloseTextDocument>(DidCloseTextDocumentParams {
+        text_document: TextDocumentIdentifier {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+        },
+    });
+    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    assert_eq!(0, diagnostics.diagnostics.len());
 }
 
 /// full-featured client for ease of testing
