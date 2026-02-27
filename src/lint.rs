@@ -1,7 +1,8 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
-use anyhow::{Context, Error};
-use std::{ops::Range, sync::LazyLock};
-use tree_sitter::{Node, Query, QueryCursor, StreamingIterator, Tree};
+use anyhow::{Context as _, Error};
+use core::ops::Range;
+use std::sync::LazyLock;
+use tree_sitter::{Node, Query, QueryCursor, StreamingIterator as _, Tree};
 
 /// Single diagnostic result
 #[derive(Hash)]
@@ -225,10 +226,10 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
             }
         }
         rules.push(Rule {
-            name: name.expect("pattern should have a name").to_string(),
-            title: title.expect("pattern should have a title").to_string(),
+            name: name.expect("pattern should have a name").to_owned(),
+            title: title.expect("pattern should have a title").to_owned(),
             severity: severity.expect("pattern should have a severity"),
-            help: help.expect("pattern should have a help").to_string(),
+            help: help.expect("pattern should have a help").to_owned(),
             label: label.map(ToString::to_string),
             context_label: context_label.map(ToString::to_string),
             fix: fix.map(ToString::to_string),

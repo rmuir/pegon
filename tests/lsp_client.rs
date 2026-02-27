@@ -1,8 +1,10 @@
+#![expect(clippy::panic, reason = "tests")]
+
+use core::cell::{Cell, RefCell};
+use core::time::Duration;
 use std::{
-    cell::{Cell, RefCell},
     io::ErrorKind,
     thread::{self, JoinHandle},
-    time::Duration,
 };
 
 use anyhow::{Error, Result};
@@ -22,7 +24,7 @@ pub struct Client {
     messages: RefCell<Vec<Message>>,
     init_response: RefCell<Option<InitializeResult>>,
     conn: Connection,
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "for the drop")]
     thread: JoinHandle<Result<(), Error>>,
 }
 
@@ -45,7 +47,10 @@ impl Client {
 
     /// Returns the init response from the server
     pub fn init_response(&self) -> InitializeResult {
-        self.init_response.borrow().clone().unwrap()
+        self.init_response
+            .borrow()
+            .clone()
+            .expect("initialize occurred in new")
     }
 
     pub(crate) fn notify<N>(&self, params: N::Params)
@@ -53,23 +58,28 @@ impl Client {
         N: lsp_types::notification::Notification,
         N::Params: Serialize,
     {
-        let r = lsp_server::Notification::new(N::METHOD.to_owned(), params);
-        self.conn.sender.send(Message::Notification(r)).unwrap();
+        let notification = lsp_server::Notification::new(N::METHOD.to_owned(), params);
+        self.conn
+            .sender
+            .send(Message::Notification(notification))
+            .expect("able to send notification");
     }
 
-    #[track_caller]
     pub fn read_notify<N>(&self) -> N::Params
     where
         N: lsp_types::notification::Notification,
         N::Params: Serialize,
     {
-        let Message::Notification(msg) = self.recv().unwrap().unwrap() else {
+        let message = self
+            .recv()
+            .expect("able to read message")
+            .expect("able to deserialize");
+        let Message::Notification(msg) = message else {
             panic!();
         };
-        serde_json::from_value(msg.params).unwrap()
+        serde_json::from_value(msg.params).expect("able to deserialize")
     }
 
-    #[track_caller]
     pub fn request<R>(&self, params: R::Params) -> R::Result
     where
         R: lsp_types::request::Request,
@@ -78,19 +88,21 @@ impl Client {
         let id = self.req_id.get();
         self.req_id.set(id.wrapping_add(1));
 
-        let r = ServerRequest::new(id.into(), R::METHOD.to_owned(), params);
-        let value = self.send_request_(&r);
-        serde_json::from_value(value).unwrap()
+        let req = ServerRequest::new(id.into(), R::METHOD.to_owned(), params);
+        let value = self.send_request_(&req);
+        serde_json::from_value(value).expect("able to deserialize")
     }
 
-    #[track_caller]
-    fn send_request_(&self, r: &ServerRequest) -> Value {
-        let id = r.id.clone();
-        self.conn.sender.send(r.clone().into()).unwrap();
-        while let Some(msg) = self.recv().unwrap_or_else(|_| panic!("timeout: {r:?}")) {
+    fn send_request_(&self, req: &ServerRequest) -> Value {
+        let id = req.id.clone();
+        self.conn
+            .sender
+            .send(req.clone().into())
+            .expect("able to send request");
+        while let Some(msg) = self.recv().unwrap_or_else(|_| panic!("timeout: {req:?}")) {
             match msg {
-                Message::Request(req) => {
-                    panic!("unexpected request: {req:?}")
+                Message::Request(request) => {
+                    panic!("unexpected request: {request:?}")
                 }
                 Message::Notification(_) => (),
                 Message::Response(res) => {
@@ -98,11 +110,11 @@ impl Client {
                     if let Some(err) = res.error {
                         panic!("error response: {err:#?}");
                     }
-                    return res.result.unwrap();
+                    return res.result.expect("able to deserialize");
                 }
             }
         }
-        panic!("no response for {r:?}");
+        panic!("no response for {req:?}");
     }
 
     fn recv(&self) -> Result<Option<Message>, ErrorKind> {

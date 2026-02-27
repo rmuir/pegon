@@ -1,6 +1,8 @@
-use anyhow::{Context, Error, Result, bail};
+use anyhow::{Context as _, Error, Result, bail};
 use line_index::LineIndex;
-use lsp_server::{Connection, Message, Request as ServerRequest, RequestId, Response};
+use lsp_server::{
+    Connection, ErrorCode, Message, Request as ServerRequest, RequestId, Response, ResponseError,
+};
 use lsp_types::{
     DiagnosticOptions, DiagnosticServerCapabilities, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
@@ -8,10 +10,10 @@ use lsp_types::{
     ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
     WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
-        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification,
-        PublishDiagnostics,
+        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument,
+        Notification as _, PublishDiagnostics,
     },
-    request::{DocumentDiagnosticRequest, Formatting, Request},
+    request::{DocumentDiagnosticRequest, Formatting, Request as _},
 };
 use rustc_hash::FxHashMap;
 use std::time::Instant;
@@ -92,7 +94,7 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
                     send_error(
                         connection,
                         req.id.clone(),
-                        lsp_server::ErrorCode::RequestFailed,
+                        ErrorCode::RequestFailed,
                         err.to_string().as_str(),
                     )?;
                 }
@@ -176,7 +178,7 @@ fn handle_notification(
             // TODO: still not incremental
             parser.reset();
             let tree = parser.parse(&text, None).context("broken parser setup")?;
-            let doc = Document {
+            let newdoc = Document {
                 text,
                 version: params.text_document.version,
                 tree,
@@ -189,10 +191,10 @@ fn handle_notification(
                 send_notify(
                     connection,
                     PublishDiagnostics::METHOD,
-                    push_diagnostics(client, &doc, &uri)?,
+                    push_diagnostics(client, &newdoc, &uri)?,
                 )
             };
-            docs.insert(uri.to_string(), doc);
+            docs.insert(uri.to_string(), newdoc);
             diagnosis
         }
         DidCloseTextDocument::METHOD => {
@@ -244,7 +246,7 @@ fn handle_request(
             send_error(
                 connection,
                 req.id.clone(),
-                lsp_server::ErrorCode::MethodNotFound,
+                ErrorCode::MethodNotFound,
                 "unhandled request",
             )?;
         }
@@ -253,7 +255,7 @@ fn handle_request(
 }
 
 fn send_notify<T: serde::Serialize>(conn: &Connection, method: &str, params: T) -> Result<()> {
-    let note = lsp_server::Notification::new(method.to_string(), params);
+    let note = lsp_server::Notification::new(method.to_owned(), params);
     conn.sender.send(Message::Notification(note))?;
     Ok(())
 }
@@ -268,16 +270,11 @@ fn send_response<T: serde::Serialize>(conn: &Connection, id: RequestId, result: 
     Ok(())
 }
 
-fn send_error(
-    conn: &Connection,
-    id: RequestId,
-    code: lsp_server::ErrorCode,
-    msg: &str,
-) -> Result<()> {
+fn send_error(conn: &Connection, id: RequestId, code: ErrorCode, msg: &str) -> Result<()> {
     let resp = Response {
         id,
         result: None,
-        error: Some(lsp_server::ResponseError {
+        error: Some(ResponseError {
             code: code as i32,
             message: msg.into(),
             data: None,

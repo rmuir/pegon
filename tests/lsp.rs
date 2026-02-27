@@ -1,7 +1,9 @@
-use std::{
-    str::FromStr,
-    thread::{self},
-};
+#![expect(clippy::panic, reason = "tests")]
+#![expect(clippy::unwrap_used, reason = "tests")]
+#![expect(clippy::tests_outside_test_module, reason = "false positive")]
+
+use core::str::FromStr as _;
+use std::thread;
 
 use indoc::indoc;
 use lsp_server::Connection;
@@ -27,7 +29,7 @@ mod lsp_client;
 
 /// default to UTF-16 according to the spec
 #[test]
-fn test_encoding_default() {
+fn encoding_default() {
     let client = Client::new(InitializeParams::default());
     assert_eq!(
         Some(PositionEncodingKind::UTF16),
@@ -38,7 +40,7 @@ fn test_encoding_default() {
 /// pick the client's first offered encoding.
 /// most likely it is the most performant for that client
 #[test]
-fn test_encoding_preferred() {
+fn encoding_preferred() {
     let client = Client::new(InitializeParams {
         capabilities: ClientCapabilities {
             general: Some(GeneralClientCapabilities {
@@ -60,7 +62,7 @@ fn test_encoding_preferred() {
 
 /// check all encoding kinds can be negotiated
 #[test]
-fn test_negotiate_encodings() {
+fn negotiate_encodings() {
     for encoding in [
         PositionEncodingKind::UTF8,
         PositionEncodingKind::UTF16,
@@ -85,7 +87,7 @@ fn test_negotiate_encodings() {
 
 /// diagnose a document with no problems
 #[test]
-fn test_no_diagnostics() {
+fn no_diagnostics() {
     let client = Client::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
@@ -108,7 +110,7 @@ fn test_no_diagnostics() {
 
 /// diagnose a simple document (push diagnostics, zero fancy features)
 #[test]
-fn test_diagnostics() {
+fn diagnostics() {
     let client = Client::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
@@ -150,7 +152,7 @@ fn test_diagnostics() {
 
 /// push diagnostics should be cleared by the server on close
 #[test]
-fn test_push_clear_on_close() {
+fn push_clear_on_close() {
     let client = Client::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
@@ -173,8 +175,8 @@ fn test_push_clear_on_close() {
             uri: Uri::from_str("file:///Foo.java").unwrap(),
         },
     });
-    let diagnostics = client.read_notify::<PublishDiagnostics>();
-    assert_eq!(0, diagnostics.diagnostics.len());
+    let cleared = client.read_notify::<PublishDiagnostics>();
+    assert_eq!(0, cleared.diagnostics.len());
 }
 
 /// full-featured client for ease of testing
@@ -202,7 +204,7 @@ fn full_capabilities() -> ClientCapabilities {
 
 /// test diagnostics pull approach, with all features
 #[test]
-fn test_pull_diagnostics() {
+fn pull_diagnostics() {
     let client = Client::new(InitializeParams {
         capabilities: full_capabilities(),
         ..Default::default()
@@ -289,7 +291,7 @@ fn test_pull_diagnostics() {
 /// when the result is the same as the `previous_result_id`, emit unchanged
 /// it can save some serialization and client processing
 #[test]
-fn test_diagnostics_unchanged() {
+fn diagnostics_unchanged() {
     let client = Client::new(InitializeParams {
         capabilities: full_capabilities(),
         ..Default::default()
@@ -330,7 +332,7 @@ fn test_diagnostics_unchanged() {
     assert_ne!(None, result_id);
     assert_eq!(1, report.items.len());
 
-    let result = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
+    let unchanged = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
         text_document: TextDocumentIdentifier {
             uri: Uri::from_str("file:///Foo.java").unwrap(),
         },
@@ -345,7 +347,7 @@ fn test_diagnostics_unchanged() {
     });
 
     let DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Unchanged(unchanged)) =
-        result
+        unchanged
     else {
         panic!();
     };
@@ -358,7 +360,7 @@ fn test_diagnostics_unchanged() {
 
 /// modify a document to become problematic
 #[test]
-fn test_diagnostics_on_change() {
+fn diagnostics_on_change() {
     let client = Client::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
@@ -395,16 +397,16 @@ fn test_diagnostics_on_change() {
             text: "f".into(),
         }],
     });
-    let diagnostics = client.read_notify::<PublishDiagnostics>();
-    assert_eq!(1, diagnostics.diagnostics.len());
+    let changed = client.read_notify::<PublishDiagnostics>();
+    assert_eq!(1, changed.diagnostics.len());
     let code = Some(NumberOrString::String("lowercase-class".into()));
-    assert_eq!(code, diagnostics.diagnostics[0].code);
+    assert_eq!(code, changed.diagnostics[0].code);
 }
 
 /// make sure if the stream disconnects that the error makes it out
 /// this ensure no leftover processes, which will annoy users!
 #[test]
-fn test_hard_disconnect() {
+fn hard_disconnect() {
     let (client, server) = Connection::memory();
     let server_thread = thread::spawn(move || start(server));
     drop(client);

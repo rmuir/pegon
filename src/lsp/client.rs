@@ -1,5 +1,5 @@
-use std::convert::From;
-use std::ops::Range;
+use core::convert::From;
+use core::ops::Range;
 
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use lsp_types::{ClientCapabilities, InitializeParams, Position, PositionEncodingKind};
@@ -57,7 +57,7 @@ impl Client {
         position: Position,
         line_index: &LineIndex,
     ) -> Option<usize> {
-        match self.encoding {
+        let line_col = match self.encoding {
             Encoding::Utf8 => Some(LineCol {
                 line: position.line,
                 col: position.character,
@@ -76,8 +76,8 @@ impl Client {
                     col: position.character,
                 },
             ),
-        }
-        .and_then(|line_col| line_index.offset(line_col).map(usize::from))
+        }?;
+        line_index.offset(line_col).map(usize::from)
     }
 
     pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {

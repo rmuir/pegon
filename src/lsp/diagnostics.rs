@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Result};
+use anyhow::{Context as _, Error, Result};
 use line_index::LineIndex;
 use lsp_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
@@ -6,10 +6,10 @@ use lsp_types::{
     NumberOrString, PublishDiagnosticsParams, Range, UnchangedDocumentDiagnosticReport, Uri,
 };
 
-use std::{
-    hash::{DefaultHasher, Hash, Hasher},
-    str::FromStr,
-};
+use core::hash::Hash as _;
+use core::hash::Hasher as _;
+use core::str::FromStr as _;
+use std::hash::DefaultHasher;
 
 use crate::{
     lint::{Lint, Severity, lint, rule},
@@ -64,11 +64,7 @@ pub fn push_diagnostics(
     Ok(PublishDiagnosticsParams {
         diagnostics: encode(client, uri, &doc.line_index, &results)?,
         uri: uri.clone(),
-        version: if client.version_support() {
-            Some(doc.version)
-        } else {
-            None
-        },
+        version: client.version_support().then_some(doc.version),
     })
 }
 
@@ -138,20 +134,14 @@ fn encode(
                 range: Range::new(start, end),
                 severity: Some(lsp_severity),
                 code: Some(NumberOrString::String(rule.name.clone())),
-                code_description: if client.code_description_support() {
-                    Some(CodeDescription {
-                        href: Uri::from_str(&rule.url).expect("rule url should exist"),
-                    })
-                } else {
-                    None
-                },
-                source: Some("pegon".to_string()),
+                code_description: client.code_description_support().then(|| CodeDescription {
+                    href: Uri::from_str(&rule.url).expect("rule url should exist"),
+                }),
+                source: Some("pegon".to_owned()),
                 message: diagnostic.title.clone(),
-                related_information: if client.related_information_support() {
-                    Some(related_information)
-                } else {
-                    None
-                },
+                related_information: client
+                    .related_information_support()
+                    .then_some(related_information),
                 tags: None,
                 data: None,
             })

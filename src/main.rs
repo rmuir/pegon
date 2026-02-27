@@ -3,15 +3,16 @@ pub mod console;
 pub mod lint;
 pub mod lsp;
 
+use core::net::Ipv4Addr;
+use core::sync::atomic::{AtomicUsize, Ordering};
+
 use std::{
     fs,
-    net::Ipv4Addr,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicUsize, Ordering},
     time::Instant,
 };
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Context as _, Error, bail};
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use lsp_server::Connection;
 use tree_sitter::Parser;
@@ -26,7 +27,7 @@ static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
 fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
     let data = fs::read(path)?;
     let hash = blake3::hash(data.as_slice());
-    #[allow(unused_variables)]
+    #[expect(unused_variables, reason = "TODO: needs cache impl")]
     let res = hash.to_hex().to_string();
     parser.reset();
     let tree = parser
@@ -41,9 +42,9 @@ fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
     Ok(())
 }
 
-fn check(files: &[PathBuf]) -> Result<(), Error> {
+fn check(inputs: &[PathBuf]) -> Result<(), Error> {
     let start_time = Instant::now();
-    let mut paths = files.to_vec();
+    let mut paths = inputs.to_vec();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
     // i guess we could format those?
@@ -77,7 +78,7 @@ fn check(files: &[PathBuf]) -> Result<(), Error> {
             match result {
                 Ok(entry) => {
                     if let Some(filetype) = entry.file_type()
-                        && filetype.is_file()
+                        && !filetype.is_dir()
                         && let Err(error) = check_file(&mut parser, entry.path())
                     {
                         let filename = entry.path().to_string_lossy();
@@ -113,18 +114,14 @@ fn main() -> Result<(), Error> {
     match &cli.command {
         Commands::Check { files, fix: _ } => check(files),
         Commands::Format { files: _, check: _ } => todo!(),
-        Commands::Server {
-            stdio: _,
-            socket: None,
-        } => {
+        Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
             let result = lsp::start(connection);
             iothreads.join()?;
             result
         }
         Commands::Server {
-            stdio: _,
-            socket: Some(port),
+            socket: Some(port), ..
         } => {
             let addr = (Ipv4Addr::LOCALHOST, *port);
             let (connection, iothreads) = Connection::listen(addr)?;

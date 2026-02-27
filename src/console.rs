@@ -3,10 +3,8 @@ use annotate_snippets::{
     renderer::{Ansi256Color, DecorStyle, Style},
 };
 use anyhow::Error;
-use std::{
-    fmt::{Display, Formatter},
-    path::Path,
-};
+use core::fmt::{Display, Formatter};
+use std::path::Path;
 
 use crate::lint::{Lint, Severity, rule};
 
@@ -17,12 +15,12 @@ static RENDERER: Renderer = Renderer::styled()
     .line_num(GREY);
 
 impl Display for Severity {
-    fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
-        match self {
-            Self::Error => write!(formatter, "error"),
-            Self::Warn => write!(formatter, "warn"),
-            Self::Info => write!(formatter, "info"),
-            Self::Hint => write!(formatter, "hint"),
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        match *self {
+            Self::Error => write!(f, "error"),
+            Self::Warn => write!(f, "warn"),
+            Self::Info => write!(f, "info"),
+            Self::Hint => write!(f, "hint"),
         }
     }
 }

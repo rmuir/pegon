@@ -68,8 +68,42 @@ workspace = true
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
+restriction = { level = "warn", priority = -1 }
 
-# useless lint, standardize the tests
-needless_raw_string_hashes = "allow"
 # discourages writing tests
 missing_panics_doc = "allow"
+# useless lint, standardize the tests
+needless_raw_string_hashes = "allow"
+
+# lots of the restriction ones are no good
+absolute_paths = "allow"
+arbitrary_source_item_ordering = "allow"
+blanket_clippy_restriction_lints = "allow"
+default_numeric_fallback = "allow"
+doc_paragraphs_missing_punctuation = "allow"
+else_if_without_else = "allow"
+exhaustive_enums = "allow"
+exhaustive_structs = "allow"
+field_scoped_visibility_modifiers = "allow"
+implicit_return = "allow"
+missing_assert_message = "allow"
+missing_docs_in_private_items = "allow"
+missing_inline_in_public_items = "allow"
+needless_raw_strings = "allow"
+pub_with_shorthand = "allow"
+question_mark_used = "allow"
+self_named_module_files = "allow"
+shadow_reuse = "allow"
+single_call_fn = "allow"
+
+# TODO: uses can be reduced
+as_conversions = "allow"
+indexing_slicing = "allow"
+expect_used = "allow"
+panic = "allow"
+pattern_type_mismatch = "allow"
+print_stdout = "allow"
+print_stderr = "allow"
+todo = "allow"
+unneeded_field_pattern = "allow"
+use_debug = "allow"
