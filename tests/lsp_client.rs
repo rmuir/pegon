@@ -20,7 +20,7 @@ use serde_json::Value;
 pub struct Client {
     req_id: Cell<i32>,
     messages: RefCell<Vec<Message>>,
-    init_response: RefCell<Option<Value>>,
+    init_response: RefCell<Option<InitializeResult>>,
     conn: Connection,
     #[allow(dead_code)]
     thread: JoinHandle<Result<(), Error>>,
@@ -45,8 +45,7 @@ impl Client {
 
     /// Returns the init response from the server
     pub fn init_response(&self) -> InitializeResult {
-        let value = self.init_response.borrow().clone().unwrap();
-        serde_json::from_value(value).unwrap()
+        self.init_response.borrow().clone().unwrap()
     }
 
     pub(crate) fn notify<N>(&self, params: N::Params)
@@ -58,8 +57,19 @@ impl Client {
         self.conn.sender.send(Message::Notification(r)).unwrap();
     }
 
+    pub(crate) fn read_notify<N>(&self) -> N::Params
+    where
+        N: lsp_types::notification::Notification,
+        N::Params: Serialize,
+    {
+        let Message::Notification(msg) = self.recv().unwrap().unwrap() else {
+            panic!();
+        };
+        serde_json::from_value(msg.params).unwrap()
+    }
+
     #[track_caller]
-    pub(crate) fn request<R>(&self, params: R::Params) -> Value
+    pub(crate) fn request<R>(&self, params: R::Params) -> R::Result
     where
         R: lsp_types::request::Request,
         R::Params: Serialize,
@@ -68,7 +78,8 @@ impl Client {
         self.req_id.set(id.wrapping_add(1));
 
         let r = ServerRequest::new(id.into(), R::METHOD.to_owned(), params);
-        self.send_request_(&r)
+        let value = self.send_request_(&r);
+        serde_json::from_value(value).unwrap()
     }
 
     #[track_caller]
@@ -113,7 +124,7 @@ fn recv_timeout(receiver: &Receiver<Message>) -> Result<Option<Message>, ErrorKi
 
 impl Drop for Client {
     fn drop(&mut self) {
-        assert_eq!(Value::Null, self.request::<Shutdown>(()));
+        assert_eq!((), self.request::<Shutdown>(()));
         self.notify::<Exit>(());
     }
 }

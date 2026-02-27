@@ -6,8 +6,16 @@ use std::{
 use indoc::indoc;
 use lsp_server::{Connection, Message};
 use lsp_types::{
-    ClientCapabilities, DidOpenTextDocumentParams, GeneralClientCapabilities, InitializeParams,
-    PositionEncodingKind, TextDocumentItem, Uri, notification::DidOpenTextDocument,
+    ClientCapabilities, CodeDescription, Diagnostic, DiagnosticClientCapabilities,
+    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidOpenTextDocumentParams,
+    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
+    FullDocumentDiagnosticReport, GeneralClientCapabilities, InitializeParams, Location,
+    NumberOrString, PartialResultParams, Position, PositionEncodingKind,
+    PublishDiagnosticsClientCapabilities, PublishDiagnosticsParams, Range,
+    RelatedFullDocumentDiagnosticReport, TagSupport, TextDocumentClientCapabilities,
+    TextDocumentIdentifier, TextDocumentItem, Uri, WorkDoneProgressParams,
+    notification::{DidOpenTextDocument, PublishDiagnostics},
+    request::DocumentDiagnosticRequest,
 };
 use pegon::lsp::start;
 
@@ -50,7 +58,7 @@ fn test_encoding_preferred() {
 
 /// check all encoding kinds can be negotiated
 #[test]
-fn test_encodings() {
+fn test_negotiate_encodings() {
     for encoding in [
         PositionEncodingKind::UTF8,
         PositionEncodingKind::UTF16,
@@ -73,9 +81,32 @@ fn test_encodings() {
     }
 }
 
-/// diagnose a simple document
+/// diagnose a document with no problems
 #[test]
-fn test_diagnose() {
+fn test_no_diagnostics() {
+    let client = Client::new(InitializeParams::default());
+    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+        text_document: TextDocumentItem {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            language_id: "java".into(),
+            version: 0,
+            text: indoc! {r#"
+                public class Foo {
+                }
+            "#}
+            .into(),
+        },
+    });
+    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    // we didn't sign up for this
+    assert_eq!(None, diagnostics.version);
+    // no problems
+    assert!(diagnostics.diagnostics.is_empty());
+}
+
+/// diagnose a simple document (push diagnostics, zero fancy features)
+#[test]
+fn test_diagnostics() {
     let client = Client::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
@@ -89,12 +120,140 @@ fn test_diagnose() {
             .into(),
         },
     });
-    let notification = client.recv().unwrap();
-    if let Some(Message::Notification(diagnostics)) = notification {
-        assert_eq!("textDocument/publishDiagnostics", diagnostics.method);
-    } else {
-        panic!("wrong: {notification:?}");
+    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    // we didn't sign up for this
+    assert_eq!(None, diagnostics.version);
+    // one problem
+    assert_eq!(
+        vec![Diagnostic {
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: 13
+                },
+                end: Position {
+                    line: 0,
+                    character: 16
+                }
+            },
+            severity: Some(DiagnosticSeverity::WARNING),
+            code: Some(NumberOrString::String("lowercase-class".into())),
+            source: Some("pegon".into()),
+            message: "Lowercase class: `foo`".into(),
+            ..Default::default()
+        }],
+        diagnostics.diagnostics
+    );
+}
+
+/// full-featured client for ease of testing
+fn full_capabilities() -> ClientCapabilities {
+    ClientCapabilities {
+        text_document: Some(TextDocumentClientCapabilities {
+            diagnostic: Some(DiagnosticClientCapabilities {
+                related_document_support: Some(true),
+                dynamic_registration: Some(true),
+            }),
+            publish_diagnostics: Some(PublishDiagnosticsClientCapabilities {
+                related_information: Some(true),
+                code_description_support: Some(true),
+                version_support: Some(true),
+                data_support: Some(true),
+                tag_support: Some(TagSupport {
+                    value_set: vec![DiagnosticTag::UNNECESSARY, DiagnosticTag::DEPRECATED],
+                }),
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
     }
+}
+
+#[test]
+fn test_pull_diagnostics() {
+    let client = Client::new(InitializeParams {
+        capabilities: full_capabilities(),
+        ..Default::default()
+    });
+    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+        text_document: TextDocumentItem {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            language_id: "java".into(),
+            version: 0,
+            text: indoc! {r#"
+                public class foo {
+                }
+            "#}
+            .into(),
+        },
+    });
+    let result = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
+        text_document: TextDocumentIdentifier {
+            uri: Uri::from_str("file:///Foo.java").unwrap(),
+        },
+        previous_result_id: None,
+        identifier: None,
+        work_done_progress_params: WorkDoneProgressParams {
+            work_done_token: None,
+        },
+        partial_result_params: PartialResultParams {
+            partial_result_token: None,
+        },
+    });
+
+    let DocumentDiagnosticReportResult::Report(report) = result else {
+        panic!();
+    };
+
+    let DocumentDiagnosticReport::Full(full) = report else {
+        panic!();
+    };
+
+    let x = full.full_document_diagnostic_report;
+    let result_id = x.result_id;
+    let diagnostics = x.items;
+
+    // one problem
+    assert_eq!(
+        vec![Diagnostic {
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: 13
+                },
+                end: Position {
+                    line: 0,
+                    character: 16
+                }
+            },
+            severity: Some(DiagnosticSeverity::WARNING),
+            code: Some(NumberOrString::String("lowercase-class".into())),
+            source: Some("pegon".into()),
+            message: "Lowercase class: `foo`".into(),
+            code_description: Some(CodeDescription {
+                href: Uri::from_str("https://github.com/rmuir/pegon/wiki/lints#lowercase-class")
+                    .unwrap(),
+            }),
+            related_information: Some(vec![DiagnosticRelatedInformation {
+                location: Location {
+                    uri: Uri::from_str("file:///Foo.java").unwrap(),
+                    range: Range {
+                        start: Position {
+                            line: 0,
+                            character: 13
+                        },
+                        end: Position {
+                            line: 0,
+                            character: 16
+                        }
+                    },
+                },
+                message: "Rename `foo` using UpperCamelCase".into(),
+            },]),
+            ..Default::default()
+        }],
+        diagnostics
+    );
 }
 
 /// make sure if the stream disconnects that the error makes it out
