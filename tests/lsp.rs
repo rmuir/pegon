@@ -200,18 +200,15 @@ fn test_pull_diagnostics() {
         },
     });
 
-    let DocumentDiagnosticReportResult::Report(report) = result else {
+    let DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(full)) = result
+    else {
         panic!();
     };
 
-    let DocumentDiagnosticReport::Full(full) = report else {
-        panic!();
-    };
-
-    let x = full.full_document_diagnostic_report;
-    let result_id = x.result_id;
+    let report = full.full_document_diagnostic_report;
+    let result_id = report.result_id;
     assert_ne!(None, result_id);
-    let diagnostics = x.items;
+    let diagnostics = report.items;
 
     // one problem
     assert_eq!(
