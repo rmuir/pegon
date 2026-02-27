@@ -71,3 +71,5 @@ cargo = { level = "warn", priority = -1 }
 
 # useless lint, standardize the tests
 needless_raw_string_hashes = "allow"
+# discourages writing tests
+missing_panics_doc = "allow"

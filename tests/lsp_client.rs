@@ -9,7 +9,7 @@ use anyhow::{Error, Result};
 use crossbeam_channel::{Receiver, after, select};
 use lsp_server::{Connection, Message, Request as ServerRequest};
 use lsp_types::{
-    InitializeParams, InitializedParams,
+    InitializeParams, InitializeResult, InitializedParams,
     notification::{Exit, Initialized},
     request::{Initialize, Shutdown},
 };
@@ -20,29 +20,33 @@ use serde_json::Value;
 pub struct Client {
     req_id: Cell<i32>,
     messages: RefCell<Vec<Message>>,
+    init_response: RefCell<Option<Value>>,
     conn: Connection,
     #[allow(dead_code)]
     thread: JoinHandle<Result<(), Error>>,
 }
 
 impl Client {
-    /// Creates a new [`Client`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if the initialize request fails.
+    /// Creates a new language server [`Client`].
     pub fn new(params: InitializeParams) -> Self {
         let (client, server) = Connection::memory();
         let instance = Self {
             req_id: Cell::new(1),
             messages: RefCell::default(),
+            init_response: RefCell::default(),
             conn: client,
             thread: thread::spawn(move || start(server)),
         };
         let response = instance.request::<Initialize>(params);
-        assert_ne!(response, Value::Null);
+        *instance.init_response.borrow_mut() = Some(response);
         instance.notify::<Initialized>(InitializedParams {});
         instance
+    }
+
+    /// Returns the init response from the server
+    pub fn init_response(&self) -> InitializeResult {
+        let value = self.init_response.borrow().clone().unwrap();
+        serde_json::from_value(value).unwrap()
     }
 
     pub(crate) fn notify<N>(&self, params: N::Params)
