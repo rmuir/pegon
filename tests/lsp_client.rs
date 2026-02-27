@@ -57,7 +57,8 @@ impl Client {
         self.conn.sender.send(Message::Notification(r)).unwrap();
     }
 
-    pub(crate) fn read_notify<N>(&self) -> N::Params
+    #[track_caller]
+    pub fn read_notify<N>(&self) -> N::Params
     where
         N: lsp_types::notification::Notification,
         N::Params: Serialize,
@@ -69,7 +70,7 @@ impl Client {
     }
 
     #[track_caller]
-    pub(crate) fn request<R>(&self, params: R::Params) -> R::Result
+    pub fn request<R>(&self, params: R::Params) -> R::Result
     where
         R: lsp_types::request::Request,
         R::Params: Serialize,
@@ -104,8 +105,7 @@ impl Client {
         panic!("no response for {r:?}");
     }
 
-    // TODO: make private again
-    pub(crate) fn recv(&self) -> Result<Option<Message>, ErrorKind> {
+    fn recv(&self) -> Result<Option<Message>, ErrorKind> {
         let msg = recv_timeout(&self.conn.receiver)?;
         let msg = msg.inspect(|msg| {
             self.messages.borrow_mut().push(msg.clone());

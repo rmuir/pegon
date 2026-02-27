@@ -4,16 +4,15 @@ use std::{
 };
 
 use indoc::indoc;
-use lsp_server::{Connection, Message};
+use lsp_server::Connection;
 use lsp_types::{
     ClientCapabilities, CodeDescription, Diagnostic, DiagnosticClientCapabilities,
     DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidOpenTextDocumentParams,
     DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    FullDocumentDiagnosticReport, GeneralClientCapabilities, InitializeParams, Location,
-    NumberOrString, PartialResultParams, Position, PositionEncodingKind,
-    PublishDiagnosticsClientCapabilities, PublishDiagnosticsParams, Range,
-    RelatedFullDocumentDiagnosticReport, TagSupport, TextDocumentClientCapabilities,
-    TextDocumentIdentifier, TextDocumentItem, Uri, WorkDoneProgressParams,
+    GeneralClientCapabilities, InitializeParams, Location, NumberOrString, PartialResultParams,
+    Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities, Range, TagSupport,
+    TextDocumentClientCapabilities, TextDocumentIdentifier, TextDocumentItem, Uri,
+    WorkDoneProgressParams,
     notification::{DidOpenTextDocument, PublishDiagnostics},
     request::DocumentDiagnosticRequest,
 };
@@ -211,6 +210,7 @@ fn test_pull_diagnostics() {
 
     let x = full.full_document_diagnostic_report;
     let result_id = x.result_id;
+    assert_ne!(None, result_id);
     let diagnostics = x.items;
 
     // one problem
