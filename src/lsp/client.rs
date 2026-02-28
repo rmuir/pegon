@@ -1,8 +1,9 @@
 use core::convert::From;
 use core::ops::Range;
 
-use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
+use line_index::{LineCol, LineIndex, WideEncoding, WideLineCol};
 use lsp_types::{ClientCapabilities, InitializeParams, Position, PositionEncodingKind};
+use tree_sitter::Point;
 
 pub struct Client {
     init_params: InitializeParams,
@@ -18,23 +19,71 @@ impl Client {
         }
     }
 
-    pub(crate) fn encode_position(
+    // encodes a tree-sitter UTF-8 range into an LSP range (client's encoding)
+    // use this to encode client responses.
+    pub(crate) fn encode_range(
         &self,
-        offset: usize,
-        line_index: &LineIndex,
-    ) -> Option<Position> {
-        let offset = TextSize::try_from(offset).ok()?;
-        let position = line_index.try_line_col(offset)?;
+        range: &tree_sitter::Range,
+        index: &LineIndex,
+    ) -> Option<lsp_types::Range> {
+        Some(lsp_types::Range {
+            start: self.encode_point(&range.start_point, index)?,
+            end: self.encode_point(&range.end_point, index)?,
+        })
+    }
+
+    // encodes a tree-sitter UTF-8 point into an LSP position (client's encoding)
+    // use this to encode client responses.
+    pub(crate) fn encode_point(&self, point: &Point, index: &LineIndex) -> Option<Position> {
+        // check bounds
+        let linecol = LineCol {
+            line: u32::try_from(point.row).ok()?,
+            col: u32::try_from(point.column).ok()?,
+        };
+
+        // translate using the index for wide encodings
         match self.encoding {
-            Encoding::Utf8 => Some(Position::new(position.line, position.col)),
+            Encoding::Utf8 => Some(Position {
+                line: linecol.line,
+                character: linecol.col,
+            }),
             Encoding::Utf16 => {
-                let wide = line_index.to_wide(WideEncoding::Utf16, position)?;
-                Some(Position::new(wide.line, wide.col))
+                let wide = index.to_wide(WideEncoding::Utf16, linecol)?;
+                Some(Position {
+                    line: wide.line,
+                    character: wide.col,
+                })
             }
             Encoding::Utf32 => {
-                let wide = line_index.to_wide(WideEncoding::Utf32, position)?;
-                Some(Position::new(wide.line, wide.col))
+                let wide = index.to_wide(WideEncoding::Utf32, linecol)?;
+                Some(Position {
+                    line: wide.line,
+                    character: wide.col,
+                })
             }
+        }
+    }
+
+    pub(crate) fn decode_pos2(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
+        match self.encoding {
+            Encoding::Utf8 => Some(LineCol {
+                line: position.line,
+                col: position.character,
+            }),
+            Encoding::Utf16 => index.to_utf8(
+                WideEncoding::Utf16,
+                WideLineCol {
+                    line: position.line,
+                    col: position.character,
+                },
+            ),
+            Encoding::Utf32 => index.to_utf8(
+                WideEncoding::Utf32,
+                WideLineCol {
+                    line: position.line,
+                    col: position.character,
+                },
+            ),
         }
     }
 
@@ -197,6 +246,14 @@ mod tests {
         })
     }
 
+    fn point(row: usize, column: usize) -> Point {
+        Point { row, column }
+    }
+
+    fn pos(line: u32, character: u32) -> Option<Position> {
+        Some(Position { line, character })
+    }
+
     #[test]
     fn defaults() {
         let client = Client::new(InitializeParams::default());
@@ -205,6 +262,25 @@ mod tests {
         assert!(!client.related_information_support());
         assert!(!client.code_description_support());
         assert!(!client.version_support());
+    }
+
+    #[test]
+    fn utf8_encode() {
+        let utf8 = with_encoding(PositionEncodingKind::UTF8);
+        let index = LineIndex::new("1\u{6f3}\u{2165}\u{1f130}\n2");
+        assert_eq!(pos(0, 0), utf8.encode_point(&point(0, 0), &index));
+        // 1-byter
+        assert_eq!(pos(0, 1), utf8.encode_point(&point(0, 1), &index));
+        // 2-byter
+        assert_eq!(pos(0, 3), utf8.encode_point(&point(0, 3), &index));
+        // 3-byter
+        assert_eq!(pos(0, 6), utf8.encode_point(&point(0, 6), &index));
+        // 4-byter
+        assert_eq!(pos(0, 10), utf8.encode_point(&point(0, 10), &index));
+        // newline
+        assert_eq!(pos(1, 0), utf8.encode_point(&point(1, 0), &index));
+        // 1-byter
+        assert_eq!(pos(1, 1), utf8.encode_point(&point(1, 1), &index));
     }
 
     #[test]
@@ -227,30 +303,22 @@ mod tests {
     }
 
     #[test]
-    fn utf8_encode() {
-        let utf8 = with_encoding(PositionEncodingKind::UTF8);
+    fn utf16_encode() {
+        let utf16 = with_encoding(PositionEncodingKind::UTF16);
         let index = LineIndex::new("1\u{6f3}\u{2165}\u{1f130}\n2");
-        assert_eq!(Some(Position::new(0, 0)), utf8.encode_position(0, &index));
+        assert_eq!(pos(0, 0), utf16.encode_point(&point(0, 0), &index));
         // 1-byter
-        assert_eq!(Some(Position::new(0, 1)), utf8.encode_position(1, &index));
+        assert_eq!(pos(0, 1), utf16.encode_point(&point(0, 1), &index));
         // 2-byter
-        assert_eq!(None, utf8.encode_position(2, &index));
-        assert_eq!(Some(Position::new(0, 3)), utf8.encode_position(3, &index));
+        assert_eq!(pos(0, 2), utf16.encode_point(&point(0, 3), &index));
         // 3-byter
-        assert_eq!(None, utf8.encode_position(4, &index));
-        assert_eq!(None, utf8.encode_position(5, &index));
-        assert_eq!(Some(Position::new(0, 6)), utf8.encode_position(6, &index));
+        assert_eq!(pos(0, 3), utf16.encode_point(&point(0, 6), &index));
         // 4-byter
-        assert_eq!(None, utf8.encode_position(7, &index));
-        assert_eq!(None, utf8.encode_position(8, &index));
-        assert_eq!(None, utf8.encode_position(9, &index));
-        assert_eq!(Some(Position::new(0, 10)), utf8.encode_position(10, &index));
+        assert_eq!(pos(0, 5), utf16.encode_point(&point(0, 10), &index));
         // newline
-        assert_eq!(Some(Position::new(1, 0)), utf8.encode_position(11, &index));
+        assert_eq!(pos(1, 0), utf16.encode_point(&point(1, 0), &index));
         // 1-byter
-        assert_eq!(Some(Position::new(1, 1)), utf8.encode_position(12, &index));
-        // out of bounds
-        assert_eq!(None, utf8.encode_position(13, &index));
+        assert_eq!(pos(1, 1), utf16.encode_point(&point(1, 1), &index));
     }
 
     #[test]
@@ -273,30 +341,22 @@ mod tests {
     }
 
     #[test]
-    fn utf16_encode() {
-        let utf16 = with_encoding(PositionEncodingKind::UTF16);
+    fn utf32_encode() {
+        let utf32 = with_encoding(PositionEncodingKind::UTF32);
         let index = LineIndex::new("1\u{6f3}\u{2165}\u{1f130}\n2");
-        assert_eq!(Some(Position::new(0, 0)), utf16.encode_position(0, &index));
+        assert_eq!(pos(0, 0), utf32.encode_point(&point(0, 0), &index));
         // 1-byter
-        assert_eq!(Some(Position::new(0, 1)), utf16.encode_position(1, &index));
+        assert_eq!(pos(0, 1), utf32.encode_point(&point(0, 1), &index));
         // 2-byter
-        assert_eq!(None, utf16.encode_position(2, &index));
-        assert_eq!(Some(Position::new(0, 2)), utf16.encode_position(3, &index));
+        assert_eq!(pos(0, 2), utf32.encode_point(&point(0, 3), &index));
         // 3-byter
-        assert_eq!(None, utf16.encode_position(4, &index));
-        assert_eq!(None, utf16.encode_position(5, &index));
-        assert_eq!(Some(Position::new(0, 3)), utf16.encode_position(6, &index));
+        assert_eq!(pos(0, 3), utf32.encode_point(&point(0, 6), &index));
         // 4-byter
-        assert_eq!(None, utf16.encode_position(7, &index));
-        assert_eq!(None, utf16.encode_position(8, &index));
-        assert_eq!(None, utf16.encode_position(9, &index));
-        assert_eq!(Some(Position::new(0, 5)), utf16.encode_position(10, &index));
+        assert_eq!(pos(0, 4), utf32.encode_point(&point(0, 10), &index));
         // newline
-        assert_eq!(Some(Position::new(1, 0)), utf16.encode_position(11, &index));
+        assert_eq!(pos(1, 0), utf32.encode_point(&point(1, 0), &index));
         // 1-byter
-        assert_eq!(Some(Position::new(1, 1)), utf16.encode_position(12, &index));
-        // out of bounds
-        assert_eq!(None, utf16.encode_position(13, &index));
+        assert_eq!(pos(1, 1), utf32.encode_point(&point(1, 1), &index));
     }
 
     #[test]
@@ -316,32 +376,5 @@ mod tests {
         assert_eq!(Some(11), utf32.decode_position(Position::new(1, 0), &index));
         // 1-byter
         assert_eq!(Some(12), utf32.decode_position(Position::new(1, 1), &index));
-    }
-
-    #[test]
-    fn utf32_encode() {
-        let utf32 = with_encoding(PositionEncodingKind::UTF32);
-        let index = LineIndex::new("1\u{6f3}\u{2165}\u{1f130}\n2");
-        assert_eq!(Some(Position::new(0, 0)), utf32.encode_position(0, &index));
-        // 1-byter
-        assert_eq!(Some(Position::new(0, 1)), utf32.encode_position(1, &index));
-        // 2-byter
-        assert_eq!(None, utf32.encode_position(2, &index));
-        assert_eq!(Some(Position::new(0, 2)), utf32.encode_position(3, &index));
-        // 3-byter
-        assert_eq!(None, utf32.encode_position(4, &index));
-        assert_eq!(None, utf32.encode_position(5, &index));
-        assert_eq!(Some(Position::new(0, 3)), utf32.encode_position(6, &index));
-        // 4-byter
-        assert_eq!(None, utf32.encode_position(7, &index));
-        assert_eq!(None, utf32.encode_position(8, &index));
-        assert_eq!(None, utf32.encode_position(9, &index));
-        assert_eq!(Some(Position::new(0, 4)), utf32.encode_position(10, &index));
-        // newline
-        assert_eq!(Some(Position::new(1, 0)), utf32.encode_position(11, &index));
-        // 1-byter
-        assert_eq!(Some(Position::new(1, 1)), utf32.encode_position(12, &index));
-        // out of bounds
-        assert_eq!(None, utf32.encode_position(13, &index));
     }
 }

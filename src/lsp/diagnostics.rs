@@ -3,7 +3,7 @@ use line_index::LineIndex;
 use lsp_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location,
-    NumberOrString, PublishDiagnosticsParams, Range, UnchangedDocumentDiagnosticReport, Uri,
+    NumberOrString, PublishDiagnosticsParams, UnchangedDocumentDiagnosticReport, Uri,
 };
 
 use core::hash::Hash as _;
@@ -85,28 +85,21 @@ fn encode(
         .iter()
         .map(|diagnostic| {
             let rule = rule(diagnostic.rule_id);
-            let start = client
-                .encode_position(diagnostic.range.start_byte, line_index)
-                .context("invalid start offset")?;
-            let end = client
-                .encode_position(diagnostic.range.end_byte, line_index)
-                .context("invalid end offset")?;
+            let range = client
+                .encode_range(&diagnostic.range, line_index)
+                .context("invalid range")?;
             let lsp_severity = rule.severity.into();
             // all the context ranges are related information
             let mut related_information = diagnostic
                 .context
                 .iter()
                 .map(|context| {
-                    let related_start = client
-                        .encode_position(context.start_byte, line_index)
-                        .context("invalid context start offset")?;
-                    let related_end = client
-                        .encode_position(context.end_byte, line_index)
-                        .context("invalid context end offset")?;
                     Ok(DiagnosticRelatedInformation {
                         location: Location {
                             uri: uri.clone(),
-                            range: Range::new(related_start, related_end),
+                            range: client
+                                .encode_range(context, line_index)
+                                .context("invalid range")?,
                         },
                         message: rule.context_label.clone().unwrap_or_default(),
                     })
@@ -117,7 +110,7 @@ fn encode(
                 related_information.push(DiagnosticRelatedInformation {
                     location: Location {
                         uri: uri.clone(),
-                        range: Range::new(start, end),
+                        range,
                     },
                     message: label.clone(),
                 });
@@ -126,12 +119,12 @@ fn encode(
             related_information.push(DiagnosticRelatedInformation {
                 location: Location {
                     uri: uri.clone(),
-                    range: Range::new(start, end),
+                    range,
                 },
                 message: diagnostic.help.clone(),
             });
             Ok(Diagnostic {
-                range: Range::new(start, end),
+                range,
                 severity: Some(lsp_severity),
                 code: Some(NumberOrString::String(rule.name.clone())),
                 code_description: client.code_description_support().then(|| CodeDescription {
