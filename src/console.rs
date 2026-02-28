@@ -48,7 +48,7 @@ pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), 
         // primary error annotation: as precise of a range as possible
         annotations.push(
             AnnotationKind::Primary
-                .span(diagnostic.range.clone())
+                .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
                 .label(diagnostic.label),
         );
 
@@ -58,11 +58,12 @@ pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), 
         // explicitly marked context in the query
         for context in diagnostic.context {
             if label_written {
-                annotations.push(AnnotationKind::Context.span(context));
+                annotations
+                    .push(AnnotationKind::Context.span(context.start_byte..context.end_byte));
             } else {
                 annotations.push(
                     AnnotationKind::Context
-                        .span(context)
+                        .span(context.start_byte..context.end_byte)
                         .label(rule.context_label.clone()),
                 );
                 label_written = true;
@@ -71,12 +72,12 @@ pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), 
 
         // explicitly marked visible in the query
         for visible in diagnostic.visible {
-            annotations.push(AnnotationKind::Visible.span(visible));
+            annotations.push(AnnotationKind::Visible.span(visible.start_byte..visible.end_byte));
         }
 
         // top context: e.g. what function are you in
         if let Some(ctx) = diagnostic.top_context {
-            annotations.push(AnnotationKind::Visible.span(ctx));
+            annotations.push(AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte));
         }
 
         let level: Level = rule.severity.into();
@@ -99,7 +100,10 @@ pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), 
                 Level::NOTE
                     .with_name("help")
                     .secondary_title(diagnostic.help)
-                    .element(Snippet::source(source).patch(Patch::new(diagnostic.range, fix))),
+                    .element(Snippet::source(source).patch(Patch::new(
+                        diagnostic.range.start_byte..diagnostic.range.end_byte,
+                        fix,
+                    ))),
             );
         } else {
             report.push(Group::with_title(

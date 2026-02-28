@@ -1,8 +1,7 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::{Context as _, Error};
-use core::ops::Range;
 use std::sync::LazyLock;
-use tree_sitter::{Node, Query, QueryCursor, StreamingIterator as _, Tree};
+use tree_sitter::{Node, Query, QueryCursor, Range, StreamingIterator as _, Tree};
 
 /// Single diagnostic result
 #[derive(Hash)]
@@ -10,7 +9,7 @@ pub struct Lint {
     /// Matched rule
     pub rule_id: usize,
     /// Primary matching error node range
-    pub range: Range<usize>,
+    pub range: Range,
     /// Formatted title of problem
     pub title: String,
     /// Formatted instructions to address the issue
@@ -18,20 +17,20 @@ pub struct Lint {
     /// Formatted Text describing the matching error range
     pub label: Option<String>,
     /// Ranges that provide additional information
-    pub context: Vec<Range<usize>>,
+    pub context: Vec<Range>,
 
     // CLI only features that can't translate to LSP
     /// Ranges that should be visible
-    pub visible: Vec<Range<usize>>,
+    pub visible: Vec<Range>,
     /// Computed top context (e.g. what function you are in)
-    pub top_context: Option<Range<usize>>,
+    pub top_context: Option<Range>,
 }
 
-/// Runs lint queries against a parse tree, returning any lints found
+/// Returns any lint errors found against the document.
 ///
 /// # Errors
 ///
-/// This function will return an error if .
+/// This function will return an error if rules are misconfigured.
 pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
@@ -53,18 +52,18 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
         // explicitly marked visible in the query
         let mut visible = Vec::new();
         for visible_node in hit.nodes_for_capture_index(*VISIBLE_CAPTURE) {
-            visible.push(visible_node.byte_range());
+            visible.push(visible_node.range());
         }
 
         // explicitly marked context in the query
         let mut context = Vec::new();
         for context_node in hit.nodes_for_capture_index(*CONTEXT_CAPTURE) {
-            context.push(context_node.byte_range());
+            context.push(context_node.range());
         }
 
         lints.push(Lint {
             rule_id: hit.pattern_index,
-            range: node.byte_range(),
+            range: node.range(),
             title: TEMPLATE_ENGINE.replace_all(&rule.title, &replacements),
             help: TEMPLATE_ENGINE.replace_all(&rule.help, &replacements),
             label,
@@ -138,7 +137,7 @@ pub fn rule(index: usize) -> &'static Rule {
 ///     │         ━━━━━━━━━━━
 ///     ╰╴
 /// ```
-fn top_context(error_node: &Node) -> Option<Range<usize>> {
+fn top_context(error_node: &Node) -> Option<Range> {
     let mut parent = error_node.parent();
     while let Some(node) = parent {
         match node.kind() {
@@ -153,7 +152,7 @@ fn top_context(error_node: &Node) -> Option<Range<usize>> {
                 if let Some(name) = node.child_by_field_name("name")
                     && name.start_position().row != error_node.start_position().row
                 {
-                    return Some(name.byte_range());
+                    return Some(name.range());
                 }
             }
             _ => {}

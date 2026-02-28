@@ -86,10 +86,10 @@ fn encode(
         .map(|diagnostic| {
             let rule = rule(diagnostic.rule_id);
             let start = client
-                .encode_position(diagnostic.range.start, line_index)
+                .encode_position(diagnostic.range.start_byte, line_index)
                 .context("invalid start offset")?;
             let end = client
-                .encode_position(diagnostic.range.end, line_index)
+                .encode_position(diagnostic.range.end_byte, line_index)
                 .context("invalid end offset")?;
             let lsp_severity = rule.severity.into();
             // all the context ranges are related information
@@ -98,10 +98,10 @@ fn encode(
                 .iter()
                 .map(|context| {
                     let related_start = client
-                        .encode_position(context.start, line_index)
+                        .encode_position(context.start_byte, line_index)
                         .context("invalid context start offset")?;
                     let related_end = client
-                        .encode_position(context.end, line_index)
+                        .encode_position(context.end_byte, line_index)
                         .context("invalid context end offset")?;
                     Ok(DiagnosticRelatedInformation {
                         location: Location {
