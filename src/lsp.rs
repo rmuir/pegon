@@ -179,7 +179,10 @@ fn handle_notification(
                     text.replace_range(byte_range.clone(), &change.text);
                     line_index = LineIndex::new(&text);
                     // edit tree
-                    let new_end = byte_range.start + change.text.len();
+                    let new_end = byte_range
+                        .start
+                        .checked_add(change.text.len())
+                        .context("overflow")?;
                     let new_end_pos = to_point(new_end, &line_index).context("illegal range")?;
                     old_tree.edit(&InputEdit {
                         start_byte: byte_range.start,

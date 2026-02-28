@@ -95,6 +95,7 @@ question_mark_used = "allow"
 self_named_module_files = "allow"
 shadow_reuse = "allow"
 single_call_fn = "allow"
+too_many_lines = "allow"
 
 # TODO: uses can be reduced
 as_conversions = "allow"
