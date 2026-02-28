@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Error, Result, bail};
-use line_index::LineIndex;
+use line_index::{LineIndex, TextSize};
 use lsp_server::{
     Connection, ErrorCode, Message, Request as ServerRequest, RequestId, Response, ResponseError,
 };
@@ -17,7 +17,7 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 use std::time::Instant;
-use tree_sitter::Parser;
+use tree_sitter::{InputEdit, Parser, Point};
 
 use crate::lsp::{
     client::Client,
@@ -160,24 +160,43 @@ fn handle_notification(
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
             let uri = params.text_document.uri;
-            let doc = docs.get(&uri.to_string()).context("document not open")?;
-            let mut text = doc.text.clone();
+            let doc = docs.remove(&uri.to_string()).context("document not open")?;
+            let mut text = doc.text;
+            let mut old_tree = doc.tree;
             let mut line_index = LineIndex::new(&text);
             for change in params.content_changes {
                 if let Some(range) = change.range {
-                    let offsets = client
+                    // convert to byte range offset
+                    let byte_range = client
                         .decode_range(range, &line_index)
                         .context("illegal range")?;
-                    text.get(offsets.clone()).context("illegal slice")?;
-                    text.replace_range(offsets, &change.text);
+                    // validate range is legal UTF-8
+                    text.get(byte_range.clone()).context("illegal slice")?;
+                    let start_pos =
+                        to_point(byte_range.start, &line_index).context("illegal range")?;
+                    let end_pos = to_point(byte_range.end, &line_index).context("illegal range")?;
+                    // edit document
+                    text.replace_range(byte_range.clone(), &change.text);
                     line_index = LineIndex::new(&text);
+                    // edit tree
+                    let new_end = byte_range.start + change.text.len();
+                    let new_end_pos = to_point(new_end, &line_index).context("illegal range")?;
+                    old_tree.edit(&InputEdit {
+                        start_byte: byte_range.start,
+                        old_end_byte: byte_range.end,
+                        new_end_byte: new_end,
+                        start_position: start_pos,
+                        old_end_position: end_pos,
+                        new_end_position: new_end_pos,
+                    });
                 } else {
                     text = change.text;
                 }
             }
-            // TODO: still not incremental
             parser.reset();
-            let tree = parser.parse(&text, None).context("broken parser setup")?;
+            let tree = parser
+                .parse(&text, Some(&old_tree))
+                .context("broken parser setup")?;
             let newdoc = Document {
                 text,
                 version: params.text_document.version,
@@ -222,6 +241,16 @@ fn handle_notification(
             Ok(())
         }
     }
+}
+
+/// TODO: move somewhere else
+fn to_point(offset: usize, line_index: &LineIndex) -> Option<Point> {
+    let offset = TextSize::try_from(offset).ok()?;
+    let position = line_index.try_line_col(offset)?;
+    Some(Point {
+        row: position.line as usize,
+        column: position.col as usize,
+    })
 }
 
 fn handle_request(
