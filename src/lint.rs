@@ -33,7 +33,6 @@ pub struct Lint {
 ///
 /// This function will return an error if .
 pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
-    let has_error = tree.root_node().has_error();
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&QUERY, tree.root_node(), data);
@@ -75,7 +74,7 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
         });
         // stop linting the document at the first ERROR or MISSING node
         // alerts to the issue, but prevents annoying cascade
-        if has_error && hit.pattern_index < 2 {
+        if hit.pattern_index < 2 {
             break;
         }
     }
@@ -118,7 +117,7 @@ pub enum Severity {
 // Look up rule by pattern index
 #[must_use]
 pub fn rule(index: usize) -> &'static Rule {
-    &RULES[index]
+    RULES.get(index).expect("rule should exist")
 }
 
 /// Returns optional range of "top context" for the node.
