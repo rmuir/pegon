@@ -38,6 +38,8 @@ impl Client {
         }
     }
 
+    /// decodes the LSP position to a range
+    /// you must check that it is in-bounds and lies on utf-8 boundary
     pub(crate) fn decode_range(
         &self,
         range: lsp_types::Range,
@@ -52,11 +54,9 @@ impl Client {
         }
     }
 
-    pub(crate) fn decode_position(
-        &self,
-        position: Position,
-        line_index: &LineIndex,
-    ) -> Option<usize> {
+    /// decodes the LSP position to an offset
+    /// you must check that it is in-bounds and lies on utf-8 boundary
+    fn decode_position(&self, position: Position, line_index: &LineIndex) -> Option<usize> {
         let line_col = match self.encoding {
             Encoding::Utf8 => Some(LineCol {
                 line: position.line,
@@ -77,12 +77,7 @@ impl Client {
                 },
             ),
         }?;
-        let offset = line_index.offset(line_col).map(usize::from)?;
-        // validate the offset is on a utf-8 boundary, since line_index doesn't
-        // TODO: this is stupid slow and just needs to check a single bit...
-        let textsize = TextSize::try_from(offset).ok()?;
-        line_index.try_line_col(textsize)?;
-        Some(offset)
+        line_index.offset(line_col).map(usize::from)
     }
 
     pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {
@@ -220,23 +215,15 @@ mod tests {
         // 1-byter
         assert_eq!(Some(1), utf8.decode_position(Position::new(0, 1), &index));
         // 2-byter
-        assert_eq!(None, utf8.decode_position(Position::new(0, 2), &index));
         assert_eq!(Some(3), utf8.decode_position(Position::new(0, 3), &index));
         // 3-byter
-        assert_eq!(None, utf8.decode_position(Position::new(0, 4), &index));
-        assert_eq!(None, utf8.decode_position(Position::new(0, 5), &index));
         assert_eq!(Some(6), utf8.decode_position(Position::new(0, 6), &index));
         // 4-byter
-        assert_eq!(None, utf8.decode_position(Position::new(0, 7), &index));
-        assert_eq!(None, utf8.decode_position(Position::new(0, 8), &index));
-        assert_eq!(None, utf8.decode_position(Position::new(0, 9), &index));
         assert_eq!(Some(10), utf8.decode_position(Position::new(0, 10), &index));
         // newline
         assert_eq!(Some(11), utf8.decode_position(Position::new(1, 0), &index));
         // 1-byter
         assert_eq!(Some(12), utf8.decode_position(Position::new(1, 1), &index));
-        // out of bounds
-        assert_eq!(None, utf8.decode_position(Position::new(1, 2), &index));
     }
 
     #[test]
@@ -278,14 +265,11 @@ mod tests {
         // 3-byter
         assert_eq!(Some(6), utf16.decode_position(Position::new(0, 3), &index));
         // 4-byter
-        assert_eq!(None, utf16.decode_position(Position::new(0, 4), &index));
         assert_eq!(Some(10), utf16.decode_position(Position::new(0, 5), &index));
         // newline
         assert_eq!(Some(11), utf16.decode_position(Position::new(1, 0), &index));
         // 1-byter
         assert_eq!(Some(12), utf16.decode_position(Position::new(1, 1), &index));
-        // out of bounds
-        assert_eq!(None, utf16.decode_position(Position::new(1, 2), &index));
     }
 
     #[test]
@@ -332,8 +316,6 @@ mod tests {
         assert_eq!(Some(11), utf32.decode_position(Position::new(1, 0), &index));
         // 1-byter
         assert_eq!(Some(12), utf32.decode_position(Position::new(1, 1), &index));
-        // out of bounds
-        assert_eq!(None, utf32.decode_position(Position::new(1, 2), &index));
     }
 
     #[test]
