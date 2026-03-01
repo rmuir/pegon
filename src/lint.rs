@@ -1,7 +1,9 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::{Context as _, Error};
 use std::sync::LazyLock;
-use tree_sitter::{Node, Query, QueryCursor, Range, StreamingIterator as _, Tree};
+use tree_sitter::{
+    Node, Query, QueryCursor, QueryMatch, QueryPredicateArg, Range, StreamingIterator as _, Tree,
+};
 
 /// Single diagnostic result
 #[derive(Hash)]
@@ -35,7 +37,13 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&QUERY, tree.root_node(), data);
-    while let Some(hit) = matches.next() {
+    'hits: while let Some(hit) = matches.next() {
+        for predicate in QUERY.general_predicates(hit.pattern_index) {
+            if !custom_predicate(hit, &predicate.operator, &predicate.args) {
+                continue 'hits;
+            }
+        }
+
         let rule = rule(hit.pattern_index);
 
         let node = hit
@@ -78,6 +86,15 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
         }
     }
     Ok(lints)
+}
+
+fn custom_predicate(hit: &QueryMatch, operator: &str, args: &Box<[QueryPredicateArg]>) -> bool {
+    match operator {
+        "multiple-children?" => true,
+        _ => {
+            panic!("{operator}");
+        }
+    }
 }
 
 // single rule (compiled pattern)

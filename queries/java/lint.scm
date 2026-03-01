@@ -297,8 +297,11 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
 (block
   (local_variable_declaration
+    type: (_)
+    .
     (variable_declarator
-      name: (identifier) @context)+
+      name: (identifier) @context)
+    .
     (variable_declarator
       name: (identifier) @error
       (#set! name "multiple-declaration")
