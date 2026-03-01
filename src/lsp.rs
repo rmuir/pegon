@@ -165,32 +165,28 @@ fn handle_notification(
             let mut old_tree = doc.tree;
             let mut line_index = LineIndex::new(&text);
             for change in params.content_changes {
-                let byte_range = if let Some(range) = change.range {
-                    client
-                        .decode_range(range, &line_index)
-                        .context("illegal range")?
-                } else {
-                    0..text.len()
-                };
+                let decoded = client
+                    .decode_change(&change, &line_index)
+                    .context("illegal range")?;
                 // validate range is legal UTF-8
-                text.get(byte_range.clone()).context("illegal slice")?;
-                let start_pos = to_point(byte_range.start, &line_index).context("illegal range")?;
-                let end_pos = to_point(byte_range.end, &line_index).context("illegal range")?;
+                text.get(decoded.start_byte..decoded.end_byte)
+                    .context("illegal slice")?;
                 // edit document
-                text.replace_range(byte_range.clone(), &change.text);
+                text.replace_range(decoded.start_byte..decoded.end_byte, &change.text);
+                // rebuild index
                 line_index = LineIndex::new(&text);
-                // edit tree
-                let new_end = byte_range
-                    .start
+                // edit parse tree
+                let new_end = decoded
+                    .start_byte
                     .checked_add(change.text.len())
                     .context("overflow")?;
                 let new_end_pos = to_point(new_end, &line_index).context("illegal range")?;
                 old_tree.edit(&InputEdit {
-                    start_byte: byte_range.start,
-                    old_end_byte: byte_range.end,
+                    start_byte: decoded.start_byte,
+                    old_end_byte: decoded.end_byte,
                     new_end_byte: new_end,
-                    start_position: start_pos,
-                    old_end_position: end_pos,
+                    start_position: decoded.start_point,
+                    old_end_position: decoded.end_point,
                     new_end_position: new_end_pos,
                 });
             }
