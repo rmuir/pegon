@@ -27,7 +27,7 @@ debug = "none"
 # Templates diagnostic errors
 aho-corasick = "1.1.4"
 # Renders console diagnostics
-annotate-snippets = "0.12.11"
+annotate-snippets = { version = "0.12.11", features = ["simd"] }
 # ANSI styling of console output
 anstream = "0.6.21"
 # Error handling
