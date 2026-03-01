@@ -36,14 +36,17 @@ pub struct Lint {
 pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
-    let mut matches = cursor.matches(&QUERY, tree.root_node(), data);
-    'hits: while let Some(hit) = matches.next() {
-        for predicate in QUERY.general_predicates(hit.pattern_index) {
-            if !custom_predicate(hit, &predicate.operator, &predicate.args) {
-                continue 'hits;
+    let mut matches = cursor
+        .matches(&QUERY, tree.root_node(), data)
+        .filter(|hit| {
+            for predicate in QUERY.general_predicates(hit.pattern_index) {
+                if !custom_predicate(hit, &predicate.operator, &predicate.args) {
+                    return false;
+                }
             }
-        }
-
+            true
+        });
+    while let Some(hit) = matches.next() {
         let rule = rule(hit.pattern_index);
 
         let node = hit

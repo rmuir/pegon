@@ -64,5 +64,3 @@ dev = [
 bindings = "bin"
 manifest-path = "Cargo.toml"
 module-name = "pegon"
-strip = true
-exclude = []
