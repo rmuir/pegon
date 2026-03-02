@@ -711,12 +711,13 @@
     name: (identifier) @error)
   body: (block) @_block
   ; unnamed variable
-  (#not-eq? @error "_")
+  (#not-any-of? @error "_" "ignored" "tolerated" "expected" "acceptable" "ok" "success" "optional")
   ; no real content at all
   (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! name "swallowed-exception")
   (#set! title "Unhandled caught exception: `{node.text}`")
   (#set! help "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
+  (#set! fix "_")
   (#set! severity "info")) @visible ; body is small (empty)
 
 ; Finalizers: not used
