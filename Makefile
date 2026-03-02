@@ -23,9 +23,15 @@ bench: ## Run micro-benchmarks
 	# run benchmark suite
 	cargo bench
 
-.PHONY: profile
-profile: ## Profile queries
+.PHONY: profile-queries
+profile-queries: ## Profile queries
 	ts_query_ls profile
+
+.PHONY: profile
+profile: ## Profile lint run with perf
+	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --release
+	perf record --call-graph fp -c 10000 target/release/pegon check ~/workspace/lucene > out.txt || true
+	perf report
 
 export LLVM_COV ?= llvm-cov
 export LLVM_PROFDATA ?= llvm-profdata
