@@ -686,11 +686,12 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (enhanced_for_statement
   name: (identifier) @error
+  ")" @visible ; ensure entire loop header is visible
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-for-local")
   (#set! title "Uppercase local variable: `{node.text}`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn")) @visible
+  (#set! severity "warn"))
 
 ; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
