@@ -461,15 +461,7 @@
 ; Primitive type constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers
-    [
-      "static"
-      "final"
-    ]
-    [
-      "final"
-      "static"
-    ])
+  (modifiers) @_modifiers
   type: [
     (boolean_type)
     (integral_type)
@@ -477,6 +469,8 @@
   ] @context
   declarator: (variable_declarator
     name: (identifier) @error)
+  (#match? @_modifiers "final")
+  (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#not-eq? @error "serialVersionUID")
   (#set! name "lowercase-primitive-constant")
@@ -488,18 +482,12 @@
 ; String constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers
-    [
-      "static"
-      "final"
-    ]
-    [
-      "final"
-      "static"
-    ])
+  (modifiers) @_modifiers
   type: (type_identifier) @_type @context
   declarator: (variable_declarator
     name: (identifier) @error)
+  (#match? @_modifiers "final")
+  (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#eq? @_type "String")
   (#set! name "lowercase-string-constant")
@@ -511,18 +499,12 @@
 ; Null constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers
-    [
-      "static"
-      "final"
-    ]
-    [
-      "final"
-      "static"
-    ])
+  (modifiers) @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error
     value: (null_literal) @context)
+  (#match? @_modifiers "final")
+  (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#set! name "lowercase-null-constant")
   (#set! title "Lowercase in constant field: `{node.text}`")
@@ -533,18 +515,12 @@
 ; Empty array constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (field_declaration
-  (modifiers
-    [
-      "static"
-      "final"
-    ]
-    [
-      "final"
-      "static"
-    ])
+  (modifiers) @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error
     value: (array_initializer) @_array @context)
+  (#match? @_modifiers "final")
+  (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#match? @_array "^[{]\\s*[}]$")
   (#set! name "lowercase-array-constant")
@@ -572,12 +548,12 @@
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers
-    "static" @context) @_modifiers
+  (modifiers) @context @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error)
-  (#match? @error "^[A-Z]")
+  (#match? @_modifiers "static")
   (#not-match? @_modifiers "final")
+  (#match? @error "^[A-Z]")
   (#set! name "uppercase-static-field")
   (#set! title "Uppercase mutable static field: `{node.text}`")
   (#set! context.label "Not `static final`")
@@ -587,12 +563,12 @@
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers
-    "final" @context) @_modifiers
+  (modifiers) @context @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error)
-  (#match? @error "^[A-Z]")
+  (#match? @_modifiers "final")
   (#not-match? @_modifiers "static")
+  (#match? @error "^[A-Z]")
   (#set! name "uppercase-final-field")
   (#set! title "Uppercase field: `{node.text}`")
   (#set! context.label "Not `static final`")
@@ -658,12 +634,12 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (local_variable_declaration
   .
-  (modifiers
-    "final" @context)
+  (modifiers) @_modifiers @context
   declarator: (variable_declarator
     name: (identifier) @error)
   ";" @visible
   (#match? @error "^[A-Z]")
+  (#match? @_modifiers "final")
   (#set! name "uppercase-final-local")
   (#set! title "Uppercase local variable: `{node.text}`")
   (#set! context.label "Not `static final`")

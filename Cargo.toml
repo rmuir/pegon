@@ -55,7 +55,7 @@ rustc-hash = "2.1.1"
 # Parser framework
 tree-sitter = "0.26.5"
 # Parser for java language
-tree-sitter-java = "0.23.5"
+tree-sitter-java-orchard = "0.5.4"
 
 [dev-dependencies]
 # indented string literals in tests
