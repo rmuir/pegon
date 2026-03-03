@@ -18,12 +18,12 @@ pub struct Lint {
     pub help: String,
     /// Formatted Text describing the matching error range
     pub label: Option<String>,
-    /// Ranges that provide additional information
-    pub context: Vec<Range>,
+    /// Range that provides additional information
+    pub context: Option<Range>,
 
     // CLI only features that can't translate to LSP
-    /// Ranges that should be visible
-    pub visible: Vec<Range>,
+    /// Range that should be visible
+    pub visible: Option<Range>,
     /// Computed top context (e.g. what function you are in)
     pub top_context: Option<Range>,
 }
@@ -64,13 +64,13 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
         let visible = hit
             .nodes_for_capture_index(*VISIBLE_CAPTURE)
             .map(|item| item.range())
-            .collect();
+            .next();
 
         // explicitly marked context in the query
         let context = hit
             .nodes_for_capture_index(*CONTEXT_CAPTURE)
             .map(|item| item.range())
-            .collect();
+            .next();
 
         lints.push(Lint {
             rule_id: hit.pattern_index,

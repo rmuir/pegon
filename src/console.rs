@@ -52,26 +52,17 @@ pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), 
                 .label(diagnostic.label),
         );
 
-        // only write context label a single time, colors will coordinate
-        let mut label_written = false;
-
         // explicitly marked context in the query
-        for context in diagnostic.context {
-            if label_written {
-                annotations
-                    .push(AnnotationKind::Context.span(context.start_byte..context.end_byte));
-            } else {
-                annotations.push(
-                    AnnotationKind::Context
-                        .span(context.start_byte..context.end_byte)
-                        .label(rule.context_label.clone()),
-                );
-                label_written = true;
-            }
+        if let Some(context) = diagnostic.context {
+            annotations.push(
+                AnnotationKind::Context
+                    .span(context.start_byte..context.end_byte)
+                    .label(rule.context_label.clone()),
+            );
         }
 
         // explicitly marked visible in the query
-        for visible in diagnostic.visible {
+        if let Some(visible) = diagnostic.visible {
             annotations.push(AnnotationKind::Visible.span(visible.start_byte..visible.end_byte));
         }
 

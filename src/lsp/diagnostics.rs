@@ -89,22 +89,19 @@ fn encode(
                 .encode_range(&diagnostic.range, line_index)
                 .context("invalid range")?;
             let lsp_severity = rule.severity.into();
+            let mut related_information: Vec<DiagnosticRelatedInformation> = Vec::with_capacity(3);
             // all the context ranges are related information
-            let mut related_information = diagnostic
-                .context
-                .iter()
-                .map(|context| {
-                    Ok(DiagnosticRelatedInformation {
-                        location: Location {
-                            uri: uri.clone(),
-                            range: client
-                                .encode_range(context, line_index)
-                                .context("invalid range")?,
-                        },
-                        message: rule.context_label.clone().unwrap_or_default(),
-                    })
-                })
-                .collect::<Result<Vec<_>, Error>>()?;
+            if let Some(related) = &diagnostic.context {
+                related_information.push(DiagnosticRelatedInformation {
+                    location: Location {
+                        uri: uri.clone(),
+                        range: client
+                            .encode_range(related, line_index)
+                            .context("invalid range")?,
+                    },
+                    message: rule.context_label.clone().unwrap_or_default(),
+                });
+            }
             // optional label maps to related information at node's position
             if let Some(label) = &diagnostic.label {
                 related_information.push(DiagnosticRelatedInformation {

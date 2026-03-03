@@ -646,12 +646,13 @@
   .
   type: (_)
   declarator: (variable_declarator
-    name: (identifier) @error
-    (#match? @error "^[A-Z]")
-    (#set! name "uppercase-local")
-    (#set! title "Uppercase local variable: `{node.text}`")
-    (#set! help "Rename `{node.text}` using lowerCamelCase")
-    (#set! severity "warn")))
+    name: (identifier) @error)
+  ";" @visible
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-local")
+  (#set! title "Uppercase local variable: `{node.text}`")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "warn"))
 
 ; Local variables should be lowerCamelCase (final variant)
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
