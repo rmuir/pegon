@@ -79,7 +79,7 @@ pub fn start(connection: Connection) -> Result<(), Error> {
 fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
     let mut docs: FxHashMap<String, Document> = FxHashMap::default();
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&tree_sitter_java::LANGUAGE.into())?;
+    parser.set_language(&crate::LANGUAGE.into())?;
 
     for msg in &connection.receiver {
         let start_time = Instant::now();

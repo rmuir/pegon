@@ -185,7 +185,7 @@ fn top_context(error_node: &Node) -> Option<Range> {
 /// compiled query that matches all lint rules
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &tree_sitter_java::LANGUAGE.into(),
+        &crate::LANGUAGE.into(),
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/lint.scm"
