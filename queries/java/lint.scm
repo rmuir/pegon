@@ -47,7 +47,7 @@
   (string_fragment)
   (multiline_string_fragment)
 ] @error
-  (#match? @error "[\\s&&[^\\u0020\n]]")
+  (#match? @error "[\\s&&[^\\u0020\r\n]]")
   (#set! name "literal-special-space")
   (#set! title "Literal contains unescaped special whitespace")
   (#set! help "Escape the special whitespace: only `0x20` may appear in literals")
@@ -556,28 +556,14 @@
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  . ; no modifiers
-  type: (_) @context
-  declarator: (variable_declarator
-    name: (identifier) @error)
-  (#match? @error "^[A-Z]")
-  (#set! name "uppercase-field")
-  (#set! title "Uppercase field: `{node.text}`")
-  (#set! context.label "Not `static final`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn"))
-
-; non-constants should be lowerCamelCase
-; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
-(field_declaration
-  (modifiers) @_modifiers
+  (modifiers)? @_modifiers
   type: (_) @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! name "uppercase-field-modifiers")
+  (#set! name "uppercase-field")
   (#set! title "Uppercase field: `{node.text}`")
   (#set! context.label "Not `static final`")
   (#set! help "Rename `{node.text}` using lowerCamelCase")
