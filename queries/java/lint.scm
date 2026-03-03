@@ -672,7 +672,8 @@
     name: (identifier) @error)
   body: (block) @_block
   ; unnamed variable
-  (#not-any-of? @error "_" "ignored" "tolerated" "expected" "acceptable" "ok" "success" "optional")
+  (#not-any-of? @error "_" "ignored" "tolerated" "accepted" "acceptable" "ok" "success" "optional")
+  (#not-match? @error "^expected.*")
   ; no real content at all
   (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! name "swallowed-exception")
