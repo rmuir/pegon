@@ -285,13 +285,13 @@
       name: (identifier) @context)
   ]
   (declaration
-    name: (identifier) @error
-    (#set! name "multiple-classes")
-    (#set! title "Multiple top-level classes: `{node.text}`")
-    (#set! label "Additional class")
-    (#set! context.label "First class")
-    (#set! help "Move `{node.text}` to separate `{node.text}.java` file")
-    (#set! severity "warn")))
+    name: (identifier) @error)
+  (#set! name "multiple-classes")
+  (#set! title "Multiple top-level classes: `{node.text}`")
+  (#set! label "Additional class")
+  (#set! context.label "First class")
+  (#set! help "Move `{node.text}` to separate `{node.text}.java` file")
+  (#set! severity "warn"))
 
 ; One variable per declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
@@ -303,13 +303,13 @@
       name: (identifier) @context)
     .
     (variable_declarator
-      name: (identifier) @error
-      (#set! name "multiple-declaration")
-      (#set! title "Multiple variable declaration: `{node.text}`")
-      (#set! label "Additional variable")
-      (#set! context.label "First variable")
-      (#set! help "Move `{node.text}` to separate declaration")
-      (#set! severity "info"))))
+      name: (identifier) @error))
+  (#set! name "multiple-declaration")
+  (#set! title "Multiple variable declaration: `{node.text}`")
+  (#set! label "Additional variable")
+  (#set! context.label "First variable")
+  (#set! help "Move `{node.text}` to separate declaration")
+  (#set! severity "info"))
 
 ; Integer literal with lowercase 'l'
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
@@ -613,12 +613,12 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (spread_parameter
   (variable_declarator
-    name: (identifier) @error
-    (#match? @error "^[A-Z]")
-    (#set! name "uppercase-vararg")
-    (#set! title "Uppercase vararg: `{node.text}`")
-    (#set! help "Rename `{node.text}` using lowerCamelCase")
-    (#set! severity "warn"))) @visible
+    name: (identifier) @error)
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-vararg")
+  (#set! title "Uppercase vararg: `{node.text}`")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "warn")) @visible
 
 ; Catch parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
@@ -661,13 +661,14 @@
   (modifiers
     "final" @context)
   declarator: (variable_declarator
-    name: (identifier) @error
-    (#match? @error "^[A-Z]")
-    (#set! name "uppercase-final-local")
-    (#set! title "Uppercase local variable: `{node.text}`")
-    (#set! context.label "Not `static final`")
-    (#set! help "Rename `{node.text}` using lowerCamelCase")
-    (#set! severity "info")))
+    name: (identifier) @error)
+  ";" @visible
+  (#match? @error "^[A-Z]")
+  (#set! name "uppercase-final-local")
+  (#set! title "Uppercase local variable: `{node.text}`")
+  (#set! context.label "Not `static final`")
+  (#set! help "Rename `{node.text}` using lowerCamelCase")
+  (#set! severity "info"))
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
