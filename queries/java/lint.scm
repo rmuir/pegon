@@ -647,7 +647,6 @@
   type: (_)
   declarator: (variable_declarator
     name: (identifier) @error)
-  ";" @visible
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-local")
   (#set! title "Uppercase local variable: `{node.text}`")
@@ -662,7 +661,6 @@
     "final" @context)
   declarator: (variable_declarator
     name: (identifier) @error)
-  ";" @visible
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-final-local")
   (#set! title "Uppercase local variable: `{node.text}`")
@@ -674,7 +672,6 @@
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (enhanced_for_statement
   name: (identifier) @error
-  ")" @visible ; ensure entire loop header is visible
   (#match? @error "^[A-Z]")
   (#set! name "uppercase-for-local")
   (#set! title "Uppercase local variable: `{node.text}`")
