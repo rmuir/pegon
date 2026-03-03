@@ -71,7 +71,7 @@ fn check(inputs: &[PathBuf]) -> Result<(), Error> {
     builder.build_parallel().run(|| {
         let mut parser = Parser::new();
         parser
-            .set_language(&tree_sitter_java_orchard::LANGUAGE.into())
+            .set_language(&tree_sitter_java::LANGUAGE.into())
             .expect("parser should be included in the binary");
 
         Box::new(move |result| {
