@@ -12,6 +12,9 @@ authors = ["Robert Muir <rmuir@apache.org>"]
 keywords = ["java", "linter", "formatter", "language-server", "static-analysis"]
 categories = ["command-line-utilities", "development-tools", "text-editors"]
 
+[lib]
+path = "src/lib.rs"
+
 [profile.release]
 lto = "fat"
 codegen-units = 1

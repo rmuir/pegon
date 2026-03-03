@@ -1,18 +1,23 @@
 use clap::{Parser, Subcommand, builder::styling::AnsiColor, builder::styling::Styles};
 use std::path::PathBuf;
 
+#[must_use]
+pub fn parse() -> Cli {
+    Cli::parse()
+}
+
 #[derive(Parser)]
 #[command(about, long_about = None, version)]
 #[command(arg_required_else_help = true)]
 #[command(propagate_version = true)]
 #[command(styles = CLI_STYLES)]
-pub(crate) struct Cli {
+pub struct Cli {
     #[command(subcommand)]
-    pub(crate) command: Commands,
+    pub command: Commands,
 }
 
 #[derive(Subcommand)]
-pub(crate) enum Commands {
+pub enum Commands {
     /// Run pegon on the given files or directories.
     Check {
         /// List of files or directories to check, or `-` to read from stdin
@@ -52,7 +57,3 @@ const CLI_STYLES: Styles = Styles::styled()
     .usage(AnsiColor::Green.on_default().bold())
     .literal(AnsiColor::Blue.on_default().bold())
     .placeholder(AnsiColor::Cyan.on_default());
-
-pub(crate) fn parse() -> Cli {
-    Cli::parse()
-}

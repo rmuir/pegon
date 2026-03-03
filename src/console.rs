@@ -36,7 +36,7 @@ impl From<Severity> for Level<'_> {
     }
 }
 
-pub(crate) fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> {
+pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> {
     if errors.is_empty() {
         return Ok(());
     }

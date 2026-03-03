@@ -1,8 +1,3 @@
-pub mod cli;
-pub mod console;
-pub mod lint;
-pub mod lsp;
-
 use core::net::Ipv4Addr;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
@@ -17,8 +12,10 @@ use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBui
 use lsp_server::Connection;
 use tree_sitter::Parser;
 
-use crate::cli::{Commands, parse};
-use crate::lint::lint;
+use pegon::cli::{Commands, parse};
+use pegon::console;
+use pegon::lint::lint;
+use pegon::lsp;
 
 static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
