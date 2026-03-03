@@ -548,7 +548,8 @@
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers) @context @_modifiers
+  (modifiers) @_modifiers
+  type: (_) @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @_modifiers "static")
@@ -563,7 +564,8 @@
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
 (field_declaration
-  (modifiers) @context @_modifiers
+  (modifiers) @_modifiers
+  type: (_) @context
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @_modifiers "final")
