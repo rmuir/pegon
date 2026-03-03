@@ -61,16 +61,16 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
             .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
 
         // explicitly marked visible in the query
-        let mut visible = Vec::new();
-        for visible_node in hit.nodes_for_capture_index(*VISIBLE_CAPTURE) {
-            visible.push(visible_node.range());
-        }
+        let visible = hit
+            .nodes_for_capture_index(*VISIBLE_CAPTURE)
+            .map(|item| item.range())
+            .collect();
 
         // explicitly marked context in the query
-        let mut context = Vec::new();
-        for context_node in hit.nodes_for_capture_index(*CONTEXT_CAPTURE) {
-            context.push(context_node.range());
-        }
+        let context = hit
+            .nodes_for_capture_index(*CONTEXT_CAPTURE)
+            .map(|item| item.range())
+            .collect();
 
         lints.push(Lint {
             rule_id: hit.pattern_index,
