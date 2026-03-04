@@ -13,7 +13,7 @@ use tree_sitter::{InputEdit, Parser};
 
 use crate::lsp::{Document, client::Client};
 
-pub(crate) fn did_open(
+pub fn did_open(
     connection: &Connection,
     client: &Client,
     params: DidOpenTextDocumentParams,
@@ -45,7 +45,7 @@ pub(crate) fn did_open(
     diagnosis
 }
 
-pub(crate) fn did_change(
+pub fn did_change(
     connection: &Connection,
     client: &Client,
     params: DidChangeTextDocumentParams,
@@ -108,7 +108,7 @@ pub(crate) fn did_change(
     diagnosis
 }
 
-pub(crate) fn did_close(
+pub fn did_close(
     connection: &Connection,
     client: &Client,
     params: DidCloseTextDocumentParams,

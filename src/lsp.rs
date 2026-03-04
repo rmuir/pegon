@@ -59,7 +59,7 @@ pub fn start(connection: Connection) -> Result<(), Error> {
             workspace: Some(WorkspaceServerCapabilities {
                 workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                     supported: Some(true),
-                    change_notifications: Some(OneOf::Left(true)),
+                    change_notifications: Some(OneOf::Left(false)),
                 }),
                 file_operations: None,
             }),
@@ -92,7 +92,7 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
                 }
                 if let Err(err) = handle_request(connection, client, &req, & /*mut*/ docs) {
                     eprintln!("[lsp] request {} failed: {err}", req.method);
-                    send_error(
+                    error(
                         connection,
                         req.id.clone(),
                         ErrorCode::RequestFailed,
@@ -169,11 +169,11 @@ fn handle_request(
             let uri = &params.text_document.uri;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
             let response = pull_diagnostics(client, doc, &params)?;
-            send_response(connection, req.id.clone(), &response)?;
+            respond(connection, req.id.clone(), &response)?;
         }
         _ => {
             eprintln!("[lsp] unhandled request {req:?}");
-            send_error(
+            error(
                 connection,
                 req.id.clone(),
                 ErrorCode::MethodNotFound,
@@ -190,7 +190,7 @@ pub fn notify<T: serde::Serialize>(conn: &Connection, method: &str, params: T) -
     Ok(())
 }
 
-fn send_response<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
+fn respond<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
     let resp = Response {
         id,
         result: Some(serde_json::to_value(result)?),
@@ -200,7 +200,7 @@ fn send_response<T: serde::Serialize>(conn: &Connection, id: RequestId, result: 
     Ok(())
 }
 
-fn send_error(conn: &Connection, id: RequestId, code: ErrorCode, msg: &str) -> Result<()> {
+fn error(conn: &Connection, id: RequestId, code: ErrorCode, msg: &str) -> Result<()> {
     let resp = Response {
         id,
         result: None,
