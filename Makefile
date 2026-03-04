@@ -36,8 +36,8 @@ profile: ## Profile lint run with perf
 export LLVM_COV ?= llvm-cov
 export LLVM_PROFDATA ?= llvm-profdata
 
-.PHONY: coverage
-coverage: ## Run tests with coverage report
+.PHONY: test
+test: ## Run tests with coverage report
 	cargo llvm-cov --text
 	cargo llvm-cov report --summary-only
 

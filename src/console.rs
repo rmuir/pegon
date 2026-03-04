@@ -49,7 +49,8 @@ pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> 
         annotations.push(
             AnnotationKind::Primary
                 .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
-                .label(diagnostic.label),
+                .label(diagnostic.label)
+                .highlight_source(true),
         );
 
         // explicitly marked context in the query
