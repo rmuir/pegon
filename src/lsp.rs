@@ -110,14 +110,15 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
                 );
             }
             Message::Notification(note) => {
+                let method = note.method.clone();
                 if let Err(err) =
-                    handle_notification(connection, client, &note, &mut docs, &mut parser)
+                    handle_notification(connection, client, note, &mut docs, &mut parser)
                 {
-                    eprintln!("[lsp] notification {} failed: {err}", note.method);
+                    eprintln!("[lsp] notification {method} failed: {err}");
                 }
                 eprintln!(
                     "[notify] {}: {} ms",
-                    note.method,
+                    method,
                     start_time.elapsed().as_millis()
                 );
             }
@@ -131,111 +132,22 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
 fn handle_notification(
     connection: &Connection,
     client: &Client,
-    note: &lsp_server::Notification,
+    note: lsp_server::Notification,
     docs: &mut FxHashMap<String, Document>,
     parser: &mut Parser,
 ) -> Result<()> {
     match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
-            let params: DidOpenTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = params.text_document.uri;
-            parser.reset();
-            let tree = parser
-                .parse(&params.text_document.text, None)
-                .context("broken parser setup")?;
-            let line_index = LineIndex::new(&params.text_document.text);
-            let doc = Document {
-                text: params.text_document.text,
-                version: params.text_document.version,
-                tree,
-                line_index,
-            };
-            let diagnosis = if client.pull_diagnostics_support() {
-                Ok(())
-            } else {
-                send_notify(
-                    connection,
-                    PublishDiagnostics::METHOD,
-                    push_diagnostics(client, &doc, &uri)?,
-                )
-            };
-            docs.insert(uri.to_string(), doc);
-            diagnosis
+            let params = serde_json::from_value(note.params)?;
+            did_open(connection, client, params, docs, parser)
         }
         DidChangeTextDocument::METHOD => {
-            let params: DidChangeTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = params.text_document.uri;
-            let doc = docs.remove(&uri.to_string()).context("document not open")?;
-            let mut text = doc.text;
-            let mut old_tree = doc.tree;
-            let mut line_index = LineIndex::new(&text);
-            for change in params.content_changes {
-                let decoded = client
-                    .decode_change(&change, &line_index)
-                    .context("illegal range")?;
-                // validate range is legal UTF-8
-                text.get(decoded.start_byte..decoded.end_byte)
-                    .context("illegal slice")?;
-                // edit document
-                text.replace_range(decoded.start_byte..decoded.end_byte, &change.text);
-                // rebuild index
-                line_index = LineIndex::new(&text);
-                // edit parse tree
-                let new_end_byte = decoded
-                    .start_byte
-                    .checked_add(change.text.len())
-                    .context("overflow")?;
-                let new_end_position =
-                    Client::to_point(new_end_byte, &line_index).context("illegal range")?;
-                old_tree.edit(&InputEdit {
-                    start_byte: decoded.start_byte,
-                    old_end_byte: decoded.end_byte,
-                    new_end_byte,
-                    start_position: decoded.start_point,
-                    old_end_position: decoded.end_point,
-                    new_end_position,
-                });
-            }
-            parser.reset();
-            let tree = parser
-                .parse(&text, Some(&old_tree))
-                .context("broken parser setup")?;
-            let newdoc = Document {
-                text,
-                version: params.text_document.version,
-                tree,
-                line_index,
-            };
-
-            let diagnosis = if client.pull_diagnostics_support() {
-                Ok(())
-            } else {
-                send_notify(
-                    connection,
-                    PublishDiagnostics::METHOD,
-                    push_diagnostics(client, &newdoc, &uri)?,
-                )
-            };
-            docs.insert(uri.to_string(), newdoc);
-            diagnosis
+            let params = serde_json::from_value(note.params)?;
+            did_change(connection, client, params, docs, parser)
         }
         DidCloseTextDocument::METHOD => {
-            let params: DidCloseTextDocumentParams = serde_json::from_value(note.params.clone())?;
-            let uri = params.text_document.uri;
-            docs.remove(&uri.to_string());
-            // according to LSP spec, we should clear on close if we are pushing
-            if !client.pull_diagnostics_support() {
-                send_notify(
-                    connection,
-                    PublishDiagnostics::METHOD,
-                    PublishDiagnosticsParams {
-                        diagnostics: vec![],
-                        uri,
-                        version: None,
-                    },
-                )?;
-            }
-            Ok(())
+            let params = serde_json::from_value(note.params)?;
+            did_close(connection, client, params, docs)
         }
         // doesn't make sense for a single-threaded impl
         Cancel::METHOD => Ok(()),
@@ -244,6 +156,124 @@ fn handle_notification(
             Ok(())
         }
     }
+}
+
+fn did_open(
+    connection: &Connection,
+    client: &Client,
+    params: DidOpenTextDocumentParams,
+    docs: &mut FxHashMap<String, Document>,
+    parser: &mut Parser,
+) -> Result<()> {
+    let uri = params.text_document.uri;
+    parser.reset();
+    let tree = parser
+        .parse(&params.text_document.text, None)
+        .context("broken parser setup")?;
+    let line_index = LineIndex::new(&params.text_document.text);
+    let doc = Document {
+        text: params.text_document.text,
+        version: params.text_document.version,
+        tree,
+        line_index,
+    };
+    let diagnosis = if client.pull_diagnostics_support() {
+        Ok(())
+    } else {
+        send_notify(
+            connection,
+            PublishDiagnostics::METHOD,
+            push_diagnostics(client, &doc, &uri)?,
+        )
+    };
+    docs.insert(uri.to_string(), doc);
+    diagnosis
+}
+
+fn did_change(
+    connection: &Connection,
+    client: &Client,
+    params: DidChangeTextDocumentParams,
+    docs: &mut FxHashMap<String, Document>,
+    parser: &mut Parser,
+) -> Result<()> {
+    let uri = params.text_document.uri;
+    let doc = docs.remove(&uri.to_string()).context("document not open")?;
+    let mut text = doc.text;
+    let mut old_tree = doc.tree;
+    let mut line_index = LineIndex::new(&text);
+    for change in params.content_changes {
+        let decoded = client
+            .decode_change(&change, &line_index)
+            .context("illegal range")?;
+        // validate range is legal UTF-8
+        text.get(decoded.start_byte..decoded.end_byte)
+            .context("illegal slice")?;
+        // edit document
+        text.replace_range(decoded.start_byte..decoded.end_byte, &change.text);
+        // rebuild index
+        line_index = LineIndex::new(&text);
+        // edit parse tree
+        let new_end_byte = decoded
+            .start_byte
+            .checked_add(change.text.len())
+            .context("overflow")?;
+        let new_end_position =
+            Client::to_point(new_end_byte, &line_index).context("illegal range")?;
+        old_tree.edit(&InputEdit {
+            start_byte: decoded.start_byte,
+            old_end_byte: decoded.end_byte,
+            new_end_byte,
+            start_position: decoded.start_point,
+            old_end_position: decoded.end_point,
+            new_end_position,
+        });
+    }
+    parser.reset();
+    let tree = parser
+        .parse(&text, Some(&old_tree))
+        .context("broken parser setup")?;
+    let newdoc = Document {
+        text,
+        version: params.text_document.version,
+        tree,
+        line_index,
+    };
+
+    let diagnosis = if client.pull_diagnostics_support() {
+        Ok(())
+    } else {
+        send_notify(
+            connection,
+            PublishDiagnostics::METHOD,
+            push_diagnostics(client, &newdoc, &uri)?,
+        )
+    };
+    docs.insert(uri.to_string(), newdoc);
+    diagnosis
+}
+
+fn did_close(
+    connection: &Connection,
+    client: &Client,
+    params: DidCloseTextDocumentParams,
+    docs: &mut FxHashMap<String, Document>,
+) -> Result<()> {
+    let uri = params.text_document.uri;
+    docs.remove(&uri.to_string());
+    // according to LSP spec, we should clear on close if we are pushing
+    if !client.pull_diagnostics_support() {
+        send_notify(
+            connection,
+            PublishDiagnostics::METHOD,
+            PublishDiagnosticsParams {
+                diagnostics: vec![],
+                uri,
+                version: None,
+            },
+        )?;
+    }
+    Ok(())
 }
 
 fn handle_request(
