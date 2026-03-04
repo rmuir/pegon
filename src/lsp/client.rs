@@ -1,6 +1,6 @@
 use core::convert::From;
 
-use line_index::{LineCol, LineIndex, WideEncoding, WideLineCol};
+use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use lsp_types::{
     ClientCapabilities, InitializeParams, Position, PositionEncodingKind,
     TextDocumentContentChangeEvent,
@@ -123,6 +123,16 @@ impl Client {
                 },
             ),
         }
+    }
+
+    /// converts from an byte offset to a row/column
+    pub(crate) fn to_point(offset: usize, line_index: &LineIndex) -> Option<Point> {
+        let offset = TextSize::try_from(offset).ok()?;
+        let position = line_index.try_line_col(offset)?;
+        Some(Point {
+            row: position.line as usize,
+            column: position.col as usize,
+        })
     }
 
     pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {

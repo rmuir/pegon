@@ -176,18 +176,19 @@ fn handle_notification(
                 // rebuild index
                 line_index = LineIndex::new(&text);
                 // edit parse tree
-                let new_end = decoded
+                let new_end_byte = decoded
                     .start_byte
                     .checked_add(change.text.len())
                     .context("overflow")?;
-                let new_end_pos = to_point(new_end, &line_index).context("illegal range")?;
+                let new_end_position =
+                    Client::to_point(new_end_byte, &line_index).context("illegal range")?;
                 old_tree.edit(&InputEdit {
                     start_byte: decoded.start_byte,
                     old_end_byte: decoded.end_byte,
-                    new_end_byte: new_end,
+                    new_end_byte,
                     start_position: decoded.start_point,
                     old_end_position: decoded.end_point,
-                    new_end_position: new_end_pos,
+                    new_end_position,
                 });
             }
             parser.reset();
@@ -238,16 +239,6 @@ fn handle_notification(
             Ok(())
         }
     }
-}
-
-/// TODO: move somewhere else
-fn to_point(offset: usize, line_index: &LineIndex) -> Option<Point> {
-    let offset = TextSize::try_from(offset).ok()?;
-    let position = line_index.try_line_col(offset)?;
-    Some(Point {
-        row: position.line as usize,
-        column: position.col as usize,
-    })
 }
 
 fn handle_request(
