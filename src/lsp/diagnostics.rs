@@ -28,7 +28,7 @@ impl From<Severity> for DiagnosticSeverity {
 }
 
 /// diagnostics request (pull)
-pub fn pull_diagnostics(
+pub fn pull(
     client: &Client,
     doc: &Document,
     params: &DocumentDiagnosticParams,
@@ -54,11 +54,7 @@ pub fn pull_diagnostics(
 }
 
 /// publish diagnostics (push)
-pub fn push_diagnostics(
-    client: &Client,
-    doc: &Document,
-    uri: &Uri,
-) -> Result<PublishDiagnosticsParams> {
+pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnosticsParams> {
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
     Ok(PublishDiagnosticsParams {

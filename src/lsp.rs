@@ -17,7 +17,7 @@ use rustc_hash::FxHashMap;
 use std::time::Instant;
 use tree_sitter::{Parser, Tree};
 
-use crate::lsp::{client::Client, diagnostics::pull_diagnostics};
+use crate::lsp::client::Client;
 
 mod client;
 mod diagnostics;
@@ -168,7 +168,7 @@ fn handle_request(
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = &params.text_document.uri;
             let doc = docs.get(&uri.to_string()).context("document not open")?;
-            let response = pull_diagnostics(client, doc, &params)?;
+            let response = diagnostics::pull(client, doc, &params)?;
             respond(connection, req.id.clone(), &response)?;
         }
         _ => {

@@ -38,7 +38,7 @@ pub fn did_open(
         super::notify(
             connection,
             PublishDiagnostics::METHOD,
-            super::diagnostics::push_diagnostics(client, &doc, &uri)?,
+            super::diagnostics::push(client, &doc, &uri)?,
         )
     };
     docs.insert(uri.to_string(), doc);
@@ -101,7 +101,7 @@ pub fn did_change(
         super::notify(
             connection,
             PublishDiagnostics::METHOD,
-            super::diagnostics::push_diagnostics(client, &newdoc, &uri)?,
+            super::diagnostics::push(client, &newdoc, &uri)?,
         )
     };
     docs.insert(uri.to_string(), newdoc);
