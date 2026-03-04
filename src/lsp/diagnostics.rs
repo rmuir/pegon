@@ -1,4 +1,4 @@
-use anyhow::{Context as _, Error, Result};
+use anyhow::{Context as _, Result};
 use line_index::LineIndex;
 use lsp_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
@@ -13,7 +13,7 @@ use std::hash::DefaultHasher;
 
 use crate::{
     lint::{Lint, Severity, lint, rule},
-    lsp::{Client, document::Document},
+    lsp::{Client, Document},
 };
 
 impl From<Severity> for DiagnosticSeverity {

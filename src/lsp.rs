@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Error, Result, bail};
-use line_index::{LineIndex, TextSize};
+use line_index::LineIndex;
 use lsp_server::{
     Connection, ErrorCode, Message, Request as ServerRequest, RequestId, Response, ResponseError,
 };
@@ -17,17 +17,22 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 use std::time::Instant;
-use tree_sitter::{InputEdit, Parser, Point};
+use tree_sitter::{InputEdit, Parser, Tree};
 
 use crate::lsp::{
     client::Client,
     diagnostics::{pull_diagnostics, push_diagnostics},
-    document::Document,
 };
 
 mod client;
 mod diagnostics;
-mod document;
+
+pub struct Document {
+    pub(crate) text: String,
+    pub(crate) version: i32,
+    pub(crate) line_index: LineIndex,
+    pub(crate) tree: Tree,
+}
 
 /// Start lsp server with provided connection
 ///
