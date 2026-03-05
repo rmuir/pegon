@@ -22,7 +22,7 @@ impl Display for Severity {
             Self::Error => write!(f, "error"),
             Self::Warn => write!(f, "warn"),
             Self::Info => write!(f, "info"),
-            Self::Hint => write!(f, "hint"),
+            Self::Hint => write!(f, "note"),
         }
     }
 }
