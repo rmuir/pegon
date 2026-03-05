@@ -5,7 +5,7 @@ use clap::{
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(about, long_about = None, version)]
+#[command(about, long_about = None, author, version)]
 #[command(arg_required_else_help = true)]
 #[command(propagate_version = true)]
 #[command(styles = CLI_STYLES)]
