@@ -9,10 +9,12 @@ use std::path::Path;
 use crate::lint::{Lint, Severity, rule};
 
 static GREY: Style = Ansi256Color(247).on_default();
-static RENDERER: Renderer = Renderer::styled()
+static FULL: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
     .context(GREY)
     .line_num(GREY);
+
+static CONCISE: Renderer = Renderer::plain().short_message(true);
 
 impl Display for Severity {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
@@ -36,7 +38,7 @@ impl From<Severity> for Level<'_> {
     }
 }
 
-pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> {
+pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>, concise: bool) -> Result<(), Error> {
     if errors.is_empty() {
         return Ok(());
     }
@@ -46,10 +48,11 @@ pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> 
         let rule = rule(diagnostic.rule_id);
 
         // primary error annotation: as precise of a range as possible
+        let label = if concise { None } else { diagnostic.label };
         annotations.push(
             AnnotationKind::Primary
                 .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
-                .label(diagnostic.label)
+                .label(label)
                 .highlight_source(true),
         );
 
@@ -104,7 +107,11 @@ pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>) -> Result<(), Error> 
                     .secondary_title(diagnostic.help),
             ));
         }
-        anstream::println!("{}\n", RENDERER.render(&report));
+        if concise {
+            anstream::println!("{}", CONCISE.render(&report));
+        } else {
+            anstream::println!("{}\n", FULL.render(&report));
+        }
     }
     Ok(())
 }

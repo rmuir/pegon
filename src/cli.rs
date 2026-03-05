@@ -1,4 +1,7 @@
-use clap::{Parser, Subcommand, builder::styling::AnsiColor, builder::styling::Styles};
+use clap::{
+    Parser, Subcommand, ValueEnum,
+    builder::styling::{AnsiColor, Styles},
+};
 use std::path::PathBuf;
 
 #[must_use]
@@ -24,8 +27,12 @@ pub enum Commands {
         files: Vec<PathBuf>,
 
         /// Apply fixes to resolve lint violations.
-        #[arg(long, short)]
+        #[arg(long)]
         fix: bool,
+
+        /// Diagnostic output format
+        #[arg(long, value_enum, default_value_t = OutputFormat::Full)]
+        output_format: OutputFormat,
     },
 
     /// Run the pegon formatter on the given files or directories.
@@ -35,7 +42,7 @@ pub enum Commands {
 
         /// Avoid writing any formatted files back; instead, exit with a non-zero status code if any
         /// files would be modified, and zero otherwise.
-        #[arg(long, short)]
+        #[arg(long)]
         check: bool,
     },
 
@@ -50,6 +57,12 @@ pub enum Commands {
         #[arg(long, id = "PORT")]
         socket: Option<u16>,
     },
+}
+
+#[derive(ValueEnum, Clone, PartialEq, Eq)]
+pub enum OutputFormat {
+    Full,
+    Concise,
 }
 
 const CLI_STYLES: Styles = Styles::styled()

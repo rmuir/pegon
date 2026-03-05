@@ -12,7 +12,7 @@ use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBui
 use lsp_server::Connection;
 use tree_sitter::Parser;
 
-use pegon::cli::{Commands, parse};
+use pegon::cli::{Commands, OutputFormat, parse};
 use pegon::console;
 use pegon::lint::lint;
 use pegon::lsp;
@@ -21,7 +21,7 @@ static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
 static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
 
-fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
+fn check_file(parser: &mut Parser, path: &Path, concise: bool) -> Result<(), Error> {
     let data = fs::read(path)?;
     let hash = blake3::hash(data.as_slice());
     #[expect(unused_variables, reason = "TODO: needs cache impl")]
@@ -33,13 +33,13 @@ fn check_file(parser: &mut Parser, path: &Path) -> Result<(), Error> {
     let result = lint(&tree, &data)?;
     if !result.is_empty() {
         ERRORS.fetch_add(result.len(), Ordering::Relaxed);
-        console::render(path, &data, result)?;
+        console::render(path, &data, result, concise)?;
     }
     FILES.fetch_add(1, Ordering::Relaxed);
     Ok(())
 }
 
-fn check(inputs: &[PathBuf]) -> Result<(), Error> {
+fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
     let start_time = Instant::now();
     let mut paths = inputs.to_vec();
     let mut typesbuilder = TypesBuilder::new();
@@ -76,7 +76,7 @@ fn check(inputs: &[PathBuf]) -> Result<(), Error> {
                 Ok(entry) => {
                     if let Some(filetype) = entry.file_type()
                         && !filetype.is_dir()
-                        && let Err(error) = check_file(&mut parser, entry.path())
+                        && let Err(error) = check_file(&mut parser, entry.path(), concise)
                     {
                         let filename = entry.path().to_string_lossy();
                         eprintln!("internal error: {filename} {error}");
@@ -109,7 +109,11 @@ fn check(inputs: &[PathBuf]) -> Result<(), Error> {
 fn main() -> Result<(), Error> {
     let cli = parse();
     match &cli.command {
-        Commands::Check { files, fix: _ } => check(files),
+        Commands::Check {
+            files,
+            fix: _,
+            output_format,
+        } => check(files, *output_format == OutputFormat::Concise),
         Commands::Format { files: _, check: _ } => todo!(),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
