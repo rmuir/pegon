@@ -74,10 +74,15 @@ fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
         Box::new(move |result| {
             match result {
                 Ok(entry) => {
-                    if let Some(filetype) = entry.file_type()
-                        && !filetype.is_dir()
-                        && let Err(error) = check_file(&mut parser, entry.path(), concise)
-                    {
+                    let shouldcheck = entry.file_type().is_none_or(|filetype| !filetype.is_dir());
+                    let path = if entry.is_stdin() {
+                        // TODO
+                        Path::new("/dev/stdin")
+                    } else {
+                        entry.path()
+                    };
+
+                    if shouldcheck && let Err(error) = check_file(&mut parser, path, concise) {
                         let filename = entry.path().to_string_lossy();
                         eprintln!("internal error: {filename} {error}");
                         INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
