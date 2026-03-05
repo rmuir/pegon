@@ -91,7 +91,7 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     Ok(lints)
 }
 
-fn custom_predicate(_hit: &QueryMatch, operator: &str, _args: &Box<[QueryPredicateArg]>) -> bool {
+fn custom_predicate(_hit: &QueryMatch, operator: &str, _args: &[QueryPredicateArg]) -> bool {
     match operator {
         "multiple-children?" => true,
         _ => {

@@ -4,11 +4,6 @@ use clap::{
 };
 use std::path::PathBuf;
 
-#[must_use]
-pub fn parse() -> Cli {
-    Cli::parse()
-}
-
 #[derive(Parser)]
 #[command(about, long_about = None, version)]
 #[command(arg_required_else_help = true)]

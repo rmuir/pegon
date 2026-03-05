@@ -8,13 +8,14 @@ use std::{
 };
 
 use anyhow::{Context as _, Error, bail};
+use clap::Parser as _;
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use lsp_server::Connection;
 use tree_sitter::Parser;
 
-use pegon::cli::{Commands, OutputFormat, parse};
+use pegon::cli;
 use pegon::console;
-use pegon::lint::lint;
+use pegon::lint;
 use pegon::lsp;
 
 static FILES: AtomicUsize = AtomicUsize::new(0);
@@ -30,7 +31,7 @@ fn check_file(parser: &mut Parser, path: &Path, concise: bool) -> Result<(), Err
     let tree = parser
         .parse(&data, None)
         .context("parser should be setup")?;
-    let result = lint(&tree, &data)?;
+    let result = lint::lint(&tree, &data)?;
     if !result.is_empty() {
         ERRORS.fetch_add(result.len(), Ordering::Relaxed);
         console::render(path, &data, result, concise)?;
@@ -112,21 +113,21 @@ fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
 }
 
 fn main() -> Result<(), Error> {
-    let cli = parse();
-    match &cli.command {
-        Commands::Check {
+    let options = cli::Cli::parse();
+    match &options.command {
+        cli::Commands::Check {
             files,
             fix: _,
             output_format,
-        } => check(files, *output_format == OutputFormat::Concise),
-        Commands::Format { files: _, check: _ } => todo!(),
-        Commands::Server { socket: None, .. } => {
+        } => check(files, *output_format == cli::OutputFormat::Concise),
+        cli::Commands::Format { files: _, check: _ } => todo!(),
+        cli::Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
             let result = lsp::start(connection);
             iothreads.join()?;
             result
         }
-        Commands::Server {
+        cli::Commands::Server {
             socket: Some(port), ..
         } => {
             let addr = (Ipv4Addr::LOCALHOST, *port);

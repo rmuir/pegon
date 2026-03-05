@@ -38,6 +38,11 @@ impl From<Severity> for Level<'_> {
     }
 }
 
+/// Render any diagnostics to the console
+///
+/// # Errors
+///
+/// This function will return an error if something goes wrong
 pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>, concise: bool) -> Result<(), Error> {
     if errors.is_empty() {
         return Ok(());

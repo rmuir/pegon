@@ -184,7 +184,11 @@ fn handle_request(
     Ok(())
 }
 
-pub fn notify<T: serde::Serialize>(conn: &Connection, method: &str, params: T) -> Result<()> {
+pub(crate) fn notify<T: serde::Serialize>(
+    conn: &Connection,
+    method: &str,
+    params: T,
+) -> Result<()> {
     let note = lsp_server::Notification::new(method.to_owned(), params);
     conn.sender.send(Message::Notification(note))?;
     Ok(())
