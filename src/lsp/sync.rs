@@ -10,7 +10,7 @@ use lsp_types::{
 use rustc_hash::FxHashMap;
 use tree_sitter::{InputEdit, Parser};
 
-use crate::lsp::{Document, client::Client};
+use crate::lsp::{client::Client, server::Document};
 
 pub fn did_open(
     connection: &Connection,
@@ -40,7 +40,8 @@ pub fn did_open(
         )
     };
     docs.insert(uri.to_string(), doc);
-    diagnosis
+    diagnosis?;
+    Ok(())
 }
 
 pub fn did_change(
@@ -102,7 +103,8 @@ pub fn did_change(
         )
     };
     docs.insert(uri.to_string(), newdoc);
-    diagnosis
+    diagnosis?;
+    Ok(())
 }
 
 pub fn did_close(

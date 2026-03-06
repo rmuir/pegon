@@ -13,7 +13,7 @@ use std::hash::DefaultHasher;
 
 use crate::{
     lint::{Lint, Severity, lint, rule},
-    lsp::{Client, Document},
+    lsp::{Client, server::Document},
 };
 
 impl From<Severity> for DiagnosticSeverity {
