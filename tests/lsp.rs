@@ -408,7 +408,7 @@ fn diagnostics_on_change() {
 #[test]
 fn hard_disconnect() {
     let (client, server) = Connection::memory();
-    let server_thread = thread::spawn(move || start(&server));
+    let server_thread = thread::spawn(move || start(server));
     drop(client);
     let err = server_thread.join().unwrap().unwrap_err();
     assert_eq!(err.to_string(), "disconnected channel");

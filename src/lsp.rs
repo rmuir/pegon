@@ -37,7 +37,7 @@ pub struct Document {
 /// # Errors
 ///
 /// This function will return an error if something bad happens
-pub fn start(connection: &Connection) -> Result<(), Error> {
+pub fn start(connection: Connection) -> Result<(), Error> {
     // get the client capabilities
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
@@ -79,6 +79,7 @@ pub fn start(connection: &Connection) -> Result<(), Error> {
 
     connection.initialize_finish(id, result)?;
     main_loop(&connection, &client)?;
+    drop(connection);
     Ok(())
 }
 
