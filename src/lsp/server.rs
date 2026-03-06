@@ -4,7 +4,8 @@ use lsp_server::{Connection, ErrorCode, Message, Request as ServerRequest};
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
-    DocumentDiagnosticParams, InitializeResult, OneOf, ServerCapabilities, ServerInfo,
+    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
+    InitializeResult, OneOf, RelatedFullDocumentDiagnosticReport, ServerCapabilities, ServerInfo,
     TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
     WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
@@ -158,7 +159,11 @@ impl Server {
                 let uri = &params.text_document.uri;
                 let _doc = docs.get(&uri.to_string()).context("document not open")?;
                 let response: Vec<CodeActionOrCommand> = vec![];
-                super::respond(&self.connection, req.id.clone(), &response)?;
+                super::respond::<CodeActionRequest>(
+                    &self.connection,
+                    req.id.clone(),
+                    Some(response),
+                )?;
             }
 
             Formatting::METHOD => {
@@ -169,7 +174,11 @@ impl Server {
                 let uri = &params.text_document.uri;
                 let doc = docs.get(&uri.to_string()).context("document not open")?;
                 let response = super::diagnostics::pull(client, doc, &params)?;
-                super::respond(&self.connection, req.id.clone(), &response)?;
+                super::respond::<DocumentDiagnosticRequest>(
+                    &self.connection,
+                    req.id.clone(),
+                    DocumentDiagnosticReportResult::Report(response),
+                )?;
             }
             _ => {
                 eprintln!("[lsp] unhandled request {req:?}");

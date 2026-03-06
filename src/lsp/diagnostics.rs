@@ -5,6 +5,10 @@ use lsp_types::{
     DocumentDiagnosticParams, DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location,
     NumberOrString, PublishDiagnosticsParams, UnchangedDocumentDiagnosticReport, Uri,
 };
+use lsp_types::{
+    DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,
+    RelatedUnchangedDocumentDiagnosticReport,
+};
 
 use core::hash::Hash as _;
 use core::hash::Hasher as _;
@@ -32,7 +36,7 @@ pub fn pull(
     client: &Client,
     doc: &Document,
     params: &DocumentDiagnosticParams,
-) -> Result<DocumentDiagnosticReportKind> {
+) -> Result<DocumentDiagnosticReport> {
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
     let result_id = hash_items(&results);
@@ -40,14 +44,22 @@ pub fn pull(
     if let Some(previous_id) = &params.previous_result_id
         && *previous_id == result_id
     {
-        Ok(DocumentDiagnosticReportKind::Unchanged(
-            UnchangedDocumentDiagnosticReport { result_id },
+        Ok(DocumentDiagnosticReport::Unchanged(
+            RelatedUnchangedDocumentDiagnosticReport {
+                unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
+                    result_id,
+                },
+                related_documents: None,
+            },
         ))
     } else {
-        Ok(DocumentDiagnosticReportKind::Full(
-            FullDocumentDiagnosticReport {
-                items: encode(client, &params.text_document.uri, &doc.line_index, &results)?,
-                result_id: Some(result_id),
+        Ok(DocumentDiagnosticReport::Full(
+            RelatedFullDocumentDiagnosticReport {
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    items: encode(client, &params.text_document.uri, &doc.line_index, &results)?,
+                    result_id: Some(result_id),
+                },
+                related_documents: None,
             },
         ))
     }

@@ -43,13 +43,12 @@ where
 }
 
 /// responds successfully to an LSP client request
-fn respond<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
-    // TODO: tighten the types up like notify(), but lsp types get complex here
-    let resp = Response {
-        id,
-        result: Some(serde_json::to_value(result)?),
-        error: None,
-    };
+fn respond<R>(conn: &Connection, id: RequestId, result: R::Result) -> Result<(), SendError<Message>>
+where
+    R: lsp_types::request::Request,
+    R::Result: Serialize,
+{
+    let resp = Response::new_ok(id, result);
     conn.sender.send(Message::Response(resp))?;
     Ok(())
 }
