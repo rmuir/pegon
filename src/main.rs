@@ -123,7 +123,8 @@ fn main() -> Result<(), Error> {
         cli::Commands::Format { files: _, check: _ } => todo!(),
         cli::Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
-            let result = lsp::start(connection);
+            let result = lsp::start(&connection);
+            drop(connection);
             iothreads.join()?;
             result
         }
@@ -132,7 +133,8 @@ fn main() -> Result<(), Error> {
         } => {
             let addr = (Ipv4Addr::LOCALHOST, *port);
             let (connection, iothreads) = Connection::listen(addr)?;
-            let result = lsp::start(connection);
+            let result = lsp::start(&connection);
+            drop(connection);
             iothreads.join()?;
             result
         }

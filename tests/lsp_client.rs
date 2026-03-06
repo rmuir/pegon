@@ -37,7 +37,7 @@ impl Client {
             messages: RefCell::default(),
             init_response: RefCell::default(),
             conn: client,
-            thread: thread::spawn(move || start(server)),
+            thread: thread::spawn(move || start(&server)),
         };
         let response = instance.request::<Initialize>(params);
         *instance.init_response.borrow_mut() = Some(response);
