@@ -4,10 +4,9 @@ use lsp_server::{Connection, ErrorCode, Message, Request as ServerRequest};
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
-    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
-    InitializeResult, OneOf, RelatedFullDocumentDiagnosticReport, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    DocumentDiagnosticParams, DocumentDiagnosticReportResult, InitializeResult, OneOf,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
     },

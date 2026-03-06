@@ -2,8 +2,8 @@ use anyhow::{Context as _, Result};
 use line_index::LineIndex;
 use lsp_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
-    DocumentDiagnosticParams, DocumentDiagnosticReportKind, FullDocumentDiagnosticReport, Location,
-    NumberOrString, PublishDiagnosticsParams, UnchangedDocumentDiagnosticReport, Uri,
+    DocumentDiagnosticParams, FullDocumentDiagnosticReport, Location, NumberOrString,
+    PublishDiagnosticsParams, UnchangedDocumentDiagnosticReport, Uri,
 };
 use lsp_types::{
     DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,

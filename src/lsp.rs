@@ -1,6 +1,6 @@
 use anyhow::{Error, Result};
 use crossbeam_channel::SendError;
-use lsp_server::{Connection, ErrorCode, Message, RequestId, Response, ResponseError};
+use lsp_server::{Connection, ErrorCode, Message, Notification, RequestId, Response};
 use lsp_types::InitializeParams;
 use serde::Serialize;
 
@@ -37,9 +37,10 @@ where
     N: lsp_types::notification::Notification,
     N::Params: Serialize,
 {
-    let notification = lsp_server::Notification::new(N::METHOD.to_owned(), params);
-    conn.sender.send(Message::Notification(notification))?;
-    Ok(())
+    conn.sender.send(Message::Notification(Notification::new(
+        N::METHOD.to_owned(),
+        params,
+    )))
 }
 
 /// responds successfully to an LSP client request
@@ -48,9 +49,8 @@ where
     R: lsp_types::request::Request,
     R::Result: Serialize,
 {
-    let resp = Response::new_ok(id, result);
-    conn.sender.send(Message::Response(resp))?;
-    Ok(())
+    conn.sender
+        .send(Message::Response(Response::new_ok(id, result)))
 }
 
 /// responds unsuccessfully to an LSP client request
@@ -60,15 +60,9 @@ fn error(
     code: ErrorCode,
     msg: &str,
 ) -> Result<(), SendError<Message>> {
-    let resp = Response {
+    conn.sender.send(Message::Response(Response::new_err(
         id,
-        result: None,
-        error: Some(ResponseError {
-            code: code as i32,
-            message: msg.into(),
-            data: None,
-        }),
-    };
-    conn.sender.send(Message::Response(resp))?;
-    Ok(())
+        code as i32,
+        msg.into(),
+    )))
 }
