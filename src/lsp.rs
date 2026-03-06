@@ -1,20 +1,21 @@
-use anyhow::{Context as _, Error, Result, bail};
+use anyhow::{Context as _, Error, Result};
 use line_index::LineIndex;
 use lsp_server::{
     Connection, ErrorCode, Message, Request as ServerRequest, RequestId, Response, ResponseError,
 };
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
-    CodeActionProviderCapability, CodeActionResponse, DiagnosticOptions,
-    DiagnosticServerCapabilities, DocumentDiagnosticParams, InitializeParams, InitializeResult,
-    OneOf, ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
+    DocumentDiagnosticParams, InitializeParams, InitializeResult, OneOf, ServerCapabilities,
+    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
     },
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
 };
 use rustc_hash::FxHashMap;
+use serde::Serialize;
 use std::time::Instant;
 use tree_sitter::{Parser, Tree};
 
@@ -170,9 +171,9 @@ fn handle_request(
         CodeActionRequest::METHOD => {
             let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
             let uri = &params.text_document.uri;
-            let doc = docs.get(&uri.to_string()).context("document not open")?;
+            let _doc = docs.get(&uri.to_string()).context("document not open")?;
             let response: Vec<CodeActionOrCommand> = vec![];
-            respond(connection, req.id.clone(), &response);
+            respond(connection, req.id.clone(), &response)?;
         }
 
         Formatting::METHOD => {
@@ -198,13 +199,13 @@ fn handle_request(
     Ok(())
 }
 
-pub(crate) fn notify<T: serde::Serialize>(
-    conn: &Connection,
-    method: &str,
-    params: T,
-) -> Result<()> {
-    let note = lsp_server::Notification::new(method.to_owned(), params);
-    conn.sender.send(Message::Notification(note))?;
+pub(crate) fn notify<N>(conn: &Connection, params: N::Params) -> Result<()>
+where
+    N: lsp_types::notification::Notification,
+    N::Params: Serialize,
+{
+    let notification = lsp_server::Notification::new(N::METHOD.to_owned(), params);
+    conn.sender.send(Message::Notification(notification))?;
     Ok(())
 }
 

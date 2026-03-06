@@ -2,7 +2,6 @@ use anyhow::Context as _;
 use anyhow::Result;
 use line_index::LineIndex;
 use lsp_server::Connection;
-use lsp_types::notification::Notification as _;
 use lsp_types::notification::PublishDiagnostics;
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
@@ -35,9 +34,8 @@ pub fn did_open(
     let diagnosis = if client.pull_diagnostics_support() {
         Ok(())
     } else {
-        super::notify(
+        super::notify::<PublishDiagnostics>(
             connection,
-            PublishDiagnostics::METHOD,
             super::diagnostics::push(client, &doc, &uri)?,
         )
     };
@@ -98,9 +96,8 @@ pub fn did_change(
     let diagnosis = if client.pull_diagnostics_support() {
         Ok(())
     } else {
-        super::notify(
+        super::notify::<PublishDiagnostics>(
             connection,
-            PublishDiagnostics::METHOD,
             super::diagnostics::push(client, &newdoc, &uri)?,
         )
     };
@@ -118,9 +115,8 @@ pub fn did_close(
     docs.remove(&uri.to_string());
     // according to LSP spec, we should clear on close if we are pushing
     if !client.pull_diagnostics_support() {
-        super::notify(
+        super::notify::<PublishDiagnostics>(
             connection,
-            PublishDiagnostics::METHOD,
             PublishDiagnosticsParams {
                 diagnostics: vec![],
                 uri,
