@@ -81,14 +81,13 @@ impl Server {
         parser.set_language(&crate::LANGUAGE.into())?;
 
         for msg in &self.connection.receiver {
-            let start_time = Instant::now();
             match msg {
                 Message::Request(req) => {
                     // try to go down gracefully, but always go down
                     if self.connection.handle_shutdown(&req)? {
                         return Ok(());
                     }
-                    if let Err(err) = self.handle_request(client, &req, & /*mut*/ docs) {
+                    if let Err(err) = self.handle_request(client, &req, &docs) {
                         eprintln!("[lsp] request {} failed: {err}", req.method);
                         error(
                             &self.connection,
@@ -97,11 +96,6 @@ impl Server {
                             err.to_string().as_str(),
                         )?;
                     }
-                    eprintln!(
-                        "[request] {}: {} ms",
-                        req.method,
-                        start_time.elapsed().as_millis()
-                    );
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
@@ -109,13 +103,7 @@ impl Server {
                     {
                         eprintln!("[lsp] notification {method} failed: {err}");
                     }
-                    eprintln!(
-                        "[notify] {}: {} ms",
-                        method,
-                        start_time.elapsed().as_millis()
-                    );
                 }
-
                 // we can request workspaceEdit, but we don't care about the response.
                 Message::Response(_) => {}
             }
@@ -182,7 +170,6 @@ impl Server {
                 )?;
             }
             _ => {
-                eprintln!("[lsp] unhandled request {req:?}");
                 error(
                     &self.connection,
                     req.id.clone(),
