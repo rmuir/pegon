@@ -25,6 +25,10 @@ mod client;
 mod diagnostics;
 mod sync;
 
+pub struct Server {
+    pub(crate) connection: Connection,
+}
+
 pub struct Document {
     pub(crate) text: String,
     pub(crate) version: i32,
@@ -42,6 +46,7 @@ pub fn start(connection: Connection) -> Result<(), Error> {
     let (id, params) = connection.initialize_start()?;
     let init_params: InitializeParams = serde_json::from_value(params)?;
 
+    let server = Server { connection };
     let client = Client::new(init_params);
 
     let result = serde_json::json!(InitializeResult {
@@ -77,126 +82,126 @@ pub fn start(connection: Connection) -> Result<(), Error> {
         }
     });
 
-    connection.initialize_finish(id, result)?;
-    main_loop(&connection, &client)?;
-    drop(connection);
+    server.connection.initialize_finish(id, result)?;
+    server.main_loop(&client)?;
     Ok(())
 }
 
-fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
-    let mut docs: FxHashMap<String, Document> = FxHashMap::default();
-    let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&crate::LANGUAGE.into())?;
+impl Server {
+    fn main_loop(&self, client: &Client) -> Result<(), Error> {
+        let mut docs: FxHashMap<String, Document> = FxHashMap::default();
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&crate::LANGUAGE.into())?;
 
-    for msg in &connection.receiver {
-        let start_time = Instant::now();
-        match msg {
-            Message::Request(req) => {
-                // try to go down gracefully, but always go down
-                if connection.handle_shutdown(&req)? {
-                    return Ok(());
+        for msg in &self.connection.receiver {
+            let start_time = Instant::now();
+            match msg {
+                Message::Request(req) => {
+                    // try to go down gracefully, but always go down
+                    if self.connection.handle_shutdown(&req)? {
+                        return Ok(());
+                    }
+                    if let Err(err) = self.handle_request(client, &req, & /*mut*/ docs) {
+                        eprintln!("[lsp] request {} failed: {err}", req.method);
+                        error(
+                            &self.connection,
+                            req.id.clone(),
+                            ErrorCode::RequestFailed,
+                            err.to_string().as_str(),
+                        )?;
+                    }
+                    eprintln!(
+                        "[request] {}: {} ms",
+                        req.method,
+                        start_time.elapsed().as_millis()
+                    );
                 }
-                if let Err(err) = handle_request(connection, client, &req, & /*mut*/ docs) {
-                    eprintln!("[lsp] request {} failed: {err}", req.method);
-                    error(
-                        connection,
-                        req.id.clone(),
-                        ErrorCode::RequestFailed,
-                        err.to_string().as_str(),
-                    )?;
+                Message::Notification(note) => {
+                    let method = note.method.clone();
+                    if let Err(err) = self.handle_notification(client, note, &mut docs, &mut parser)
+                    {
+                        eprintln!("[lsp] notification {method} failed: {err}");
+                    }
+                    eprintln!(
+                        "[notify] {}: {} ms",
+                        method,
+                        start_time.elapsed().as_millis()
+                    );
                 }
-                eprintln!(
-                    "[request] {}: {} ms",
-                    req.method,
-                    start_time.elapsed().as_millis()
-                );
+
+                // we can request workspaceEdit, but we don't care about the response.
+                Message::Response(_) => {}
             }
-            Message::Notification(note) => {
-                let method = note.method.clone();
-                if let Err(err) =
-                    handle_notification(connection, client, note, &mut docs, &mut parser)
-                {
-                    eprintln!("[lsp] notification {method} failed: {err}");
-                }
-                eprintln!(
-                    "[notify] {}: {} ms",
-                    method,
-                    start_time.elapsed().as_millis()
-                );
+        }
+        Ok(())
+    }
+
+    fn handle_notification(
+        &self,
+        client: &Client,
+        note: lsp_server::Notification,
+        docs: &mut FxHashMap<String, Document>,
+        parser: &mut Parser,
+    ) -> Result<()> {
+        match note.method.as_str() {
+            DidOpenTextDocument::METHOD => {
+                let params = serde_json::from_value(note.params)?;
+                sync::did_open(&self.connection, client, params, docs, parser)
+            }
+            DidChangeTextDocument::METHOD => {
+                let params = serde_json::from_value(note.params)?;
+                sync::did_change(&self.connection, client, params, docs, parser)
+            }
+            DidCloseTextDocument::METHOD => {
+                let params = serde_json::from_value(note.params)?;
+                sync::did_close(&self.connection, client, params, docs)
+            }
+            // doesn't make sense for a single-threaded impl
+            Cancel::METHOD => Ok(()),
+            _ => {
+                eprintln!("[lsp] unhandled notification {note:?}");
+                Ok(())
+            }
+        }
+    }
+
+    fn handle_request(
+        &self,
+        client: &Client,
+        req: &ServerRequest,
+        docs: &FxHashMap<String, Document>,
+    ) -> Result<()> {
+        match req.method.as_str() {
+            CodeActionRequest::METHOD => {
+                let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
+                let uri = &params.text_document.uri;
+                let _doc = docs.get(&uri.to_string()).context("document not open")?;
+                let response: Vec<CodeActionOrCommand> = vec![];
+                respond(&self.connection, req.id.clone(), &response)?;
             }
 
-            // we can request workspaceEdit, but we don't care about the response.
-            Message::Response(_) => {}
+            Formatting::METHOD => {
+                todo!()
+            }
+            DocumentDiagnosticRequest::METHOD => {
+                let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
+                let uri = &params.text_document.uri;
+                let doc = docs.get(&uri.to_string()).context("document not open")?;
+                let response = diagnostics::pull(client, doc, &params)?;
+                respond(&self.connection, req.id.clone(), &response)?;
+            }
+            _ => {
+                eprintln!("[lsp] unhandled request {req:?}");
+                error(
+                    &self.connection,
+                    req.id.clone(),
+                    ErrorCode::MethodNotFound,
+                    "unhandled request",
+                )?;
+            }
         }
+        Ok(())
     }
-    Ok(())
-}
-
-fn handle_notification(
-    connection: &Connection,
-    client: &Client,
-    note: lsp_server::Notification,
-    docs: &mut FxHashMap<String, Document>,
-    parser: &mut Parser,
-) -> Result<()> {
-    match note.method.as_str() {
-        DidOpenTextDocument::METHOD => {
-            let params = serde_json::from_value(note.params)?;
-            sync::did_open(connection, client, params, docs, parser)
-        }
-        DidChangeTextDocument::METHOD => {
-            let params = serde_json::from_value(note.params)?;
-            sync::did_change(connection, client, params, docs, parser)
-        }
-        DidCloseTextDocument::METHOD => {
-            let params = serde_json::from_value(note.params)?;
-            sync::did_close(connection, client, params, docs)
-        }
-        // doesn't make sense for a single-threaded impl
-        Cancel::METHOD => Ok(()),
-        _ => {
-            eprintln!("[lsp] unhandled notification {note:?}");
-            Ok(())
-        }
-    }
-}
-
-fn handle_request(
-    connection: &Connection,
-    client: &Client,
-    req: &ServerRequest,
-    docs: &FxHashMap<String, Document>,
-) -> Result<()> {
-    match req.method.as_str() {
-        CodeActionRequest::METHOD => {
-            let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            let _doc = docs.get(&uri.to_string()).context("document not open")?;
-            let response: Vec<CodeActionOrCommand> = vec![];
-            respond(connection, req.id.clone(), &response)?;
-        }
-
-        Formatting::METHOD => {
-            todo!()
-        }
-        DocumentDiagnosticRequest::METHOD => {
-            let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            let doc = docs.get(&uri.to_string()).context("document not open")?;
-            let response = diagnostics::pull(client, doc, &params)?;
-            respond(connection, req.id.clone(), &response)?;
-        }
-        _ => {
-            eprintln!("[lsp] unhandled request {req:?}");
-            error(
-                connection,
-                req.id.clone(),
-                ErrorCode::MethodNotFound,
-                "unhandled request",
-            )?;
-        }
-    }
-    Ok(())
 }
 
 /// sends an LSP notification to the client
@@ -212,6 +217,7 @@ where
 
 /// responds successfully to an LSP client request
 fn respond<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
+    // TODO: tighten the types up like notify(), but lsp types get complex here
     let resp = Response {
         id,
         result: Some(serde_json::to_value(result)?),
