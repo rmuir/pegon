@@ -1,6 +1,9 @@
 use anyhow::{Context as _, Error, Result};
+use crossbeam_channel::SendError;
 use line_index::LineIndex;
-use lsp_server::{Connection, ErrorCode, Message, Request as ServerRequest};
+use lsp_server::{
+    Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
+};
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
@@ -13,13 +16,14 @@ use lsp_types::{
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
 };
 use rustc_hash::FxHashMap;
+use serde::Serialize;
 use std::time::Instant;
 use tree_sitter::{Parser, Tree};
 
 use crate::lsp::client::Client;
 
 pub struct Server {
-    pub(crate) connection: Connection,
+    connection: Connection,
 }
 
 pub struct Document {
@@ -30,8 +34,8 @@ pub struct Document {
 }
 
 impl Server {
-    pub fn initialize(&self, client: &Client) -> InitializeResult {
-        InitializeResult {
+    pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
+        let result = serde_json::json!(InitializeResult {
             server_info: Some(ServerInfo {
                 name: "pegon".into(),
                 version: Some(env!("CARGO_PKG_VERSION").into()),
@@ -66,7 +70,9 @@ impl Server {
                 }),
                 ..ServerCapabilities::default()
             },
-        }
+        });
+        connection.initialize_finish(id, result)?;
+        Ok(Self { connection })
     }
 
     pub fn main_loop(&self, client: &Client) -> Result<(), Error> {
@@ -84,7 +90,7 @@ impl Server {
                     }
                     if let Err(err) = self.handle_request(client, &req, & /*mut*/ docs) {
                         eprintln!("[lsp] request {} failed: {err}", req.method);
-                        super::error(
+                        error(
                             &self.connection,
                             req.id.clone(),
                             ErrorCode::RequestFailed,
@@ -158,11 +164,7 @@ impl Server {
                 let uri = &params.text_document.uri;
                 let _doc = docs.get(&uri.to_string()).context("document not open")?;
                 let response: Vec<CodeActionOrCommand> = vec![];
-                super::respond::<CodeActionRequest>(
-                    &self.connection,
-                    req.id.clone(),
-                    Some(response),
-                )?;
+                respond::<CodeActionRequest>(&self.connection, req.id.clone(), Some(response))?;
             }
 
             Formatting::METHOD => {
@@ -173,7 +175,7 @@ impl Server {
                 let uri = &params.text_document.uri;
                 let doc = docs.get(&uri.to_string()).context("document not open")?;
                 let response = super::diagnostics::pull(client, doc, &params)?;
-                super::respond::<DocumentDiagnosticRequest>(
+                respond::<DocumentDiagnosticRequest>(
                     &self.connection,
                     req.id.clone(),
                     DocumentDiagnosticReportResult::Report(response),
@@ -181,7 +183,7 @@ impl Server {
             }
             _ => {
                 eprintln!("[lsp] unhandled request {req:?}");
-                super::error(
+                error(
                     &self.connection,
                     req.id.clone(),
                     ErrorCode::MethodNotFound,
@@ -191,4 +193,40 @@ impl Server {
         }
         Ok(())
     }
+}
+
+/// sends an LSP notification to the client
+pub fn notify<N>(conn: &Connection, params: N::Params) -> Result<(), SendError<Message>>
+where
+    N: lsp_types::notification::Notification,
+    N::Params: Serialize,
+{
+    conn.sender.send(Message::Notification(Notification::new(
+        N::METHOD.to_owned(),
+        params,
+    )))
+}
+
+/// responds successfully to an LSP client request
+fn respond<R>(conn: &Connection, id: RequestId, result: R::Result) -> Result<(), SendError<Message>>
+where
+    R: lsp_types::request::Request,
+    R::Result: Serialize,
+{
+    conn.sender
+        .send(Message::Response(Response::new_ok(id, result)))
+}
+
+/// responds unsuccessfully to an LSP client request
+fn error(
+    conn: &Connection,
+    id: RequestId,
+    code: ErrorCode,
+    msg: &str,
+) -> Result<(), SendError<Message>> {
+    conn.sender.send(Message::Response(Response::new_err(
+        id,
+        code as i32,
+        msg.into(),
+    )))
 }

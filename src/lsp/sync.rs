@@ -10,6 +10,8 @@ use lsp_types::{
 use rustc_hash::FxHashMap;
 use tree_sitter::{InputEdit, Parser};
 
+use crate::lsp::diagnostics;
+use crate::lsp::server;
 use crate::lsp::{client::Client, server::Document};
 
 pub fn did_open(
@@ -34,10 +36,7 @@ pub fn did_open(
     let diagnosis = if client.pull_diagnostics_support() {
         Ok(())
     } else {
-        super::notify::<PublishDiagnostics>(
-            connection,
-            super::diagnostics::push(client, &doc, &uri)?,
-        )
+        server::notify::<PublishDiagnostics>(connection, diagnostics::push(client, &doc, &uri)?)
     };
     docs.insert(uri.to_string(), doc);
     diagnosis?;
@@ -97,10 +96,7 @@ pub fn did_change(
     let diagnosis = if client.pull_diagnostics_support() {
         Ok(())
     } else {
-        super::notify::<PublishDiagnostics>(
-            connection,
-            super::diagnostics::push(client, &newdoc, &uri)?,
-        )
+        server::notify::<PublishDiagnostics>(connection, diagnostics::push(client, &newdoc, &uri)?)
     };
     docs.insert(uri.to_string(), newdoc);
     diagnosis?;
@@ -117,7 +113,7 @@ pub fn did_close(
     docs.remove(&uri.to_string());
     // according to LSP spec, we should clear on close if we are pushing
     if !client.pull_diagnostics_support() {
-        super::notify::<PublishDiagnostics>(
+        server::notify::<PublishDiagnostics>(
             connection,
             PublishDiagnosticsParams {
                 diagnostics: vec![],
