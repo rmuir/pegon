@@ -4,14 +4,15 @@ use lsp_server::{
     Connection, ErrorCode, Message, Request as ServerRequest, RequestId, Response, ResponseError,
 };
 use lsp_types::{
-    DiagnosticOptions, DiagnosticServerCapabilities, DocumentDiagnosticParams, InitializeParams,
-    InitializeResult, OneOf, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
+    CodeActionProviderCapability, CodeActionResponse, DiagnosticOptions,
+    DiagnosticServerCapabilities, DocumentDiagnosticParams, InitializeParams, InitializeResult,
+    OneOf, ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
     },
-    request::{DocumentDiagnosticRequest, Formatting, Request as _},
+    request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
 };
 use rustc_hash::FxHashMap;
 use std::time::Instant;
@@ -48,6 +49,14 @@ pub fn start(connection: Connection) -> Result<(), Error> {
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
         capabilities: ServerCapabilities {
+            code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
+                code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+                ..Default::default()
+            })),
+            diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                identifier: Some("pegon".into()),
+                ..Default::default()
+            })),
             position_encoding: Some(client.negotiated_encoding()),
             text_document_sync: Some(TextDocumentSyncCapability::Options(
                 TextDocumentSyncOptions {
@@ -63,10 +72,6 @@ pub fn start(connection: Connection) -> Result<(), Error> {
                 }),
                 file_operations: None,
             }),
-            diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-                identifier: Some("pegon".into()),
-                ..Default::default()
-            })),
             ..ServerCapabilities::default()
         }
     });
@@ -161,6 +166,14 @@ fn handle_request(
     docs: &FxHashMap<String, Document>,
 ) -> Result<()> {
     match req.method.as_str() {
+        CodeActionRequest::METHOD => {
+            let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
+            let uri = &params.text_document.uri;
+            let doc = docs.get(&uri.to_string()).context("document not open")?;
+            let response: Vec<CodeActionOrCommand> = vec![];
+            respond(connection, req.id.clone(), &response);
+        }
+
         Formatting::METHOD => {
             todo!()
         }
