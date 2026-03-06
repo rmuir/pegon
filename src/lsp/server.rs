@@ -5,19 +5,17 @@ use lsp_server::{
     Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
 };
 use lsp_types::{
-    CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
-    CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
-    DocumentDiagnosticParams, DocumentDiagnosticReportResult, InitializeResult, OneOf,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    DiagnosticOptions, DiagnosticServerCapabilities, DocumentDiagnosticParams,
+    DocumentDiagnosticReportResult, InitializeResult, OneOf, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
     },
-    request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
+    request::{DocumentDiagnosticRequest, Formatting, Request as _},
 };
 use rustc_hash::FxHashMap;
 use serde::Serialize;
-use std::time::Instant;
 use tree_sitter::{Parser, Tree};
 
 use crate::lsp::client::Client;
@@ -41,12 +39,6 @@ impl Server {
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
-                code_action_provider: Some(CodeActionProviderCapability::Options(
-                    CodeActionOptions {
-                        code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
-                        ..Default::default()
-                    },
-                )),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some("pegon".into()),
@@ -147,17 +139,6 @@ impl Server {
         docs: &FxHashMap<String, Document>,
     ) -> Result<()> {
         match req.method.as_str() {
-            CodeActionRequest::METHOD => {
-                let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-                let uri = &params.text_document.uri;
-                let _doc = docs.get(&uri.to_string()).context("document not open")?;
-                let response: Vec<CodeActionOrCommand> = vec![];
-                respond::<CodeActionRequest>(&self.connection, req.id.clone(), Some(response))?;
-            }
-
-            Formatting::METHOD => {
-                todo!()
-            }
             DocumentDiagnosticRequest::METHOD => {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
                 let uri = &params.text_document.uri;
@@ -168,6 +149,9 @@ impl Server {
                     req.id.clone(),
                     DocumentDiagnosticReportResult::Report(response),
                 )?;
+            }
+            Formatting::METHOD => {
+                todo!()
             }
             _ => {
                 error(
