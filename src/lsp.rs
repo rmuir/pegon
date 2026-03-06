@@ -199,6 +199,7 @@ fn handle_request(
     Ok(())
 }
 
+/// sends an LSP notification to the client
 pub(crate) fn notify<N>(conn: &Connection, params: N::Params) -> Result<()>
 where
     N: lsp_types::notification::Notification,
@@ -209,6 +210,7 @@ where
     Ok(())
 }
 
+/// responds successfully to an LSP client request
 fn respond<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) -> Result<()> {
     let resp = Response {
         id,
@@ -219,6 +221,7 @@ fn respond<T: serde::Serialize>(conn: &Connection, id: RequestId, result: &T) ->
     Ok(())
 }
 
+/// responds unsuccessfully to an LSP client request
 fn error(conn: &Connection, id: RequestId, code: ErrorCode, msg: &str) -> Result<()> {
     let resp = Response {
         id,
