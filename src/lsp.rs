@@ -123,8 +123,9 @@ fn main_loop(connection: &Connection, client: &Client) -> Result<(), Error> {
                     start_time.elapsed().as_millis()
                 );
             }
-            // since we don't issue any requests, any response must result in connection close
-            Message::Response(resp) => bail!("[lsp] unexpected response: {resp:?}"),
+
+            // we can request workspaceEdit, but we don't care about the response.
+            Message::Response(_) => {}
         }
     }
     Ok(())
