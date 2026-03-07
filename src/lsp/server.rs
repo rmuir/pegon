@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{Context as _, Error, Result};
 use crossbeam_channel::SendError;
 use line_index::LineIndex;
@@ -15,7 +17,6 @@ use lsp_types::{
     },
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
 };
-use rustc_hash::FxHashMap;
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
@@ -75,7 +76,7 @@ impl Server {
     }
 
     pub fn main_loop(&self, client: &Client) -> Result<(), Error> {
-        let mut docs: FxHashMap<String, Document> = FxHashMap::default();
+        let mut docs: HashMap<String, Document> = HashMap::default();
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&crate::LANGUAGE.into())?;
 
@@ -114,7 +115,7 @@ impl Server {
         &self,
         client: &Client,
         note: lsp_server::Notification,
-        docs: &mut FxHashMap<String, Document>,
+        docs: &mut HashMap<String, Document>,
         parser: &mut Parser,
     ) -> Result<()> {
         match note.method.as_str() {
@@ -143,7 +144,7 @@ impl Server {
         &self,
         client: &Client,
         req: &ServerRequest,
-        docs: &FxHashMap<String, Document>,
+        docs: &HashMap<String, Document>,
     ) -> Result<()> {
         match req.method.as_str() {
             CodeActionRequest::METHOD => {

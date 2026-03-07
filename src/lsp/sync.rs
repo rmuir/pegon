@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Context as _;
 use anyhow::Result;
 use line_index::LineIndex;
@@ -7,7 +9,6 @@ use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     PublishDiagnosticsParams,
 };
-use rustc_hash::FxHashMap;
 use tree_sitter::{InputEdit, Parser};
 
 use crate::lsp::diagnostics;
@@ -18,7 +19,7 @@ pub fn did_open(
     connection: &Connection,
     client: &Client,
     params: DidOpenTextDocumentParams,
-    docs: &mut FxHashMap<String, Document>,
+    docs: &mut HashMap<String, Document>,
     parser: &mut Parser,
 ) -> Result<()> {
     let uri = params.text_document.uri;
@@ -47,7 +48,7 @@ pub fn did_change(
     connection: &Connection,
     client: &Client,
     params: DidChangeTextDocumentParams,
-    docs: &mut FxHashMap<String, Document>,
+    docs: &mut HashMap<String, Document>,
     parser: &mut Parser,
 ) -> Result<()> {
     let uri = params.text_document.uri;
@@ -107,7 +108,7 @@ pub fn did_close(
     connection: &Connection,
     client: &Client,
     params: DidCloseTextDocumentParams,
-    docs: &mut FxHashMap<String, Document>,
+    docs: &mut HashMap<String, Document>,
 ) -> Result<()> {
     let uri = params.text_document.uri;
     docs.remove(&uri.to_string());
