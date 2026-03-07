@@ -17,7 +17,6 @@ use lsp_types::{
 };
 use rustc_hash::FxHashMap;
 use serde::Serialize;
-use std::time::Instant;
 use tree_sitter::{Parser, Tree};
 
 use crate::lsp::client::Client;
