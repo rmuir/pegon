@@ -1,0 +1,16 @@
+[package]
+name = "xtask"
+description = "xtasks for pegon"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+pegon = { path = ".." }
+# Generate manual pages
+clap = { version = "4.5.58", features = ["derive"] }
+# Generate manual pages
+clap_mangen = "0.2.31"
