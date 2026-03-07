@@ -47,6 +47,19 @@
       ],
       "description": "checks for equality between two nodes, or a node and a string"
     },
+    "lt": {
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        },
+        {
+          "type": "capture",
+          "arity": "required"
+        }
+      ],
+      "description": "utf-8 comparison between two nodes"
+    },
     "any-of": {
       "parameters": [
         {

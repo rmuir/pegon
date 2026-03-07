@@ -40,7 +40,7 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
         .matches(&QUERY, tree.root_node(), data)
         .filter(|hit| {
             for predicate in QUERY.general_predicates(hit.pattern_index) {
-                if !custom_predicate(hit, &predicate.operator, &predicate.args) {
+                if !custom_predicate(hit, data, &predicate.operator, &predicate.args) {
                     return false;
                 }
             }
@@ -91,9 +91,33 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
     Ok(lints)
 }
 
-fn custom_predicate(_hit: &QueryMatch, operator: &str, _args: &[QueryPredicateArg]) -> bool {
+fn custom_predicate(
+    hit: &QueryMatch,
+    data: &[u8],
+    operator: &str,
+    args: &[QueryPredicateArg],
+) -> bool {
     match operator {
-        "multiple-children?" => true,
+        "lt?" => {
+            if args.len() != 2 {
+                return false;
+            }
+            if let (QueryPredicateArg::Capture(left), QueryPredicateArg::Capture(right)) =
+                (&args[0], &args[1])
+            {
+                if let (Some(node1), Some(node2)) = (
+                    hit.nodes_for_capture_index(*left).next(),
+                    hit.nodes_for_capture_index(*right).next(),
+                ) {
+                    if let (Ok(text1), Ok(text2)) = (node1.utf8_text(data), node2.utf8_text(data)) {
+                        if text1 < text2 {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        }
         _ => {
             panic!("{operator}");
         }

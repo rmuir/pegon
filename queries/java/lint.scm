@@ -261,6 +261,74 @@
   (#set! help "Remove newlines from the import statement")
   (#set! severity "info"))
 
+; Unsorted static imports
+; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
+(program
+  (import_declaration
+    "static"
+    (scoped_identifier) @error)
+  .
+  [
+    (block_comment)
+    (line_comment)
+  ]*
+  .
+  (import_declaration
+    "static"
+    (scoped_identifier) @context)
+  (#lt? @context @error)
+  (#set! name "unsorted-static-import")
+  (#set! title "Static import out of order: `{node.text}`")
+  (#set! help "Static imports should be in alphabetical order")
+  (#set! label "sorts after")
+  (#set! context.label "sorts before")
+  (#set! severity "info"))
+
+; Unsorted imports
+; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
+(program
+  (import_declaration
+    (scoped_identifier) @error) @_node1
+  .
+  [
+    (block_comment)
+    (line_comment)
+  ]*
+  .
+  (import_declaration
+    (scoped_identifier) @context) @_node2
+  (#not-match? @_node1 "^import\\s+static")
+  (#not-match? @_node2 "^import\\s+static")
+  (#lt? @context @error)
+  (#set! name "unsorted-import")
+  (#set! title "Import out of order: `{node.text}`")
+  (#set! help "Imports should be in alphabetical order")
+  (#set! label "sorts after")
+  (#set! context.label "sorts before")
+  (#set! severity "info"))
+
+; Unsorted static imports
+; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
+(program
+  (import_declaration
+    (scoped_identifier) @error) @_node1
+  .
+  [
+    (block_comment)
+    (line_comment)
+  ]*
+  .
+  (import_declaration
+    "static"
+    (scoped_identifier) @context)
+  (#not-match? @_node1 "^import\\s+static")
+  (#set! name "unsorted-import-group")
+  (#set! title "Import out of order: `{node.text}`")
+  (#set! help "Static imports should be grouped before regular imports")
+  (#set! label "sorts after")
+  (#set! context.label "sorts before")
+  (#set! severity "info"))
+
 ; Multiple top-level classes in the same file
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
 (program
