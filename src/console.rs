@@ -52,8 +52,10 @@ pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>, concise: bool) -> Res
         let mut annotations: Vec<Annotation> = Vec::new();
         let rule = rule(diagnostic.rule_id);
 
-        // primary error annotation: as precise of a range as possible
         let label = if concise { None } else { diagnostic.label };
+        let id_url = if concise { "" } else { &rule.url };
+
+        // primary error annotation: as precise of a range as possible
         annotations.push(
             AnnotationKind::Primary
                 .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
@@ -88,7 +90,7 @@ pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>, concise: bool) -> Res
                 .with_name(rule.severity.to_string())
                 .primary_title(diagnostic.title)
                 .id(&rule.name)
-                .id_url(&rule.url)
+                .id_url(id_url)
                 .element(
                     Snippet::source(source)
                         .path(path.to_str())

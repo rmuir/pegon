@@ -99,24 +99,21 @@ fn custom_predicate(
 ) -> bool {
     match operator {
         "lt?" => {
-            if args.len() != 2 {
-                return false;
-            }
-            if let (QueryPredicateArg::Capture(left), QueryPredicateArg::Capture(right)) =
+            assert!(args.len() > 1);
+            let (QueryPredicateArg::Capture(left), QueryPredicateArg::Capture(right)) =
                 (&args[0], &args[1])
-            {
-                if let (Some(node1), Some(node2)) = (
-                    hit.nodes_for_capture_index(*left).next(),
-                    hit.nodes_for_capture_index(*right).next(),
-                ) {
-                    if let (Ok(text1), Ok(text2)) = (node1.utf8_text(data), node2.utf8_text(data)) {
-                        if text1 < text2 {
-                            return true;
-                        }
-                    }
-                }
-            }
-            false
+            else {
+                panic!("invalid predicate arguments")
+            };
+            let node1 = hit
+                .nodes_for_capture_index(*left)
+                .next()
+                .expect("valid capture");
+            let node2 = hit
+                .nodes_for_capture_index(*right)
+                .next()
+                .expect("valid capture");
+            node1.utf8_text(data).unwrap_or_default() < node2.utf8_text(data).unwrap_or_default()
         }
         _ => {
             panic!("{operator}");
