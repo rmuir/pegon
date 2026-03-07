@@ -1,13 +1,33 @@
 use clap::CommandFactory as _;
+use clap::ValueEnum as _;
 use core::error::Error;
 use pegon::cli::Cli;
 use std::{env, fs};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // put manpages in CWD/target/man
+    manpages()?;
+    completions()?;
+    Ok(())
+}
+
+/// output manual pages to `$CWD/target/man`
+fn manpages() -> Result<(), Box<dyn Error>> {
     let out_dir = env::current_dir()?.join("target").join("man");
     fs::create_dir_all(&out_dir)?;
     clap_mangen::generate_to(Cli::command(), &out_dir)?;
     println!("Generated man pages to {}", out_dir.display());
+    Ok(())
+}
+
+/// output completions to `$CWD/target/completions`
+fn completions() -> Result<(), Box<dyn Error>> {
+    let out_dir = env::current_dir()?.join("target").join("completions");
+    fs::create_dir_all(&out_dir)?;
+    let mut command = Cli::command();
+    for &shell in clap_complete::Shell::value_variants() {
+        clap_complete::generate_to(shell, &mut command, "pegon", &out_dir)?;
+    }
+    clap_mangen::generate_to(Cli::command(), &out_dir)?;
+    println!("Generated shell completions to {}", out_dir.display());
     Ok(())
 }
