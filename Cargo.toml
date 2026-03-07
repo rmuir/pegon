@@ -58,6 +58,12 @@ tree-sitter-language = "0.1.7"
 # Parser for java language
 tree-sitter-java = "0.23.5"
 
+[build-dependencies]
+# Generate manual pages
+clap = { version = "4.5.58", features = ["derive"] }
+# Generate manual pages
+clap_mangen = "0.2.31"
+
 [dev-dependencies]
 # indented string literals in tests
 indoc = "2.0.7"
