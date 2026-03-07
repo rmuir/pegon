@@ -24,9 +24,6 @@ static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
 
 fn check_file(parser: &mut Parser, path: &Path, concise: bool) -> Result<(), Error> {
     let data = fs::read(path)?;
-    let hash = blake3::hash(data.as_slice());
-    #[expect(unused_variables, reason = "TODO: needs cache impl")]
-    let res = hash.to_hex().to_string();
     parser.reset();
     let tree = parser
         .parse(&data, None)
