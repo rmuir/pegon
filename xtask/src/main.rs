@@ -24,10 +24,10 @@ fn completions() -> Result<(), Box<dyn Error>> {
     let out_dir = env::current_dir()?.join("target").join("completions");
     fs::create_dir_all(&out_dir)?;
     let mut command = Cli::command();
+    let name = command.get_name().to_owned();
     for &shell in clap_complete::Shell::value_variants() {
-        clap_complete::generate_to(shell, &mut command, "pegon", &out_dir)?;
+        clap_complete::generate_to(shell, &mut command, name.as_str(), &out_dir)?;
     }
-    clap_mangen::generate_to(Cli::command(), &out_dir)?;
     println!("Generated shell completions to {}", out_dir.display());
     Ok(())
 }
