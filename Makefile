@@ -27,10 +27,12 @@ bench: ## Run micro-benchmarks
 profile-queries: ## Profile queries
 	ts_query_ls profile
 
+export PERF_CONFIG ?= .perfconfig
+
 .PHONY: profile
 profile: ## Profile lint run with perf
-	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --release
-	perf record --call-graph fp -c 10000 target/release/pegon check ~/workspace/lucene > out.txt || true
+	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --profile profiling
+	perf record -g -c 10000 target/profiling/pegon check ~/workspace/lucene > out.txt || true
 	perf report
 
 export LLVM_COV ?= llvm-cov

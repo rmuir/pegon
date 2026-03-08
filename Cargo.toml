@@ -18,13 +18,26 @@ path = "src/lib.rs"
 [profile.release]
 lto = "fat"
 codegen-units = 1
+panic = "abort"
+
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"
+lto = "thin"
 
 [profile.dev]
 debug = "line-tables-only"
 lto = "off"
 
-[profile.dev.package."*"]
-debug = "none"
+# optimize the hotspots: allow dev to be close to release performance
+[profile.dev.package."regex-automata"]
+opt-level = 2
+
+[profile.dev.package."tree-sitter"]
+opt-level = 2
+
+[profile.dev.package."tree-sitter-java"]
+opt-level = 2
 
 [dependencies]
 # Templates diagnostic errors

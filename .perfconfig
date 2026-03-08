@@ -1,0 +1,12 @@
+# Use LLVM toolchain for annotation feature to work with rust
+[annotate]
+addr2line = llvm-addr2line
+disassemblers = llvm
+objdump = llvm-objdump
+hide_src_code = false
+show_linenr = true
+show_nr_jumps = true
+
+# otherwise nuts
+[colors]
+root = lightgray, default
