@@ -62,7 +62,7 @@ anstream = "0.6.21"
 # Error handling
 anyhow = "1.0.101"
 # CLI argument processing
-clap = { version = "4.5.58", features = ["derive"] }
+clap = { version = "4.5.58", features = ["derive", "env"] }
 # Traversing directories, respecting ignore files
 ignore = "0.4.25"
 # LSP support

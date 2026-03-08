@@ -31,7 +31,7 @@ pub enum Commands {
         fix: bool,
 
         /// Diagnostic output format
-        #[arg(long, value_enum, default_value_t = OutputFormat::Full)]
+        #[arg(long, value_enum, env = "PEGON_OUTPUT_FORMAT", default_value_t = OutputFormat::Full)]
         output_format: OutputFormat,
     },
 
