@@ -34,9 +34,9 @@ fn manpages() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// output completions to `$CWD/docs/completions`
+/// output completions to `$CWD/contrib/completions`
 fn completions() -> Result<(), Box<dyn Error>> {
-    let out_dir = env::current_dir()?.join("docs").join("completions");
+    let out_dir = env::current_dir()?.join("contrib").join("completions");
     if out_dir.exists() {
         fs::remove_dir_all(&out_dir)?;
     }
