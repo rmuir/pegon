@@ -25,10 +25,9 @@ set edit:completion:arg-completer[pegon] = {|@words|
             cand check 'Run pegon on the given files or directories'
             cand format 'Run the pegon formatter on the given files or directories'
             cand server 'Run the language server'
-            cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'pegon;check'= {
-            cand --output-format 'Diagnostic output format'
+            cand --output-format 'Diagnostic error format'
             cand --fix 'Apply fixes to resolve lint violations'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
@@ -40,23 +39,9 @@ set edit:completion:arg-completer[pegon] = {|@words|
         }
         &'pegon;server'= {
             cand --socket 'Listen on loopback TCP socket'
-            cand --stdio 'Use standard I/O streams (default)'
+            cand --stdio 'Use standard I/O streams \[default\]'
             cand -h 'Print help'
             cand --help 'Print help'
-        }
-        &'pegon;help'= {
-            cand check 'Run pegon on the given files or directories'
-            cand format 'Run the pegon formatter on the given files or directories'
-            cand server 'Run the language server'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'pegon;help;check'= {
-        }
-        &'pegon;help;format'= {
-        }
-        &'pegon;help;server'= {
-        }
-        &'pegon;help;help'= {
         }
     ]
     $completions[$command]

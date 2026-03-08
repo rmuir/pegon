@@ -28,11 +28,10 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
             [CompletionResult]::new('check', 'check', [CompletionResultType]::ParameterValue, 'Run pegon on the given files or directories')
             [CompletionResult]::new('format', 'format', [CompletionResultType]::ParameterValue, 'Run the pegon formatter on the given files or directories')
             [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'Run the language server')
-            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
             break
         }
         'pegon;check' {
-            [CompletionResult]::new('--output-format', '--output-format', [CompletionResultType]::ParameterName, 'Diagnostic output format')
+            [CompletionResult]::new('--output-format', '--output-format', [CompletionResultType]::ParameterName, 'Diagnostic error format')
             [CompletionResult]::new('--fix', '--fix', [CompletionResultType]::ParameterName, 'Apply fixes to resolve lint violations')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
@@ -46,28 +45,9 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
         }
         'pegon;server' {
             [CompletionResult]::new('--socket', '--socket', [CompletionResultType]::ParameterName, 'Listen on loopback TCP socket')
-            [CompletionResult]::new('--stdio', '--stdio', [CompletionResultType]::ParameterName, 'Use standard I/O streams (default)')
+            [CompletionResult]::new('--stdio', '--stdio', [CompletionResultType]::ParameterName, 'Use standard I/O streams \[default\]')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
-            break
-        }
-        'pegon;help' {
-            [CompletionResult]::new('check', 'check', [CompletionResultType]::ParameterValue, 'Run pegon on the given files or directories')
-            [CompletionResult]::new('format', 'format', [CompletionResultType]::ParameterValue, 'Run the pegon formatter on the given files or directories')
-            [CompletionResult]::new('server', 'server', [CompletionResultType]::ParameterValue, 'Run the language server')
-            [CompletionResult]::new('help', 'help', [CompletionResultType]::ParameterValue, 'Print this message or the help of the given subcommand(s)')
-            break
-        }
-        'pegon;help;check' {
-            break
-        }
-        'pegon;help;format' {
-            break
-        }
-        'pegon;help;server' {
-            break
-        }
-        'pegon;help;help' {
             break
         }
     })

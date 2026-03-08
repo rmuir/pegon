@@ -14,12 +14,18 @@ More information
 \fB\-\-fix\fR
 Apply fixes to resolve lint violations
 .TP
-\fB\-\-output\-format\fR \fI<OUTPUT_FORMAT>\fR [default: full]
-Diagnostic output format
+\fB\-\-output\-format\fR \fI<FMT>\fR [default: full]
+Diagnostic error format
 .br
 
 .br
-[\fIpossible values: \fRfull, concise]
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+full: Cargo\-style format
+.IP \(bu 2
+concise: Grep\-style format
+.RE
 .RS
 May also be specified with the \fBPEGON_OUTPUT_FORMAT\fR environment variable. 
 .RE
@@ -28,4 +34,6 @@ May also be specified with the \fBPEGON_OUTPUT_FORMAT\fR environment variable.
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
 [\fIFILES\fR]
-List of files or directories to check, or `\-` to read from stdin
+List of files or directories to check
+
+Use `\-` for standard input. [default: CWD]

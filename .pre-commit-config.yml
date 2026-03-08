@@ -28,6 +28,8 @@ repos:
           glob:
             # clap-mangen
             - docs/man/**
+            # clap-helpgen (TODO)
+            - docs/README.md
 
       - id: end-of-file-fixer
         name: Fix newline at EOF

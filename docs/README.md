@@ -1,86 +1,62 @@
-# Usage
-
-This document contains the help content for the `pegon` command-line program.
-
-**Command Overview:**
-
-* [`pegon`↴](#pegon)
-* [`pegon check`↴](#pegon-check)
-* [`pegon format`↴](#pegon-format)
-* [`pegon server`↴](#pegon-server)
-
-## `pegon`
-
+```text
 A slightly fast Java linter and code formatter, written in Rust.
 
 More sentence
 
-**Usage:** `pegon <COMMAND>`
+Usage: pegon check [OPTIONS] [FILES]...
+       pegon format [OPTIONS] [FILES]...
+       pegon server [OPTIONS]
 
-###### **Subcommands:**
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
 
-* `check` — Run pegon on the given files or directories
-* `format` — Run the pegon formatter on the given files or directories
-* `server` — Run the language server
+  -V, --version
+          Print version
 
+pegon check:
+Run pegon on the given files or directories
+      --fix
+          Apply fixes to resolve lint violations
 
+      --output-format <FMT>
+          Diagnostic error format
 
-## `pegon check`
+          Possible values:
+          - full:    Cargo-style format
+          - concise: Grep-style format
+          
+          [env: PEGON_OUTPUT_FORMAT=]
+          [default: full]
 
-Run pegon on the given files or directories.
+  -h, --help
+          Print help (see a summary with '-h')
 
-More information
+  [FILES]...
+          List of files or directories to check
+          
+          Use `-` for standard input. [default: CWD]
 
-**Usage:** `pegon check [OPTIONS] [FILES]...`
-
-###### **Arguments:**
-
-* `<FILES>` — List of files or directories to check, or `-` to read from stdin
-
-###### **Options:**
-
-* `--fix` — Apply fixes to resolve lint violations
-* `--output-format <OUTPUT_FORMAT>` — Diagnostic output format
-
-  Default value: `full`
-
-  Possible values: `full`, `concise`
-
-
-
-
-## `pegon format`
-
+pegon format:
 Run the pegon formatter on the given files or directories
+      --check
+          Avoid writing any formatted files back; instead, exit with a non-zero status code if any files would be modified, and zero otherwise
 
-**Usage:** `pegon format [OPTIONS] [FILES]...`
+  -h, --help
+          Print help
 
-###### **Arguments:**
+  [FILES]...
+          List of files or directories to format, or `-` to read from stdin
 
-* `<FILES>` — List of files or directories to format, or `-` to read from stdin
-
-###### **Options:**
-
-* `--check` — Avoid writing any formatted files back; instead, exit with a non-zero status code if any files would be modified, and zero otherwise
-
-
-
-## `pegon server`
-
+pegon server:
 Run the language server
+      --stdio
+          Use standard I/O streams \[default\]
 
-**Usage:** `pegon server [OPTIONS]`
+      --socket <PORT>
+          Listen on loopback TCP socket
 
-###### **Options:**
+  -h, --help
+          Print help
 
-* `--stdio` — Use standard I/O streams (default)
-* `--socket <PORT>` — Listen on loopback TCP socket
-
-
-
-<hr/>
-
-<small><i>
-    This document was generated automatically by
-    <a href="https://crates.io/crates/clap-markdown"><code>clap-markdown</code></a>.
-</i></small>
+```

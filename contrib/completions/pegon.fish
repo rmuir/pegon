@@ -29,17 +29,12 @@ complete -c pegon -n "__fish_pegon_needs_command" -s V -l version -d 'Print vers
 complete -c pegon -n "__fish_pegon_needs_command" -f -a "check" -d 'Run pegon on the given files or directories'
 complete -c pegon -n "__fish_pegon_needs_command" -f -a "format" -d 'Run the pegon formatter on the given files or directories'
 complete -c pegon -n "__fish_pegon_needs_command" -f -a "server" -d 'Run the language server'
-complete -c pegon -n "__fish_pegon_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c pegon -n "__fish_pegon_using_subcommand check" -l output-format -d 'Diagnostic output format' -r -f -a "full\t''
-concise\t''"
+complete -c pegon -n "__fish_pegon_using_subcommand check" -l output-format -d 'Diagnostic error format' -r -f -a "full\t'Cargo-style format'
+concise\t'Grep-style format'"
 complete -c pegon -n "__fish_pegon_using_subcommand check" -l fix -d 'Apply fixes to resolve lint violations'
 complete -c pegon -n "__fish_pegon_using_subcommand check" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c pegon -n "__fish_pegon_using_subcommand format" -l check -d 'Avoid writing any formatted files back; instead, exit with a non-zero status code if any files would be modified, and zero otherwise'
 complete -c pegon -n "__fish_pegon_using_subcommand format" -s h -l help -d 'Print help'
 complete -c pegon -n "__fish_pegon_using_subcommand server" -l socket -d 'Listen on loopback TCP socket' -r
-complete -c pegon -n "__fish_pegon_using_subcommand server" -l stdio -d 'Use standard I/O streams (default)'
+complete -c pegon -n "__fish_pegon_using_subcommand server" -l stdio -d 'Use standard I/O streams \\[default\\]'
 complete -c pegon -n "__fish_pegon_using_subcommand server" -s h -l help -d 'Print help'
-complete -c pegon -n "__fish_pegon_using_subcommand help; and not __fish_seen_subcommand_from check format server help" -f -a "check" -d 'Run pegon on the given files or directories'
-complete -c pegon -n "__fish_pegon_using_subcommand help; and not __fish_seen_subcommand_from check format server help" -f -a "format" -d 'Run the pegon formatter on the given files or directories'
-complete -c pegon -n "__fish_pegon_using_subcommand help; and not __fish_seen_subcommand_from check format server help" -f -a "server" -d 'Run the language server'
-complete -c pegon -n "__fish_pegon_using_subcommand help; and not __fish_seen_subcommand_from check format server help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'

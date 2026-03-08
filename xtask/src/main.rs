@@ -1,6 +1,5 @@
 use clap::CommandFactory as _;
 use clap::ValueEnum as _;
-use clap_markdown::MarkdownOptions;
 use core::error::Error;
 use pegon::cli::Cli;
 use std::{env, fs};
@@ -12,12 +11,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// output markdown help to `$CWD/docs/README.md`
+/// output help to `$CWD/docs/README.md`
 fn help() -> Result<(), Box<dyn Error>> {
+    let mut command = Cli::command().flatten_help(true).disable_colored_help(true);
+    let help = format!("```text\n{}\n```\n", command.render_long_help());
     let out_dir = env::current_dir()?.join("docs");
-    let options = MarkdownOptions::new().title("Usage".into());
-    let markdown = clap_markdown::help_markdown_custom::<Cli>(&options);
-    fs::write(out_dir.join("README.md"), markdown)?;
+    fs::write(out_dir.join("README.md"), help)?;
     println!("Generated help to {}", out_dir.display());
     Ok(())
 }
