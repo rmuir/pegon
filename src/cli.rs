@@ -52,7 +52,7 @@ pub enum Commands {
     /// Run the language server
     #[group(required = false, multiple = false)]
     Server {
-        /// Use standard I/O streams \[default\]
+        /// Use standard I/O streams [default]
         #[arg(long)]
         stdio: bool,
 

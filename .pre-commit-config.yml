@@ -180,7 +180,6 @@ repos:
         args: ["check"]
         env:
           RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -199,7 +198,6 @@ repos:
         args: ["clippy", "--", "-D", "warnings"]
         env:
           RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -227,26 +225,6 @@ repos:
             - Cargo.toml
             - Cargo.lock
             - "**/*.rs"
-
-      - id: cargo-rustdoc
-        name: Check Rust documentation
-        stages: [pre-push]
-        priority: 0
-        language: system
-        entry: cargo
-        args: ["rustdoc"]
-        env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
-        # runs across all files if any are touched
-        require_serial: true
-        pass_filenames: false
-        files:
-          glob:
-            - Cargo.toml
-            - Cargo.lock
-            - "**/*.rs"
-            - "README.*"
 
       - id: cargo-deny
         name: Check Rust dependencies

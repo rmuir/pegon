@@ -45,7 +45,7 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
         }
         'pegon;server' {
             [CompletionResult]::new('--socket', '--socket', [CompletionResultType]::ParameterName, 'Listen on loopback TCP socket')
-            [CompletionResult]::new('--stdio', '--stdio', [CompletionResultType]::ParameterName, 'Use standard I/O streams \[default\]')
+            [CompletionResult]::new('--stdio', '--stdio', [CompletionResultType]::ParameterName, 'Use standard I/O streams [default]')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
             break

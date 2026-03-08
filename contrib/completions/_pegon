@@ -49,7 +49,7 @@ _arguments "${_arguments_options[@]}" : \
 (server)
 _arguments "${_arguments_options[@]}" : \
 '--socket=[Listen on loopback TCP socket]:PORT:_default' \
-'--stdio[Use standard I/O streams \\\[default\\\]]' \
+'--stdio[Use standard I/O streams \[default\]]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0

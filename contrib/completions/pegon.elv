@@ -39,7 +39,7 @@ set edit:completion:arg-completer[pegon] = {|@words|
         }
         &'pegon;server'= {
             cand --socket 'Listen on loopback TCP socket'
-            cand --stdio 'Use standard I/O streams \[default\]'
+            cand --stdio 'Use standard I/O streams [default]'
             cand -h 'Print help'
             cand --help 'Print help'
         }

@@ -51,7 +51,7 @@ Run the pegon formatter on the given files or directories
 pegon server:
 Run the language server
       --stdio
-          Use standard I/O streams \[default\]
+          Use standard I/O streams [default]
 
       --socket <PORT>
           Listen on loopback TCP socket

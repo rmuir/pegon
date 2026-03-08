@@ -36,5 +36,5 @@ complete -c pegon -n "__fish_pegon_using_subcommand check" -s h -l help -d 'Prin
 complete -c pegon -n "__fish_pegon_using_subcommand format" -l check -d 'Avoid writing any formatted files back; instead, exit with a non-zero status code if any files would be modified, and zero otherwise'
 complete -c pegon -n "__fish_pegon_using_subcommand format" -s h -l help -d 'Print help'
 complete -c pegon -n "__fish_pegon_using_subcommand server" -l socket -d 'Listen on loopback TCP socket' -r
-complete -c pegon -n "__fish_pegon_using_subcommand server" -l stdio -d 'Use standard I/O streams \\[default\\]'
+complete -c pegon -n "__fish_pegon_using_subcommand server" -l stdio -d 'Use standard I/O streams [default]'
 complete -c pegon -n "__fish_pegon_using_subcommand server" -s h -l help -d 'Print help'
