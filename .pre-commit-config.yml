@@ -154,6 +154,10 @@ repos:
           UV_FROZEN: "1"
         require_serial: true
         types: ["markdown"]
+        exclude:
+          glob:
+            # clap-markdown
+            - docs/README.md
 
       - id: yamlfmt
         name: Fix YAML

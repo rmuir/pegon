@@ -15,8 +15,8 @@ _pegon() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" : \
-'-h[Print help]' \
-'--help[Print help]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
 '-V[Print version]' \
 '--version[Print version]' \
 ":: :_pegon_commands" \
@@ -32,8 +32,8 @@ _pegon() {
 _arguments "${_arguments_options[@]}" : \
 '--output-format=[Diagnostic output format]:OUTPUT_FORMAT:(full concise)' \
 '--fix[Apply fixes to resolve lint violations]' \
-'-h[Print help]' \
-'--help[Print help]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
 '-V[Print version]' \
 '--version[Print version]' \
 '*::files -- List of files or directories to check, or `-` to read from stdin:_files' \

@@ -4,8 +4,11 @@ use clap::{
 };
 use std::path::PathBuf;
 
+/// A slightly fast Java linter and code formatter, written in Rust.
+///
+/// More sentence
 #[derive(Parser)]
-#[command(name = "pegon", about, long_about = None, author, version)]
+#[command(name = "pegon", author, version)]
 #[command(arg_required_else_help = true)]
 #[command(propagate_version = true)]
 #[command(styles = CLI_STYLES)]
@@ -17,6 +20,8 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     /// Run pegon on the given files or directories.
+    ///
+    /// More information
     Check {
         /// List of files or directories to check, or `-` to read from stdin
         files: Vec<PathBuf>,

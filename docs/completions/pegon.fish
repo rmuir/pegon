@@ -24,7 +24,7 @@ function __fish_pegon_using_subcommand
 	contains -- $cmd[1] $argv
 end
 
-complete -c pegon -n "__fish_pegon_needs_command" -s h -l help -d 'Print help'
+complete -c pegon -n "__fish_pegon_needs_command" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c pegon -n "__fish_pegon_needs_command" -s V -l version -d 'Print version'
 complete -c pegon -n "__fish_pegon_needs_command" -f -a "check" -d 'Run pegon on the given files or directories'
 complete -c pegon -n "__fish_pegon_needs_command" -f -a "format" -d 'Run the pegon formatter on the given files or directories'
@@ -33,7 +33,7 @@ complete -c pegon -n "__fish_pegon_needs_command" -f -a "help" -d 'Print this me
 complete -c pegon -n "__fish_pegon_using_subcommand check" -l output-format -d 'Diagnostic output format' -r -f -a "full\t''
 concise\t''"
 complete -c pegon -n "__fish_pegon_using_subcommand check" -l fix -d 'Apply fixes to resolve lint violations'
-complete -c pegon -n "__fish_pegon_using_subcommand check" -s h -l help -d 'Print help'
+complete -c pegon -n "__fish_pegon_using_subcommand check" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c pegon -n "__fish_pegon_using_subcommand check" -s V -l version -d 'Print version'
 complete -c pegon -n "__fish_pegon_using_subcommand format" -l check -d 'Avoid writing any formatted files back; instead, exit with a non-zero status code if any files would be modified, and zero otherwise'
 complete -c pegon -n "__fish_pegon_using_subcommand format" -s h -l help -d 'Print help'

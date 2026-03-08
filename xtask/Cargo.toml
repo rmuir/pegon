@@ -9,6 +9,7 @@ publish = false
 workspace = true
 
 [dependencies]
+# Make use of main project
 pegon = { path = ".." }
 # Generate manual pages
 clap = { version = "4.5.58", features = ["derive"] }
@@ -16,3 +17,5 @@ clap = { version = "4.5.58", features = ["derive"] }
 clap_mangen = "0.2.31"
 # Generate shell completions
 clap_complete = "4.5.66"
+# Generate markdown
+clap-markdown = "0.1.5"

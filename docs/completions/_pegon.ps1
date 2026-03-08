@@ -21,8 +21,8 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
 
     $completions = @(switch ($command) {
         'pegon' {
-            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
             [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('check', 'check', [CompletionResultType]::ParameterValue, 'Run pegon on the given files or directories')
@@ -34,8 +34,8 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
         'pegon;check' {
             [CompletionResult]::new('--output-format', '--output-format', [CompletionResultType]::ParameterName, 'Diagnostic output format')
             [CompletionResult]::new('--fix', '--fix', [CompletionResultType]::ParameterName, 'Apply fixes to resolve lint violations')
-            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
+            [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
+            [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
             [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
             [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             break

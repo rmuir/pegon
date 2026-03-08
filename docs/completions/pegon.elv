@@ -18,8 +18,8 @@ set edit:completion:arg-completer[pegon] = {|@words|
     }
     var completions = [
         &'pegon'= {
-            cand -h 'Print help'
-            cand --help 'Print help'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
             cand -V 'Print version'
             cand --version 'Print version'
             cand check 'Run pegon on the given files or directories'
@@ -30,8 +30,8 @@ set edit:completion:arg-completer[pegon] = {|@words|
         &'pegon;check'= {
             cand --output-format 'Diagnostic output format'
             cand --fix 'Apply fixes to resolve lint violations'
-            cand -h 'Print help'
-            cand --help 'Print help'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
             cand -V 'Print version'
             cand --version 'Print version'
         }

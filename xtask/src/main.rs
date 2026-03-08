@@ -1,16 +1,28 @@
 use clap::CommandFactory as _;
 use clap::ValueEnum as _;
+use clap_markdown::MarkdownOptions;
 use core::error::Error;
 use pegon::cli::Cli;
 use std::{env, fs};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    help()?;
     manpages()?;
     completions()?;
     Ok(())
 }
 
-/// output manual pages to `$CWD/target/man`
+/// output markdown help to `$CWD/docs/README.md`
+fn help() -> Result<(), Box<dyn Error>> {
+    let out_dir = env::current_dir()?.join("docs");
+    let options = MarkdownOptions::new().title("Usage".into());
+    let markdown = clap_markdown::help_markdown_custom::<Cli>(&options);
+    fs::write(out_dir.join("README.md"), markdown)?;
+    println!("Generated help to {}", out_dir.display());
+    Ok(())
+}
+
+/// output manual pages to `$CWD/docs/man`
 fn manpages() -> Result<(), Box<dyn Error>> {
     let out_dir = env::current_dir()?.join("docs").join("man");
     if out_dir.exists() {
@@ -22,7 +34,7 @@ fn manpages() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// output completions to `$CWD/target/completions`
+/// output completions to `$CWD/docs/completions`
 fn completions() -> Result<(), Box<dyn Error>> {
     let out_dir = env::current_dir()?.join("docs").join("completions");
     if out_dir.exists() {
