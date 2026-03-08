@@ -21,7 +21,7 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 
-# optimize the hotspots
+# optimize the hotspots for speed
 [profile.release.package."regex-automata"]
 opt-level = 3
 
@@ -45,7 +45,8 @@ opt-level = 1
 [profile.dev.package."tree-sitter-java"]
 opt-level = 1
 
-# for use with linux perf: ~5% overhead due to frame pointers
+# for use with linux perf
+# RUSTFLAGS="-C force-frame-pointers=yes" must also be set.
 [profile.profiling]
 inherits = "release"
 debug = "full"
