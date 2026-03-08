@@ -85,7 +85,7 @@ impl Server {
                 Message::Request(req) => {
                     // try to go down gracefully, but always go down
                     if self.connection.handle_shutdown(&req)? {
-                        return Ok(());
+                        break;
                     }
                     if let Err(err) = self.handle_request(client, &req, &docs) {
                         eprintln!("[lsp] request {} failed: {err}", req.method);
