@@ -24,6 +24,10 @@ repos:
       - id: trailing-whitespace
         name: Fix trailing whitespace
         types: [text]
+        exclude:
+          glob:
+            # clap-mangen
+            - docs/man/**
 
       - id: end-of-file-fixer
         name: Fix newline at EOF
@@ -167,7 +171,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["check", "--workspace"]
+        args: ["check"]
         env:
           RUSTFLAGS: "-D warnings"
           RUSTDOCFLAGS: "-D warnings"
@@ -260,7 +264,7 @@ repos:
         pass_filenames: false
         require_serial: true
         entry: cargo
-        args: ["fix", "--workspace", "--allow-dirty", "--allow-staged"]
+        args: ["fix", "--allow-dirty", "--allow-staged"]
         env:
           RUSTFLAGS: "-D warnings"
           RUSTDOCFLAGS: "-D warnings"

@@ -1,0 +1,31 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH pegon-check 1  "check 0.1.0" 
+.SH NAME
+pegon\-check \- Run pegon on the given files or directories
+.SH SYNOPSIS
+\fBpegon check\fR [\fB\-\-fix\fR] [\fB\-\-output\-format\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIFILES\fR] 
+.SH DESCRIPTION
+Run pegon on the given files or directories
+.SH OPTIONS
+.TP
+\fB\-\-fix\fR
+Apply fixes to resolve lint violations
+.TP
+\fB\-\-output\-format\fR \fI<OUTPUT_FORMAT>\fR [default: full]
+Diagnostic output format
+.br
+
+.br
+[\fIpossible values: \fRfull, concise]
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.TP
+[\fIFILES\fR]
+List of files or directories to check, or `\-` to read from stdin
+.SH VERSION
+v0.1.0

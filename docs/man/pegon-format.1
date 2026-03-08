@@ -1,0 +1,24 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH pegon-format 1  "format 0.1.0" 
+.SH NAME
+pegon\-format \- Run the pegon formatter on the given files or directories
+.SH SYNOPSIS
+\fBpegon format\fR [\fB\-\-check\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIFILES\fR] 
+.SH DESCRIPTION
+Run the pegon formatter on the given files or directories
+.SH OPTIONS
+.TP
+\fB\-\-check\fR
+Avoid writing any formatted files back; instead, exit with a non\-zero status code if any files would be modified, and zero otherwise
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.TP
+[\fIFILES\fR]
+List of files or directories to format, or `\-` to read from stdin
+.SH VERSION
+v0.1.0

@@ -12,7 +12,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 /// output manual pages to `$CWD/target/man`
 fn manpages() -> Result<(), Box<dyn Error>> {
-    let out_dir = env::current_dir()?.join("target").join("man");
+    let out_dir = env::current_dir()?.join("docs").join("man");
+    if out_dir.exists() {
+        fs::remove_dir_all(&out_dir)?;
+    }
     fs::create_dir_all(&out_dir)?;
     clap_mangen::generate_to(Cli::command(), &out_dir)?;
     println!("Generated man pages to {}", out_dir.display());
@@ -21,7 +24,10 @@ fn manpages() -> Result<(), Box<dyn Error>> {
 
 /// output completions to `$CWD/target/completions`
 fn completions() -> Result<(), Box<dyn Error>> {
-    let out_dir = env::current_dir()?.join("target").join("completions");
+    let out_dir = env::current_dir()?.join("docs").join("completions");
+    if out_dir.exists() {
+        fs::remove_dir_all(&out_dir)?;
+    }
     fs::create_dir_all(&out_dir)?;
     let mut command = Cli::command();
     let name = command.get_name().to_owned();
