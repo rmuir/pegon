@@ -186,7 +186,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["clippy", "--workspace", "--", "-D", "warnings"]
+        args: ["clippy", "--", "-D", "warnings"]
         env:
           RUSTFLAGS: "-D warnings"
           RUSTDOCFLAGS: "-D warnings"
@@ -205,7 +205,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["test", "--workspace"]
+        args: ["test"]
         env:
           RUSTFLAGS: "-D warnings"
           RUSTDOCFLAGS: "-D warnings"
@@ -271,6 +271,19 @@ repos:
         language: system
         entry: cargo
         args: ["fmt", "--all"]
+        env:
+          RUSTFLAGS: "-D warnings"
+          RUSTDOCFLAGS: "-D warnings"
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        types: [rust]
+
+      - id: cargo-xtask
+        name: Fix regenerated sources
+        language: system
+        entry: cargo
+        args: ["xtask", "generate"]
         env:
           RUSTFLAGS: "-D warnings"
           RUSTDOCFLAGS: "-D warnings"
