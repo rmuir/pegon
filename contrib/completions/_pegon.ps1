@@ -36,16 +36,12 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
             [CompletionResult]::new('--fix', '--fix', [CompletionResultType]::ParameterName, 'Apply fixes to resolve lint violations')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help (see more with ''--help'')')
-            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
-            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             break
         }
         'pegon;format' {
             [CompletionResult]::new('--check', '--check', [CompletionResultType]::ParameterName, 'Avoid writing any formatted files back; instead, exit with a non-zero status code if any files would be modified, and zero otherwise')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
-            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             break
         }
         'pegon;server' {
@@ -53,8 +49,6 @@ Register-ArgumentCompleter -Native -CommandName 'pegon' -ScriptBlock {
             [CompletionResult]::new('--stdio', '--stdio', [CompletionResultType]::ParameterName, 'Use standard I/O streams (default)')
             [CompletionResult]::new('-h', '-h', [CompletionResultType]::ParameterName, 'Print help')
             [CompletionResult]::new('--help', '--help', [CompletionResultType]::ParameterName, 'Print help')
-            [CompletionResult]::new('-V', '-V ', [CompletionResultType]::ParameterName, 'Print version')
-            [CompletionResult]::new('--version', '--version', [CompletionResultType]::ParameterName, 'Print version')
             break
         }
         'pegon;help' {

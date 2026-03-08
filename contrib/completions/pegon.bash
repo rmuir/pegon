@@ -61,7 +61,7 @@ _pegon() {
             return 0
             ;;
         pegon__check)
-            opts="-h -V --fix --output-format --help --version [FILES]..."
+            opts="-h --fix --output-format --help [FILES]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -79,7 +79,7 @@ _pegon() {
             return 0
             ;;
         pegon__format)
-            opts="-h -V --check --help --version [FILES]..."
+            opts="-h --check --help [FILES]..."
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -163,7 +163,7 @@ _pegon() {
             return 0
             ;;
         pegon__server)
-            opts="-h -V --stdio --socket --help --version"
+            opts="-h --stdio --socket --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

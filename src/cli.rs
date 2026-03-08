@@ -10,7 +10,6 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(name = "pegon", author, version)]
 #[command(arg_required_else_help = true)]
-#[command(propagate_version = true)]
 #[command(styles = CLI_STYLES)]
 pub struct Cli {
     #[command(subcommand)]

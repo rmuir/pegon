@@ -1,10 +1,10 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
-.TH pegon-check 1  "check 0.1.0" 
+.TH pegon-check 1  "check " 
 .SH NAME
 pegon\-check \- Run pegon on the given files or directories
 .SH SYNOPSIS
-\fBpegon check\fR [\fB\-\-fix\fR] [\fB\-\-output\-format\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIFILES\fR] 
+\fBpegon check\fR [\fB\-\-fix\fR] [\fB\-\-output\-format\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIFILES\fR] 
 .SH DESCRIPTION
 Run pegon on the given files or directories.
 .PP
@@ -27,10 +27,5 @@ May also be specified with the \fBPEGON_OUTPUT_FORMAT\fR environment variable.
 \fB\-h\fR, \fB\-\-help\fR
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
-\fB\-V\fR, \fB\-\-version\fR
-Print version
-.TP
 [\fIFILES\fR]
 List of files or directories to check, or `\-` to read from stdin
-.SH VERSION
-v0.1.0
