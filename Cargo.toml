@@ -16,9 +16,20 @@ categories = ["command-line-utilities", "development-tools", "text-editors"]
 path = "src/lib.rs"
 
 [profile.release]
+opt-level = "s"
 lto = "fat"
 codegen-units = 1
 panic = "abort"
+
+# optimize the hotspots
+[profile.release.package."regex-automata"]
+opt-level = 3
+
+[profile.release.package."tree-sitter"]
+opt-level = 3
+
+[profile.release.package."tree-sitter-java"]
+opt-level = 3
 
 [profile.dev]
 debug = "none"
