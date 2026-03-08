@@ -48,7 +48,7 @@ opt-level = 1
 # for use with linux perf: ~5% overhead due to frame pointers
 [profile.profiling]
 inherits = "release"
-debug = "line-tables-only"
+debug = "full"
 lto = "off"
 
 [dependencies]

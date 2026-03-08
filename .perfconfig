@@ -6,6 +6,8 @@ objdump = llvm-objdump
 hide_src_code = false
 show_linenr = true
 show_nr_jumps = true
+demangle = true
+demangle_kernel = true
 
 # otherwise nuts
 [colors]

@@ -32,7 +32,7 @@ export PERF_CONFIG ?= .perfconfig
 .PHONY: profile
 profile: ## Profile lint run with perf
 	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --profile profiling
-	perf record -g -c 10000 target/profiling/pegon check ~/workspace/lucene > out.txt || true
+	perf record -g target/profiling/pegon check ~/workspace/lucene > out.txt || true
 	perf report
 
 export LLVM_COV ?= llvm-cov
