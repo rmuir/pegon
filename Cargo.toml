@@ -20,24 +20,25 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 
+[profile.dev]
+debug = "none"
+lto = "off"
+
+# optimize the hotspots to speed up dev runs
+[profile.dev.package."regex-automata"]
+opt-level = 1
+
+[profile.dev.package."tree-sitter"]
+opt-level = 1
+
+[profile.dev.package."tree-sitter-java"]
+opt-level = 1
+
+# for use with linux perf: ~5% overhead due to frame pointers
 [profile.profiling]
 inherits = "release"
 debug = "line-tables-only"
-lto = "thin"
-
-[profile.dev]
-debug = "line-tables-only"
 lto = "off"
-
-# optimize the hotspots: allow dev to be close to release performance
-[profile.dev.package."regex-automata"]
-opt-level = 2
-
-[profile.dev.package."tree-sitter"]
-opt-level = 2
-
-[profile.dev.package."tree-sitter-java"]
-opt-level = 2
 
 [dependencies]
 # Templates diagnostic errors
