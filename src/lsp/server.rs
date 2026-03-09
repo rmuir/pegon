@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::{Context as _, Error, Result};
-use crossbeam_channel::SendError;
 use line_index::LineIndex;
 use lsp_server::{
     Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
@@ -10,9 +9,8 @@ use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
     DocumentDiagnosticParams, DocumentDiagnosticReportResult, InitializeResult, OneOf,
-    PublishDiagnosticsParams, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument,
         Notification as _, PublishDiagnostics,
@@ -89,21 +87,25 @@ impl Server {
                     if self.connection.handle_shutdown(&req)? {
                         break;
                     }
-                    if let Err(err) = self.handle_request(client, &req, &docs) {
-                        eprintln!("[lsp] request {} failed: {err}", req.method);
-                        error(
-                            &self.connection,
-                            req.id.clone(),
-                            ErrorCode::RequestFailed,
-                            err.to_string().as_str(),
-                        )?;
+                    match handle_request(client, &req, &docs) {
+                        Ok(response) => {
+                            self.connection.sender.send(response)?;
+                        }
+                        Err(err) => {
+                            eprintln!("[lsp] request {} failed: {err}", req.method);
+                            self.connection.sender.send(error(
+                                req.id.clone(),
+                                ErrorCode::RequestFailed,
+                                err.to_string().as_str(),
+                            ))?;
+                        }
                     }
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
                     match handle_notification(client, note, &mut docs, &mut parser) {
                         Ok(Some(push)) => {
-                            notify::<PublishDiagnostics>(&self.connection, push)?;
+                            self.connection.sender.send(push)?;
                         }
                         Err(err) => {
                             eprintln!("[lsp] notification {method} failed: {err}");
@@ -117,50 +119,46 @@ impl Server {
         }
         Ok(())
     }
+}
 
-    fn handle_request(
-        &self,
-        client: &Client,
-        req: &ServerRequest,
-        docs: &HashMap<String, Document>,
-    ) -> Result<()> {
-        match req.method.as_str() {
-            CodeActionRequest::METHOD => {
-                let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-                let uri = &params.text_document.uri;
-                let _doc = docs.get(&uri.to_string()).context("document not open")?;
-                let response: Vec<CodeActionOrCommand> = vec![];
-                respond::<CodeActionRequest>(&self.connection, req.id.clone(), Some(response))?;
-            }
-
-            Formatting::METHOD => {
-                todo!()
-            }
-            DocumentDiagnosticRequest::METHOD => {
-                let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
-                let uri = &params.text_document.uri;
-                let doc = docs.get(&uri.to_string()).context("document not open")?;
-                let response = super::diagnostics::pull(client, doc, &params)?;
-                respond::<DocumentDiagnosticRequest>(
-                    &self.connection,
-                    req.id.clone(),
-                    DocumentDiagnosticReportResult::Report(response),
-                )?;
-            }
-            _ => {
-                error(
-                    &self.connection,
-                    req.id.clone(),
-                    ErrorCode::MethodNotFound,
-                    "unhandled request",
-                )?;
-            }
+// handles an incoming request
+// every request must have an associated response
+fn handle_request(
+    client: &Client,
+    req: &ServerRequest,
+    docs: &HashMap<String, Document>,
+) -> Result<Message> {
+    match req.method.as_str() {
+        CodeActionRequest::METHOD => {
+            let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
+            let uri = &params.text_document.uri;
+            let _doc = docs.get(&uri.to_string()).context("document not open")?;
+            let actions: Vec<CodeActionOrCommand> = vec![];
+            Ok(response::<CodeActionRequest>(req.id.clone(), Some(actions)))
         }
-        Ok(())
+        Formatting::METHOD => {
+            todo!()
+        }
+        DocumentDiagnosticRequest::METHOD => {
+            let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
+            let uri = &params.text_document.uri;
+            let doc = docs.get(&uri.to_string()).context("document not open")?;
+            let report = super::diagnostics::pull(client, doc, &params)?;
+            Ok(response::<DocumentDiagnosticRequest>(
+                req.id.clone(),
+                DocumentDiagnosticReportResult::Report(report),
+            ))
+        }
+        _ => Ok(error(
+            req.id.clone(),
+            ErrorCode::MethodNotFound,
+            "unhandled request",
+        )),
     }
 }
 
 /// handles an incoming notification.
+/// in our case notification has an "optional response".
 /// if the client doesn't support pull diagnostics then we've got
 /// a push diagnostics "response" that we'll `notify()` back
 fn handle_notification(
@@ -168,61 +166,50 @@ fn handle_notification(
     note: lsp_server::Notification,
     docs: &mut HashMap<String, Document>,
     parser: &mut Parser,
-) -> Result<Option<PublishDiagnosticsParams>> {
-    match note.method.as_str() {
+) -> Result<Option<Message>> {
+    let response = match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
             let params = serde_json::from_value(note.params)?;
-            super::sync::did_open(client, params, docs, parser)
+            super::sync::did_open(client, params, docs, parser)?
         }
         DidChangeTextDocument::METHOD => {
             let params = serde_json::from_value(note.params)?;
-            super::sync::did_change(client, params, docs, parser)
+            super::sync::did_change(client, params, docs, parser)?
         }
         DidCloseTextDocument::METHOD => {
             let params = serde_json::from_value(note.params)?;
-            Ok(super::sync::did_close(client, params, docs))
+            super::sync::did_close(client, params, docs)
         }
         // doesn't make sense for a single-threaded impl
-        Cancel::METHOD => Ok(None),
+        Cancel::METHOD => None,
         _ => {
             eprintln!("[lsp] unhandled notification {note:?}");
-            Ok(None)
+            None
         }
     }
+    .map(notification::<PublishDiagnostics>);
+    Ok(response)
 }
 
-/// sends an LSP notification to the client
-fn notify<N>(conn: &Connection, params: N::Params) -> Result<(), SendError<Message>>
+/// creates a notification message to the client
+fn notification<N>(params: N::Params) -> Message
 where
     N: lsp_types::notification::Notification,
     N::Params: Serialize,
 {
-    conn.sender.send(Message::Notification(Notification::new(
-        N::METHOD.to_owned(),
-        params,
-    )))
+    Message::Notification(Notification::new(N::METHOD.to_owned(), params))
 }
 
-/// responds successfully to an LSP client request
-fn respond<R>(conn: &Connection, id: RequestId, result: R::Result) -> Result<(), SendError<Message>>
+/// creates a successful response to the client
+fn response<R>(id: RequestId, result: R::Result) -> Message
 where
     R: lsp_types::request::Request,
     R::Result: Serialize,
 {
-    conn.sender
-        .send(Message::Response(Response::new_ok(id, result)))
+    Message::Response(Response::new_ok(id, result))
 }
 
-/// responds unsuccessfully to an LSP client request
-fn error(
-    conn: &Connection,
-    id: RequestId,
-    code: ErrorCode,
-    msg: &str,
-) -> Result<(), SendError<Message>> {
-    conn.sender.send(Message::Response(Response::new_err(
-        id,
-        code as i32,
-        msg.into(),
-    )))
+/// creates an unsuccessful response to the LSP client
+fn error(id: RequestId, code: ErrorCode, msg: &str) -> Message {
+    Message::Response(Response::new_err(id, code as i32, msg.into()))
 }

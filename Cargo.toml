@@ -67,8 +67,6 @@ clap = { version = "4.5.58", features = ["derive", "env"] }
 ignore = "0.4.25"
 # LSP support
 lsp-server = "0.7.9"
-# LSP support
-crossbeam-channel = "0.5.15"
 # LSP data structures
 lsp-types = "0.97"
 # serialization
@@ -87,6 +85,8 @@ tree-sitter-java = "0.23.5"
 [dev-dependencies]
 # indented string literals in tests
 indoc = "2.0.7"
+# LSP test support
+crossbeam-channel = "0.5.15"
 
 [lints]
 workspace = true
