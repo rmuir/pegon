@@ -7,12 +7,40 @@ use lsp_types::{
 };
 use tree_sitter::Point;
 
+/// A Language Server Protocol client
+///
+/// Not all LSP clients are equal, they can have different capabilities
+/// and use different text encodings. This code is the "bending-over-backwards"
+/// part needed in order to give the **editor** the best performance.
+///
+/// Treesitter stores line + column information, but also raw byte offsets.
+/// The byte offsets are lost in transmission since they aren't in the LSP
+/// protocol. Additionally, the client may be using a different unicode
+/// encoding. The SIMD-optimized [`LineIndex`] from `rust-analyzer` handles
+/// these problems with no sweat.
 pub struct Client {
+    /// parameters sent by the client in the `initialize` request.
+    ///
+    /// the parameters describe various optional client capabilities
+    /// which can be used for better performance and more features.
     init_params: InitializeParams,
+
+    /// The client's preferred offset encoding.
+    ///
+    /// Supporting this only speeds up the client: java and javascript
+    /// clients will prefer UTF-16, most everyone else will use UTF-8.
+    /// Maybe somewhere there is a python editor using UTF-32!
+    ///
+    /// Although treesitter supports parsing tree with crazy encodings,
+    /// we don't go that far: UTF-8 is used internally for sanity, and
+    /// the character offsets are adjusted when (de)serializing requests
+    /// and responses.
     encoding: Encoding,
 }
 
 impl Client {
+    /// create a new client with the parameters it sent in the
+    /// initialize request.
     pub(crate) fn new(init_params: InitializeParams) -> Self {
         let encoding = Encoding::preferred(&init_params.capabilities);
         Self {
@@ -21,8 +49,10 @@ impl Client {
         }
     }
 
-    // encodes a tree-sitter UTF-8 range into an LSP range (client's encoding)
-    // use this to encode client responses.
+    /// encodes a tree-sitter UTF-8 range into an LSP range (client's encoding)
+    ///
+    /// for the UTF-8 encoding, this is a no-op. for other encodings the index
+    /// must be used.
     pub(crate) fn encode_range(
         &self,
         range: &tree_sitter::Range,
@@ -34,7 +64,10 @@ impl Client {
         })
     }
 
-    // encodes a tree-sitter UTF-8 point into an LSP position (client's encoding)
+    /// encodes a tree-sitter UTF-8 point into an LSP position (client's encoding)
+    ///
+    /// for the UTF-8 encoding, this is a no-op. for other encodings the index
+    /// must be used.
     fn encode_point(&self, point: &Point, index: &LineIndex) -> Option<Position> {
         // check bounds are within u32
         let line_col = LineCol {
@@ -60,6 +93,11 @@ impl Client {
         Some(Position { line, character })
     }
 
+    /// decodes an LSP document change into a treesitter Range.
+    ///
+    /// we specify incremental sync, but it is unclear from the spec
+    /// if clients are allowed to send us a full sync. if it happens,
+    /// convert it into a full document range.
     pub(crate) fn decode_change(
         &self,
         change: &TextDocumentContentChangeEvent,
@@ -81,6 +119,10 @@ impl Client {
         }
     }
 
+    /// decodes an LSP range into a treesitter Range.
+    ///
+    /// treesitter range contains more information than an LSP range,
+    /// so the byte offsets must be looked up from the index.
     fn decode_range(
         &self,
         range: &lsp_types::Range,
@@ -102,6 +144,7 @@ impl Client {
         })
     }
 
+    /// decodes an LSP Position (line+col) into a UTF-8 line+col.
     fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
         match self.encoding {
             Encoding::Utf8 => Some(LineCol {
@@ -135,10 +178,28 @@ impl Client {
         })
     }
 
+    /// returns client's preferred position encoding.
+    ///
+    /// This only speeds up the client: java and javascript clients
+    /// will prefer UTF-16, most everyone else will use UTF-8. Maybe
+    /// somewhere there is a python editor using UTF-32!
+    ///
+    /// Although treesitter supports parsing tree with crazy encodings,
+    /// we don't go that far: UTF-8 is used internally for sanity, and
+    /// the character offsets are adjusted when (de)serializing requests
+    /// and responses.
     pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {
         self.encoding.into()
     }
 
+    /// true if the client supports the pull diagnostics model.
+    ///
+    /// This is less error-prone than the push model since it
+    /// can be treated by the client like any other request.
+    /// it is more efficient because it supports some basic
+    /// caching (similar to HTTP 304) and because the client
+    /// can choose when to make requests, versus having them
+    /// pushed on every didChange.
     pub(crate) fn supports_pull_diagnostics(&self) -> bool {
         (|| -> _ {
             self.init_params
@@ -151,6 +212,8 @@ impl Client {
         .is_some()
     }
 
+    /// true if the client supports receiving additional ranges
+    /// with related information ("context").
     pub(crate) fn supports_related_information(&self) -> bool {
         (|| -> _ {
             self.init_params
@@ -164,6 +227,8 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// true if the client supports receiving URLs for more information
+    /// on the diagnostic code.
     pub(crate) fn supports_code_description(&self) -> bool {
         (|| -> _ {
             self.init_params
@@ -177,6 +242,10 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// true if the client supports receiving the document version
+    /// in push diagnostics.
+    ///
+    /// not relevant to pull diagnostics where the version is implicit.
     pub(crate) fn supports_version(&self) -> bool {
         (|| -> _ {
             self.init_params
