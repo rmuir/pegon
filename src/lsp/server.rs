@@ -10,10 +10,12 @@ use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
     DocumentDiagnosticParams, DocumentDiagnosticReportResult, InitializeResult, OneOf,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    PublishDiagnosticsParams, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
     notification::{
-        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
+        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument,
+        Notification as _, PublishDiagnostics,
     },
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
 };
@@ -99,9 +101,14 @@ impl Server {
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
-                    if let Err(err) = self.handle_notification(client, note, &mut docs, &mut parser)
-                    {
-                        eprintln!("[lsp] notification {method} failed: {err}");
+                    match handle_notification(client, note, &mut docs, &mut parser) {
+                        Ok(Some(push)) => {
+                            notify::<PublishDiagnostics>(&self.connection, push)?;
+                        }
+                        Err(err) => {
+                            eprintln!("[lsp] notification {method} failed: {err}");
+                        }
+                        _ => {}
                     }
                 }
                 // we can request workspaceEdit, but we don't care about the response.
@@ -109,35 +116,6 @@ impl Server {
             }
         }
         Ok(())
-    }
-
-    fn handle_notification(
-        &self,
-        client: &Client,
-        note: lsp_server::Notification,
-        docs: &mut HashMap<String, Document>,
-        parser: &mut Parser,
-    ) -> Result<()> {
-        match note.method.as_str() {
-            DidOpenTextDocument::METHOD => {
-                let params = serde_json::from_value(note.params)?;
-                super::sync::did_open(&self.connection, client, params, docs, parser)
-            }
-            DidChangeTextDocument::METHOD => {
-                let params = serde_json::from_value(note.params)?;
-                super::sync::did_change(&self.connection, client, params, docs, parser)
-            }
-            DidCloseTextDocument::METHOD => {
-                let params = serde_json::from_value(note.params)?;
-                super::sync::did_close(&self.connection, client, params, docs)
-            }
-            // doesn't make sense for a single-threaded impl
-            Cancel::METHOD => Ok(()),
-            _ => {
-                eprintln!("[lsp] unhandled notification {note:?}");
-                Ok(())
-            }
-        }
     }
 
     fn handle_request(
@@ -182,8 +160,39 @@ impl Server {
     }
 }
 
+/// handles an incoming notification.
+/// if the client doesn't support pull diagnostics then we've got
+/// a push diagnostics "response" that we'll `notify()` back
+fn handle_notification(
+    client: &Client,
+    note: lsp_server::Notification,
+    docs: &mut HashMap<String, Document>,
+    parser: &mut Parser,
+) -> Result<Option<PublishDiagnosticsParams>> {
+    match note.method.as_str() {
+        DidOpenTextDocument::METHOD => {
+            let params = serde_json::from_value(note.params)?;
+            super::sync::did_open(client, params, docs, parser)
+        }
+        DidChangeTextDocument::METHOD => {
+            let params = serde_json::from_value(note.params)?;
+            super::sync::did_change(client, params, docs, parser)
+        }
+        DidCloseTextDocument::METHOD => {
+            let params = serde_json::from_value(note.params)?;
+            Ok(super::sync::did_close(client, params, docs))
+        }
+        // doesn't make sense for a single-threaded impl
+        Cancel::METHOD => Ok(None),
+        _ => {
+            eprintln!("[lsp] unhandled notification {note:?}");
+            Ok(None)
+        }
+    }
+}
+
 /// sends an LSP notification to the client
-pub fn notify<N>(conn: &Connection, params: N::Params) -> Result<(), SendError<Message>>
+fn notify<N>(conn: &Connection, params: N::Params) -> Result<(), SendError<Message>>
 where
     N: lsp_types::notification::Notification,
     N::Params: Serialize,

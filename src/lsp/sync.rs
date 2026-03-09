@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use anyhow::Context as _;
 use anyhow::Result;
 use line_index::LineIndex;
-use lsp_server::Connection;
-use lsp_types::notification::PublishDiagnostics;
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     PublishDiagnosticsParams,
@@ -12,16 +10,14 @@ use lsp_types::{
 use tree_sitter::{InputEdit, Parser};
 
 use crate::lsp::diagnostics;
-use crate::lsp::server;
 use crate::lsp::{client::Client, server::Document};
 
 pub fn did_open(
-    connection: &Connection,
     client: &Client,
     params: DidOpenTextDocumentParams,
     docs: &mut HashMap<String, Document>,
     parser: &mut Parser,
-) -> Result<()> {
+) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
     parser.reset();
     let tree = parser
@@ -34,23 +30,21 @@ pub fn did_open(
         tree,
         line_index,
     };
-    let diagnosis = if client.supports_pull_diagnostics() {
-        Ok(())
+    let push = if client.supports_pull_diagnostics() {
+        None
     } else {
-        server::notify::<PublishDiagnostics>(connection, diagnostics::push(client, &doc, &uri)?)
+        Some(diagnostics::push(client, &doc, &uri)?)
     };
     docs.insert(uri.to_string(), doc);
-    diagnosis?;
-    Ok(())
+    Ok(push)
 }
 
 pub fn did_change(
-    connection: &Connection,
     client: &Client,
     params: DidChangeTextDocumentParams,
     docs: &mut HashMap<String, Document>,
     parser: &mut Parser,
-) -> Result<()> {
+) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
     let doc = docs.remove(&uri.to_string()).context("document not open")?;
     let mut text = doc.text;
@@ -94,34 +88,30 @@ pub fn did_change(
         line_index,
     };
 
-    let diagnosis = if client.supports_pull_diagnostics() {
-        Ok(())
+    let push = if client.supports_pull_diagnostics() {
+        None
     } else {
-        server::notify::<PublishDiagnostics>(connection, diagnostics::push(client, &newdoc, &uri)?)
+        Some(diagnostics::push(client, &newdoc, &uri)?)
     };
     docs.insert(uri.to_string(), newdoc);
-    diagnosis?;
-    Ok(())
+    Ok(push)
 }
 
 pub fn did_close(
-    connection: &Connection,
     client: &Client,
     params: DidCloseTextDocumentParams,
     docs: &mut HashMap<String, Document>,
-) -> Result<()> {
+) -> Option<PublishDiagnosticsParams> {
     let uri = params.text_document.uri;
     docs.remove(&uri.to_string());
     // according to LSP spec, we should clear on close if we are pushing
-    if !client.supports_pull_diagnostics() {
-        server::notify::<PublishDiagnostics>(
-            connection,
-            PublishDiagnosticsParams {
-                diagnostics: vec![],
-                uri,
-                version: None,
-            },
-        )?;
+    if client.supports_pull_diagnostics() {
+        None
+    } else {
+        Some(PublishDiagnosticsParams {
+            diagnostics: vec![],
+            uri,
+            version: None,
+        })
     }
-    Ok(())
 }
