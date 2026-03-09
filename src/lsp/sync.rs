@@ -50,6 +50,8 @@ pub fn did_change(
     let mut text = doc.text;
     let mut old_tree = doc.tree;
     let mut line_index = LineIndex::new(&text);
+    // process each change in order, updating the line index and tree
+    // TODO: this is simple and safe, but rust-analyzer has some interesting optos
     for change in params.content_changes {
         let decoded = client
             .decode_change(&change, &line_index)
