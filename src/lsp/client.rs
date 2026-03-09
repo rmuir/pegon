@@ -260,8 +260,9 @@ impl Client {
     }
 }
 
-// internal representation to simplify logic:
-// use an enum rather than PositionEncodingKind's string
+/// internal representation to simplify logic:
+/// use an enum rather than [`PositionEncodingKind`]'s string
+/// <https://github.com/gluon-lang/lsp-types/pull/267>
 #[derive(Copy, Clone)]
 enum Encoding {
     Utf8,
