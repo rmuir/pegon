@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context as _, Error, Result};
+use anyhow::{Context as _, Error, Result, bail};
 use line_index::LineIndex;
 use lsp_server::{
     Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
@@ -8,11 +8,11 @@ use lsp_server::{
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
-    DocumentDiagnosticParams, DocumentDiagnosticReportResult, InitializeResult, OneOf,
+    DocumentDiagnosticParams, InitializeResult, LogMessageParams, MessageType, OneOf,
     ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
-        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument,
+        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
         Notification as _, PublishDiagnostics,
     },
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
@@ -22,10 +22,14 @@ use tree_sitter::{Parser, Tree};
 
 use crate::lsp::client::Client;
 
+/// A Language Server Protocol Server
 pub struct Server {
     connection: Connection,
 }
 
+/// A client-managed resource (file)
+///
+///
 pub enum Resource {
     Java(Document),
     Other,
@@ -97,23 +101,21 @@ impl Server {
                             self.connection.sender.send(response)?;
                         }
                         Err(err) => {
-                            eprintln!("[lsp] request {} failed: {err}", req.method);
                             self.connection.sender.send(error(
                                 req.id.clone(),
                                 ErrorCode::RequestFailed,
-                                err.to_string().as_str(),
+                                err.to_string(),
                             ))?;
                         }
                     }
                 }
                 Message::Notification(note) => {
-                    let method = note.method.clone();
                     match handle_notification(client, note, &mut docs, &mut parser) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
                         Err(err) => {
-                            eprintln!("[lsp] notification {method} failed: {err}");
+                            self.connection.sender.send(notify_error(err.to_string()))?;
                         }
                         _ => {}
                     }
@@ -147,17 +149,19 @@ fn handle_request(
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = &params.text_document.uri;
-            let resource = docs.get(&uri.to_string()).context("document not open")?;
-            let report = super::diagnostics::pull(client, resource, &params)?;
-            Ok(response::<DocumentDiagnosticRequest>(
-                req.id.clone(),
-                DocumentDiagnosticReportResult::Report(report),
-            ))
+            match docs.get(&uri.to_string()) {
+                Some(Resource::Java(doc)) => Ok(response::<DocumentDiagnosticRequest>(
+                    req.id.clone(),
+                    super::diagnostics::pull(client, doc, &params)?,
+                )),
+                Some(Resource::Other) => bail!("non-java document: {}", **uri),
+                None => bail!("document not open: {}", **uri),
+            }
         }
         _ => Ok(error(
             req.id.clone(),
             ErrorCode::MethodNotFound,
-            "unhandled request",
+            "unhandled request".to_owned(),
         )),
     }
 }
@@ -215,6 +219,17 @@ where
 }
 
 /// creates an unsuccessful response to the LSP client
-fn error(id: RequestId, code: ErrorCode, msg: &str) -> Message {
-    Message::Response(Response::new_err(id, code as i32, msg.into()))
+fn error(id: RequestId, code: ErrorCode, message: String) -> Message {
+    Message::Response(Response::new_err(id, code as i32, message))
+}
+
+/// logs via notification an error to the LSP client
+fn notify_error(message: String) -> Message {
+    Message::Notification(Notification::new(
+        LogMessage::METHOD.to_owned(),
+        LogMessageParams {
+            typ: MessageType::ERROR,
+            message,
+        },
+    ))
 }
