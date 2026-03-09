@@ -34,7 +34,7 @@ pub fn did_open(
         tree,
         line_index,
     };
-    let diagnosis = if client.pull_diagnostics_support() {
+    let diagnosis = if client.supports_pull_diagnostics() {
         Ok(())
     } else {
         server::notify::<PublishDiagnostics>(connection, diagnostics::push(client, &doc, &uri)?)
@@ -94,7 +94,7 @@ pub fn did_change(
         line_index,
     };
 
-    let diagnosis = if client.pull_diagnostics_support() {
+    let diagnosis = if client.supports_pull_diagnostics() {
         Ok(())
     } else {
         server::notify::<PublishDiagnostics>(connection, diagnostics::push(client, &newdoc, &uri)?)
@@ -113,7 +113,7 @@ pub fn did_close(
     let uri = params.text_document.uri;
     docs.remove(&uri.to_string());
     // according to LSP spec, we should clear on close if we are pushing
-    if !client.pull_diagnostics_support() {
+    if !client.supports_pull_diagnostics() {
         server::notify::<PublishDiagnostics>(
             connection,
             PublishDiagnosticsParams {

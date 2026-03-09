@@ -72,7 +72,7 @@ pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnos
     Ok(PublishDiagnosticsParams {
         diagnostics: encode(client, uri, &doc.line_index, &results)?,
         uri: uri.clone(),
-        version: client.version_support().then_some(doc.version),
+        version: client.supports_version().then_some(doc.version),
     })
 }
 
@@ -132,13 +132,13 @@ fn encode(
                 range,
                 severity: Some(lsp_severity),
                 code: Some(NumberOrString::String(rule.name.clone())),
-                code_description: client.code_description_support().then(|| CodeDescription {
+                code_description: client.supports_code_description().then(|| CodeDescription {
                     href: Uri::from_str(&rule.url).expect("rule url should exist"),
                 }),
                 source: Some("pegon".to_owned()),
                 message: diagnostic.title.clone(),
                 related_information: client
-                    .related_information_support()
+                    .supports_related_information()
                     .then_some(related_information),
                 tags: None,
                 data: None,

@@ -139,7 +139,7 @@ impl Client {
         self.encoding.into()
     }
 
-    pub(crate) fn pull_diagnostics_support(&self) -> bool {
+    pub(crate) fn supports_pull_diagnostics(&self) -> bool {
         (|| -> _ {
             self.init_params
                 .capabilities
@@ -151,7 +151,7 @@ impl Client {
         .is_some()
     }
 
-    pub(crate) fn related_information_support(&self) -> bool {
+    pub(crate) fn supports_related_information(&self) -> bool {
         (|| -> _ {
             self.init_params
                 .capabilities
@@ -164,7 +164,7 @@ impl Client {
         .unwrap_or_default()
     }
 
-    pub(crate) fn code_description_support(&self) -> bool {
+    pub(crate) fn supports_code_description(&self) -> bool {
         (|| -> _ {
             self.init_params
                 .capabilities
@@ -177,7 +177,7 @@ impl Client {
         .unwrap_or_default()
     }
 
-    pub(crate) fn version_support(&self) -> bool {
+    pub(crate) fn supports_version(&self) -> bool {
         (|| -> _ {
             self.init_params
                 .capabilities
@@ -268,10 +268,10 @@ mod tests {
     fn defaults() {
         let client = Client::new(InitializeParams::default());
         assert_eq!(PositionEncodingKind::UTF16, client.negotiated_encoding());
-        assert!(!client.pull_diagnostics_support());
-        assert!(!client.related_information_support());
-        assert!(!client.code_description_support());
-        assert!(!client.version_support());
+        assert!(!client.supports_pull_diagnostics());
+        assert!(!client.supports_related_information());
+        assert!(!client.supports_code_description());
+        assert!(!client.supports_version());
     }
 
     #[test]
