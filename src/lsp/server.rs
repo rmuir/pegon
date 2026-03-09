@@ -115,7 +115,7 @@ impl Server {
                             self.connection.sender.send(push)?;
                         }
                         Err(err) => {
-                            self.connection.sender.send(notify_error(err.to_string()))?;
+                            self.connection.sender.send(log_error(&err.to_string()))?;
                         }
                         _ => {}
                     }
@@ -224,12 +224,12 @@ fn error(id: RequestId, code: ErrorCode, message: String) -> Message {
 }
 
 /// logs via notification an error to the LSP client
-fn notify_error(message: String) -> Message {
+fn log_error(message: &String) -> Message {
     Message::Notification(Notification::new(
         LogMessage::METHOD.to_owned(),
         LogMessageParams {
             typ: MessageType::ERROR,
-            message,
+            message: format!("pegon: {message}"),
         },
     ))
 }
