@@ -15,6 +15,7 @@ use core::hash::Hasher as _;
 use core::str::FromStr as _;
 use std::hash::DefaultHasher;
 
+use crate::lsp::server::Resource;
 use crate::{
     lint::{Lint, Severity, lint, rule},
     lsp::{Client, server::Document},
@@ -34,9 +35,20 @@ impl From<Severity> for DiagnosticSeverity {
 /// diagnostics request (pull)
 pub fn pull(
     client: &Client,
-    doc: &Document,
+    resource: &Resource,
     params: &DocumentDiagnosticParams,
 ) -> Result<DocumentDiagnosticReport> {
+    let Resource::Java(doc) = resource else {
+        return Ok(DocumentDiagnosticReport::Full(
+            RelatedFullDocumentDiagnosticReport {
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    items: vec![],
+                    result_id: None,
+                },
+                related_documents: None,
+            },
+        ));
+    };
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
     let result_id = hash_items(&results);

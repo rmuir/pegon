@@ -10,15 +10,21 @@ use lsp_types::{
 use tree_sitter::{InputEdit, Parser};
 
 use crate::lsp::diagnostics;
+use crate::lsp::server::Resource;
 use crate::lsp::{client::Client, server::Document};
 
 pub fn did_open(
     client: &Client,
     params: DidOpenTextDocumentParams,
-    docs: &mut HashMap<String, Document>,
+    docs: &mut HashMap<String, Resource>,
     parser: &mut Parser,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
+    if params.text_document.language_id != "java" {
+        docs.insert(uri.to_string(), Resource::Other);
+        return Ok(None);
+    }
+
     parser.reset();
     let tree = parser
         .parse(&params.text_document.text, None)
@@ -35,18 +41,21 @@ pub fn did_open(
     } else {
         Some(diagnostics::push(client, &doc, &uri)?)
     };
-    docs.insert(uri.to_string(), doc);
+    docs.insert(uri.to_string(), Resource::Java(doc));
     Ok(push)
 }
 
 pub fn did_change(
     client: &Client,
     params: DidChangeTextDocumentParams,
-    docs: &mut HashMap<String, Document>,
+    docs: &mut HashMap<String, Resource>,
     parser: &mut Parser,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
-    let doc = docs.remove(&uri.to_string()).context("document not open")?;
+    let resource = docs.remove(&uri.to_string()).context("document not open")?;
+    let Resource::Java(doc) = resource else {
+        return Ok(None);
+    };
     let mut text = doc.text;
     let mut old_tree = doc.tree;
     let mut line_index = LineIndex::new(&text);
@@ -95,14 +104,14 @@ pub fn did_change(
     } else {
         Some(diagnostics::push(client, &newdoc, &uri)?)
     };
-    docs.insert(uri.to_string(), newdoc);
+    docs.insert(uri.to_string(), Resource::Java(newdoc));
     Ok(push)
 }
 
 pub fn did_close(
     client: &Client,
     params: DidCloseTextDocumentParams,
-    docs: &mut HashMap<String, Document>,
+    docs: &mut HashMap<String, Resource>,
 ) -> Option<PublishDiagnosticsParams> {
     let uri = params.text_document.uri;
     docs.remove(&uri.to_string());

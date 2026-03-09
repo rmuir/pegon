@@ -26,6 +26,11 @@ pub struct Server {
     connection: Connection,
 }
 
+pub enum Resource {
+    Java(Document),
+    Other,
+}
+
 pub struct Document {
     pub(crate) text: String,
     pub(crate) version: i32,
@@ -76,7 +81,7 @@ impl Server {
     }
 
     pub fn main_loop(&self, client: &Client) -> Result<(), Error> {
-        let mut docs: HashMap<String, Document> = HashMap::default();
+        let mut docs: HashMap<String, Resource> = HashMap::default();
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&crate::LANGUAGE.into())?;
 
@@ -126,7 +131,7 @@ impl Server {
 fn handle_request(
     client: &Client,
     req: &ServerRequest,
-    docs: &HashMap<String, Document>,
+    docs: &HashMap<String, Resource>,
 ) -> Result<Message> {
     match req.method.as_str() {
         CodeActionRequest::METHOD => {
@@ -142,8 +147,8 @@ fn handle_request(
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = &params.text_document.uri;
-            let doc = docs.get(&uri.to_string()).context("document not open")?;
-            let report = super::diagnostics::pull(client, doc, &params)?;
+            let resource = docs.get(&uri.to_string()).context("document not open")?;
+            let report = super::diagnostics::pull(client, resource, &params)?;
             Ok(response::<DocumentDiagnosticRequest>(
                 req.id.clone(),
                 DocumentDiagnosticReportResult::Report(report),
@@ -164,7 +169,7 @@ fn handle_request(
 fn handle_notification(
     client: &Client,
     note: lsp_server::Notification,
-    docs: &mut HashMap<String, Document>,
+    docs: &mut HashMap<String, Resource>,
     parser: &mut Parser,
 ) -> Result<Option<Message>> {
     let response = match note.method.as_str() {
