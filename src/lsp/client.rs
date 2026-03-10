@@ -258,6 +258,82 @@ impl Client {
         })()
         .unwrap_or_default()
     }
+
+    /// true if the client supports preserving the `data` property
+    /// from diagnostics into the code action request
+    #[expect(dead_code, reason = "wip")]
+    pub(crate) fn data_support(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .publish_diagnostics
+                .as_ref()?
+                .data_support
+        })()
+        .unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of doc sync
+    #[expect(dead_code, reason = "wip")]
+    pub(crate) fn sync_registration(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .synchronization
+                .as_ref()?
+                .dynamic_registration
+        })()
+        .unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of diagnostics
+    #[expect(dead_code, reason = "wip")]
+    pub(crate) fn diagnostic_registration(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .diagnostic
+                .as_ref()?
+                .dynamic_registration
+        })()
+        .unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of code actions
+    #[expect(dead_code, reason = "wip")]
+    pub(crate) fn code_action_registration(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .code_action
+                .as_ref()?
+                .dynamic_registration
+        })()
+        .unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of formatting
+    #[expect(dead_code, reason = "wip")]
+    pub(crate) fn formatting_registration(&self) -> bool {
+        (|| -> _ {
+            self.init_params
+                .capabilities
+                .text_document
+                .as_ref()?
+                .formatting
+                .as_ref()?
+                .dynamic_registration
+        })()
+        .unwrap_or_default()
+    }
 }
 
 /// internal representation to simplify logic:

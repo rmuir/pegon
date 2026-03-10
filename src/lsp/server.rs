@@ -13,7 +13,7 @@ use lsp_types::{
     ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
-        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
+        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
         Notification as _, PublishDiagnostics,
     },
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
@@ -207,9 +207,10 @@ fn handle_notification(
             let uri = params.text_document.uri.clone();
             super::sync::did_close(client, params, docs).context(uri.to_string())?
         }
-        // doesn't make sense for a single-threaded impl
-        Cancel::METHOD => None,
-        _ => bail!("unhandled notification"),
+        // can be safely ignored according to specification
+        method if method.starts_with("$/") => None,
+        // log an error otherwise
+        _ => bail!("unexpected notification"),
     }
     .map(notification::<PublishDiagnostics>);
     Ok(response)
