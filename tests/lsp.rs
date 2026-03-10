@@ -6,8 +6,7 @@ use core::str::FromStr as _;
 use std::thread;
 
 use indoc::indoc;
-use lsp_server::Connection;
-use lsp_types::{
+use ls_types::{
     ClientCapabilities, CodeDescription, Diagnostic, DiagnosticClientCapabilities,
     DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
@@ -21,6 +20,7 @@ use lsp_types::{
     },
     request::DocumentDiagnosticRequest,
 };
+use lsp_server::Connection;
 use pegon::lsp::start;
 
 use crate::lsp_client::Client;
@@ -186,6 +186,10 @@ fn full_capabilities() -> ClientCapabilities {
             diagnostic: Some(DiagnosticClientCapabilities {
                 related_document_support: Some(true),
                 dynamic_registration: Some(true),
+                related_information: Some(true),
+                code_description_support: Some(true),
+                data_support: Some(true),
+                tag_support: None,
             }),
             publish_diagnostics: Some(PublishDiagnosticsClientCapabilities {
                 related_information: Some(true),

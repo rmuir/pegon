@@ -1,7 +1,7 @@
 use core::convert::From;
 
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
-use lsp_types::{
+use ls_types::{
     ClientCapabilities, InitializeParams, Position, PositionEncodingKind,
     TextDocumentContentChangeEvent,
 };
@@ -57,8 +57,8 @@ impl Client {
         &self,
         range: &tree_sitter::Range,
         index: &LineIndex,
-    ) -> Option<lsp_types::Range> {
-        Some(lsp_types::Range {
+    ) -> Option<ls_types::Range> {
+        Some(ls_types::Range {
             start: self.encode_point(&range.start_point, index)?,
             end: self.encode_point(&range.end_point, index)?,
         })
@@ -125,7 +125,7 @@ impl Client {
     /// so the byte offsets must be looked up from the index.
     fn decode_range(
         &self,
-        range: &lsp_types::Range,
+        range: &ls_types::Range,
         index: &LineIndex,
     ) -> Option<tree_sitter::Range> {
         let start = self.decode_pos(range.start, index)?;
@@ -381,7 +381,7 @@ impl From<&PositionEncodingKind> for Encoding {
 
 #[cfg(test)]
 mod tests {
-    use lsp_types::GeneralClientCapabilities;
+    use ls_types::GeneralClientCapabilities;
 
     use super::*;
 

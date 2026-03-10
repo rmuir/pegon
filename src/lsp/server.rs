@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Context as _, Error, Result, bail};
 use line_index::LineIndex;
-use lsp_server::{
-    Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
-};
-use lsp_types::{
+use ls_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
@@ -17,6 +14,9 @@ use lsp_types::{
         Notification as _, PublishDiagnostics,
     },
     request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
+};
+use lsp_server::{
+    Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
 };
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
@@ -57,6 +57,7 @@ impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
         let result = serde_json::json!(InitializeResult {
+            offset_encoding: None,
             server_info: Some(ServerInfo {
                 name: env!("CARGO_PKG_NAME").into(),
                 version: Some(env!("CARGO_PKG_VERSION").into()),
@@ -219,7 +220,7 @@ fn handle_notification(
 /// creates a notification message to the client
 fn notification<N>(params: N::Params) -> Message
 where
-    N: lsp_types::notification::Notification,
+    N: ls_types::notification::Notification,
     N::Params: Serialize,
 {
     Message::Notification(Notification::new(N::METHOD.to_owned(), params))
@@ -228,7 +229,7 @@ where
 /// creates a successful response to the client
 fn response<R>(id: RequestId, result: R::Result) -> Message
 where
-    R: lsp_types::request::Request,
+    R: ls_types::request::Request,
     R::Result: Serialize,
 {
     Message::Response(Response::new_ok(id, result))

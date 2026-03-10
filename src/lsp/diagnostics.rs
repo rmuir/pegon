@@ -1,11 +1,11 @@
 use anyhow::{Context as _, Result};
 use line_index::LineIndex;
-use lsp_types::{
+use ls_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
     Location, NumberOrString, PublishDiagnosticsParams, UnchangedDocumentDiagnosticReport, Uri,
 };
-use lsp_types::{
+use ls_types::{
     DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,
     RelatedUnchangedDocumentDiagnosticReport,
 };

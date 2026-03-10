@@ -4,7 +4,7 @@ use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::bail;
 use line_index::LineIndex;
-use lsp_types::{
+use ls_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     PublishDiagnosticsParams,
 };

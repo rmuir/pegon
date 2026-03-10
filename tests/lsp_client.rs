@@ -9,12 +9,12 @@ use std::{
 
 use anyhow::{Error, Result};
 use crossbeam_channel::{Receiver, after, select};
-use lsp_server::{Connection, Message, Request as ServerRequest};
-use lsp_types::{
+use ls_types::{
     InitializeParams, InitializeResult, InitializedParams,
     notification::{Exit, Initialized},
     request::{Initialize, Shutdown},
 };
+use lsp_server::{Connection, Message, Request as ServerRequest};
 use pegon::lsp::start;
 use serde::Serialize;
 use serde_json::Value;
@@ -30,6 +30,7 @@ pub struct Client {
 
 impl Client {
     /// Creates a new language server [`Client`].
+    #[must_use]
     pub fn new(params: InitializeParams) -> Self {
         let (client, server) = Connection::memory();
         let instance = Self {
@@ -55,7 +56,7 @@ impl Client {
 
     pub(crate) fn notify<N>(&self, params: N::Params)
     where
-        N: lsp_types::notification::Notification,
+        N: ls_types::notification::Notification,
         N::Params: Serialize,
     {
         let notification = lsp_server::Notification::new(N::METHOD.to_owned(), params);
@@ -67,7 +68,7 @@ impl Client {
 
     pub fn read_notify<N>(&self) -> N::Params
     where
-        N: lsp_types::notification::Notification,
+        N: ls_types::notification::Notification,
         N::Params: Serialize,
     {
         let message = self
@@ -82,7 +83,7 @@ impl Client {
 
     pub fn request<R>(&self, params: R::Params) -> R::Result
     where
-        R: lsp_types::request::Request,
+        R: ls_types::request::Request,
         R::Params: Serialize,
     {
         let id = self.req_id.get();
