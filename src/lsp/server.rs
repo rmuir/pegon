@@ -30,24 +30,35 @@ pub struct Server {
 
 /// A client-managed resource (file)
 ///
-///
+/// The client might notify us about files that aren't java. This can happen e.g. due to
+/// wrong client configuration by the user. In such a case, an initial error is logged via
+/// `window/logMessage`, but we track the URI resource to avoid spamming the logs with
+/// subsequent false errors throughout the rest of the lifecycle.
 pub enum Resource {
+    /// A client-managed Java document.
     Java(Document),
+    /// A client-managed document in some other language.
     Other,
 }
 
+/// A client-managed java document
 pub struct Document {
+    /// Full text of document
     pub(crate) text: String,
+    /// Document's version
     pub(crate) version: i32,
-    pub(crate) line_index: LineIndex,
+    /// Parse tree
     pub(crate) tree: Tree,
+    /// Index of newlines
+    pub(crate) line_index: LineIndex,
 }
 
 impl Server {
+    /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
         let result = serde_json::json!(InitializeResult {
             server_info: Some(ServerInfo {
-                name: "pegon".into(),
+                name: env!("CARGO_PKG_NAME").into(),
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
@@ -59,7 +70,7 @@ impl Server {
                 )),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
-                        identifier: Some("pegon".into()),
+                        identifier: Some(env!("CARGO_PKG_NAME").into()),
                         ..Default::default()
                     },
                 )),
