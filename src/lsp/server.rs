@@ -8,6 +8,7 @@ use lsp_server::{
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentDiagnosticParams, InitializeResult, LogMessageParams, MessageType, OneOf,
     ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
@@ -104,7 +105,7 @@ impl Server {
                             self.connection.sender.send(error(
                                 req.id.clone(),
                                 ErrorCode::RequestFailed,
-                                err.to_string(),
+                                format!("{err:#}"),
                             ))?;
                         }
                     }
@@ -118,7 +119,7 @@ impl Server {
                         Err(err) => {
                             self.connection
                                 .sender
-                                .send(log_error(&method, &err.to_string()))?;
+                                .send(log_error(&method, &format!("{err:#}")))?;
                         }
                         _ => {}
                     }
@@ -181,16 +182,19 @@ fn handle_notification(
 ) -> Result<Option<Message>> {
     let response = match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
-            let params = serde_json::from_value(note.params)?;
-            super::sync::did_open(client, params, docs, parser)?
+            let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
+            let uri = params.text_document.uri.clone();
+            super::sync::did_open(client, params, docs, parser).context(uri.to_string())?
         }
         DidChangeTextDocument::METHOD => {
-            let params = serde_json::from_value(note.params)?;
-            super::sync::did_change(client, params, docs, parser)?
+            let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
+            let uri = params.text_document.uri.clone();
+            super::sync::did_change(client, params, docs, parser).context(uri.to_string())?
         }
         DidCloseTextDocument::METHOD => {
-            let params = serde_json::from_value(note.params)?;
-            super::sync::did_close(client, params, docs)?
+            let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
+            let uri = params.text_document.uri.clone();
+            super::sync::did_close(client, params, docs).context(uri.to_string())?
         }
         // doesn't make sense for a single-threaded impl
         Cancel::METHOD => None,

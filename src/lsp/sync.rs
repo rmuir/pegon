@@ -24,7 +24,7 @@ pub fn did_open(
     let lang = params.text_document.language_id;
     if lang != "java" {
         docs.insert(uri.to_string(), Resource::Other);
-        bail!("non-java {} language_id {}", *uri, lang);
+        bail!("non-java language_id: {lang}");
     }
 
     parser.reset();
@@ -44,7 +44,7 @@ pub fn did_open(
         Some(diagnostics::push(client, &doc, &uri)?)
     };
     if docs.insert(uri.to_string(), Resource::Java(doc)).is_some() {
-        bail!("{} was already open and never closed", *uri);
+        bail!("was previously already open");
     }
     Ok(push)
 }
@@ -119,7 +119,7 @@ pub fn did_close(
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
     if docs.remove(&uri.to_string()).is_none() {
-        bail!("{} was not previously open", *uri);
+        bail!("was not previously open");
     }
     // according to LSP spec, we should clear on close if we are pushing
     if client.supports_pull_diagnostics() {
