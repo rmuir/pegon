@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Context as _;
 use anyhow::Result;
+use anyhow::bail;
 use line_index::LineIndex;
 use lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
@@ -20,9 +21,10 @@ pub fn did_open(
     parser: &mut Parser,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
-    if params.text_document.language_id != "java" {
+    let lang = params.text_document.language_id;
+    if lang != "java" {
         docs.insert(uri.to_string(), Resource::Other);
-        return Ok(None);
+        bail!("non-java {} language_id {}", *uri, lang);
     }
 
     parser.reset();
@@ -41,7 +43,9 @@ pub fn did_open(
     } else {
         Some(diagnostics::push(client, &doc, &uri)?)
     };
-    docs.insert(uri.to_string(), Resource::Java(doc));
+    if docs.insert(uri.to_string(), Resource::Java(doc)).is_some() {
+        bail!("{} was already open and never closed", *uri);
+    }
     Ok(push)
 }
 
@@ -112,17 +116,19 @@ pub fn did_close(
     client: &Client,
     params: DidCloseTextDocumentParams,
     docs: &mut HashMap<String, Resource>,
-) -> Option<PublishDiagnosticsParams> {
+) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
-    docs.remove(&uri.to_string());
+    if docs.remove(&uri.to_string()).is_none() {
+        bail!("{} was not previously open", *uri);
+    }
     // according to LSP spec, we should clear on close if we are pushing
     if client.supports_pull_diagnostics() {
-        None
+        Ok(None)
     } else {
-        Some(PublishDiagnosticsParams {
+        Ok(Some(PublishDiagnosticsParams {
             diagnostics: vec![],
             uri,
             version: None,
-        })
+        }))
     }
 }

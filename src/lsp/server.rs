@@ -110,12 +110,15 @@ impl Server {
                     }
                 }
                 Message::Notification(note) => {
+                    let method = note.method.clone();
                     match handle_notification(client, note, &mut docs, &mut parser) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
                         Err(err) => {
-                            self.connection.sender.send(log_error(&err.to_string()))?;
+                            self.connection
+                                .sender
+                                .send(log_error(&method, &err.to_string()))?;
                         }
                         _ => {}
                     }
@@ -187,14 +190,11 @@ fn handle_notification(
         }
         DidCloseTextDocument::METHOD => {
             let params = serde_json::from_value(note.params)?;
-            super::sync::did_close(client, params, docs)
+            super::sync::did_close(client, params, docs)?
         }
         // doesn't make sense for a single-threaded impl
         Cancel::METHOD => None,
-        _ => {
-            eprintln!("[lsp] unhandled notification {note:?}");
-            None
-        }
+        _ => bail!("unhandled notification"),
     }
     .map(notification::<PublishDiagnostics>);
     Ok(response)
@@ -224,12 +224,12 @@ fn error(id: RequestId, code: ErrorCode, message: String) -> Message {
 }
 
 /// logs via notification an error to the LSP client
-fn log_error(message: &String) -> Message {
+fn log_error(method: &String, message: &String) -> Message {
     Message::Notification(Notification::new(
         LogMessage::METHOD.to_owned(),
         LogMessageParams {
             typ: MessageType::ERROR,
-            message: format!("pegon: {message}"),
+            message: format!("pegon[{method}]: {message}"),
         },
     ))
 }
