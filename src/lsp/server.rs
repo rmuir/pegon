@@ -4,20 +4,22 @@ use anyhow::{Context as _, Error, Result, bail};
 use line_index::LineIndex;
 use ls_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
-    CodeActionProviderCapability, DiagnosticOptions, DiagnosticServerCapabilities,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentDiagnosticParams, InitializeResult, LogMessageParams, MessageType, OneOf,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    CodeActionProviderCapability, DiagnosticOptions, DiagnosticRegistrationOptions,
+    DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, InitializeResult,
+    LogMessageParams, MessageType, OneOf, Registration, RegistrationParams, ServerCapabilities,
+    ServerInfo, StaticRegistrationOptions, TextDocumentChangeRegistrationOptions,
+    TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
         Notification as _, PublishDiagnostics,
     },
-    request::{CodeActionRequest, DocumentDiagnosticRequest, Formatting, Request as _},
+    request::{
+        CodeActionRequest, DocumentDiagnosticRequest, Formatting, RegisterCapability, Request as _,
+    },
 };
-use lsp_server::{
-    Connection, ErrorCode, Message, Notification, Request as ServerRequest, RequestId, Response,
-};
+use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
@@ -63,26 +65,32 @@ impl Server {
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
+                text_document_sync: if client.registers_sync() {
+                    None
+                } else {
+                    Some(TextDocumentSyncCapability::Options(
+                        TextDocumentSyncOptions {
+                            open_close: Some(true),
+                            change: Some(TextDocumentSyncKind::INCREMENTAL),
+                            ..Default::default()
+                        },
+                    ))
+                },
+                diagnostic_provider: if client.registers_diagnostics() {
+                    None
+                } else {
+                    Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
+                        identifier: Some(env!("CARGO_PKG_NAME").into()),
+                        ..Default::default()
+                    }))
+                },
                 code_action_provider: Some(CodeActionProviderCapability::Options(
                     CodeActionOptions {
                         code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
                         ..Default::default()
                     },
                 )),
-                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
-                    DiagnosticOptions {
-                        identifier: Some(env!("CARGO_PKG_NAME").into()),
-                        ..Default::default()
-                    },
-                )),
                 position_encoding: Some(client.negotiated_encoding()),
-                text_document_sync: Some(TextDocumentSyncCapability::Options(
-                    TextDocumentSyncOptions {
-                        open_close: Some(true),
-                        change: Some(TextDocumentSyncKind::INCREMENTAL),
-                        ..Default::default()
-                    },
-                )),
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                         supported: Some(true),
@@ -94,6 +102,60 @@ impl Server {
             },
         });
         connection.initialize_finish(id, result)?;
+        let mut registrations: Vec<Registration> = Vec::with_capacity(3);
+        let document_selector = Some(vec![DocumentFilter {
+            language: Some("java".into()),
+            scheme: None,
+            pattern: None,
+        }]);
+        if client.registers_sync() {
+            registrations.push(Registration {
+                id: DidOpenTextDocument::METHOD.to_owned(),
+                method: DidOpenTextDocument::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(TextDocumentRegistrationOptions {
+                    document_selector: document_selector.clone(),
+                })?),
+            });
+            registrations.push(Registration {
+                id: DidChangeTextDocument::METHOD.to_owned(),
+                method: DidChangeTextDocument::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(
+                    TextDocumentChangeRegistrationOptions {
+                        document_selector: document_selector.clone(),
+                        sync_kind: TextDocumentSyncKind::INCREMENTAL,
+                    },
+                )?),
+            });
+            registrations.push(Registration {
+                id: DidCloseTextDocument::METHOD.to_owned(),
+                method: DidCloseTextDocument::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(TextDocumentRegistrationOptions {
+                    document_selector: document_selector.clone(),
+                })?),
+            });
+        }
+        if client.registers_diagnostics() {
+            registrations.push(Registration {
+                id: DocumentDiagnosticRequest::METHOD.to_owned(),
+                method: DocumentDiagnosticRequest::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(DiagnosticRegistrationOptions {
+                    text_document_registration_options: TextDocumentRegistrationOptions {
+                        document_selector,
+                    },
+                    diagnostic_options: DiagnosticOptions {
+                        identifier: Some(env!("CARGO_PKG_NAME").into()),
+                        ..Default::default()
+                    },
+                    static_registration_options: StaticRegistrationOptions::default(),
+                })?),
+            });
+        }
+        if !registrations.is_empty() {
+            connection.sender.send(request::<RegisterCapability>(
+                (-1).into(),
+                RegistrationParams { registrations },
+            ))?;
+        }
         Ok(Self { connection })
     }
 
@@ -148,7 +210,7 @@ impl Server {
 // every request must have an associated response
 fn handle_request(
     client: &Client,
-    req: &ServerRequest,
+    req: &Request,
     docs: &HashMap<String, Resource>,
 ) -> Result<Message> {
     match req.method.as_str() {
@@ -224,6 +286,15 @@ where
     N::Params: Serialize,
 {
     Message::Notification(Notification::new(N::METHOD.to_owned(), params))
+}
+
+// creates a request to the client
+fn request<R>(id: RequestId, params: R::Params) -> Message
+where
+    R: ls_types::request::Request,
+    R::Params: Serialize,
+{
+    Message::Request(Request::new(id, R::METHOD.to_owned(), params))
 }
 
 /// creates a successful response to the client

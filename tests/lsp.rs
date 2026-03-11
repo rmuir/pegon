@@ -185,7 +185,7 @@ fn full_capabilities() -> ClientCapabilities {
         text_document: Some(TextDocumentClientCapabilities {
             diagnostic: Some(DiagnosticClientCapabilities {
                 related_document_support: Some(true),
-                dynamic_registration: Some(true),
+                dynamic_registration: Some(false), // TODO: test this
                 related_information: Some(true),
                 code_description_support: Some(true),
                 data_support: Some(true),

@@ -257,8 +257,7 @@ impl Client {
     }
 
     /// true if the client supports dynamic registration of doc sync
-    #[expect(dead_code, reason = "wip")]
-    pub(crate) fn sync_registration(&self) -> bool {
+    pub(crate) fn registers_sync(&self) -> bool {
         (|| -> _ {
             self.init_params
                 .capabilities
@@ -272,8 +271,7 @@ impl Client {
     }
 
     /// true if the client supports dynamic registration of diagnostics
-    #[expect(dead_code, reason = "wip")]
-    pub(crate) fn diagnostic_registration(&self) -> bool {
+    pub(crate) fn registers_diagnostics(&self) -> bool {
         (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
     }
 }
