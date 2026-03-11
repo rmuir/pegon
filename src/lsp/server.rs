@@ -58,6 +58,10 @@ pub struct Document {
 impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
+        // if the client supports dynamic registration of the capability, then we use that.
+        // it makes the code very confusing, but this is just the pain of dynamic registration.
+        // it allows pushing a filter for "java" language documents to the client, to avoid waste.
+        // otherwise, advertise it statically, but not both! (see spec)
         let result = serde_json::json!(InitializeResult {
             offset_encoding: None,
             server_info: Some(ServerInfo {
@@ -90,7 +94,10 @@ impl Server {
                         ..Default::default()
                     },
                 )),
+                // use client's preferred encoding
                 position_encoding: Some(client.negotiated_encoding()),
+                // we don't care about classpaths or anything on disk, so advertise
+                // the workspace support for better client-side reuse of the server.
                 workspace: Some(WorkspaceServerCapabilities {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                         supported: Some(true),
@@ -152,7 +159,7 @@ impl Server {
         }
         if !registrations.is_empty() {
             connection.sender.send(request::<RegisterCapability>(
-                (-1).into(),
+                0.into(),
                 RegistrationParams { registrations },
             ))?;
         }
