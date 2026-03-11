@@ -20,7 +20,7 @@ use ls_types::{
     },
 };
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tree_sitter::{Parser, Tree};
 
 use crate::lsp::client::Client;
@@ -88,12 +88,14 @@ impl Server {
                         ..Default::default()
                     }))
                 },
-                code_action_provider: Some(CodeActionProviderCapability::Options(
-                    CodeActionOptions {
+                code_action_provider: if client.registers_code_actions() {
+                    None
+                } else {
+                    Some(CodeActionProviderCapability::Options(CodeActionOptions {
                         code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
                         ..Default::default()
-                    },
-                )),
+                    }))
+                },
                 // use client's preferred encoding
                 position_encoding: Some(client.negotiated_encoding()),
                 // we don't care about classpaths or anything on disk, so advertise
@@ -147,13 +149,28 @@ impl Server {
                 method: DocumentDiagnosticRequest::METHOD.to_owned(),
                 register_options: Some(serde_json::to_value(DiagnosticRegistrationOptions {
                     text_document_registration_options: TextDocumentRegistrationOptions {
-                        document_selector,
+                        document_selector: document_selector.clone(),
                     },
                     diagnostic_options: DiagnosticOptions {
                         identifier: Some(env!("CARGO_PKG_NAME").into()),
                         ..Default::default()
                     },
                     static_registration_options: StaticRegistrationOptions::default(),
+                })?),
+            });
+        }
+        if client.registers_code_actions() {
+            registrations.push(Registration {
+                id: CodeActionRequest::METHOD.to_owned(),
+                method: CodeActionRequest::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
+                    text_document_registration_options: TextDocumentRegistrationOptions {
+                        document_selector: document_selector.clone(),
+                    },
+                    code_action_options: CodeActionOptions {
+                        code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+                        ..Default::default()
+                    },
                 })?),
             });
         }
@@ -327,4 +344,17 @@ fn log_error(method: &String, message: &String) -> Message {
             message: format!("pegon[{method}]: {message}"),
         },
     ))
+}
+
+/// Code Action registration options.
+///
+/// @since 3.17.0
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeActionRegistrationOptions {
+    #[serde(flatten)]
+    pub text_document_registration_options: TextDocumentRegistrationOptions,
+
+    #[serde(flatten)]
+    pub code_action_options: CodeActionOptions,
 }

@@ -2,8 +2,9 @@ use core::convert::From;
 
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use ls_types::{
-    ClientCapabilities, DiagnosticClientCapabilities, InitializeParams, Position,
-    PositionEncodingKind, PublishDiagnosticsClientCapabilities, TextDocumentContentChangeEvent,
+    ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
+    InitializeParams, Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities,
+    TextDocumentContentChangeEvent,
 };
 use tree_sitter::Point;
 
@@ -204,24 +205,6 @@ impl Client {
         self.pull_diagnostics().is_some()
     }
 
-    fn pull_diagnostics(&self) -> Option<&DiagnosticClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .diagnostic
-            .as_ref()
-    }
-
-    fn push_diagnostics(&self) -> Option<&PublishDiagnosticsClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .publish_diagnostics
-            .as_ref()
-    }
-
     /// true if the client supports receiving additional ranges
     /// with related information ("context").
     pub(crate) fn supports_related_information(&self, push: bool) -> bool {
@@ -273,6 +256,38 @@ impl Client {
     /// true if the client supports dynamic registration of diagnostics
     pub(crate) fn registers_diagnostics(&self) -> bool {
         (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of code actions
+    pub(crate) fn registers_code_actions(&self) -> bool {
+        (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
+    }
+
+    fn pull_diagnostics(&self) -> Option<&DiagnosticClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .diagnostic
+            .as_ref()
+    }
+
+    fn push_diagnostics(&self) -> Option<&PublishDiagnosticsClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .publish_diagnostics
+            .as_ref()
+    }
+
+    fn code_actions(&self) -> Option<&CodeActionClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .code_action
+            .as_ref()
     }
 }
 
