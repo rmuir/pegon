@@ -58,6 +58,18 @@ pub struct Document {
 impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
+        let diagnostic_options = DiagnosticOptions {
+            identifier: Some(env!("CARGO_PKG_NAME").into()),
+            ..Default::default()
+        };
+        let code_action_options = CodeActionOptions {
+            code_action_kinds: Some(vec![
+                CodeActionKind::QUICKFIX,
+                CodeActionKind::SOURCE_ORGANIZE_IMPORTS,
+                CodeActionKind::new(concat!(env!("CARGO_PKG_NAME"), ".organizeImports")),
+            ]),
+            ..Default::default()
+        };
         // if the client supports dynamic registration of the capability, then we use that.
         // it makes the code very confusing, but this is just the pain of dynamic registration.
         // it allows pushing a filter for "java" language documents to the client, to avoid waste.
@@ -83,18 +95,16 @@ impl Server {
                 diagnostic_provider: if client.registers_diagnostics() {
                     None
                 } else {
-                    Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-                        identifier: Some(env!("CARGO_PKG_NAME").into()),
-                        ..Default::default()
-                    }))
+                    Some(DiagnosticServerCapabilities::Options(
+                        diagnostic_options.clone(),
+                    ))
                 },
                 code_action_provider: if client.registers_code_actions() {
                     None
                 } else {
-                    Some(CodeActionProviderCapability::Options(CodeActionOptions {
-                        code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
-                        ..Default::default()
-                    }))
+                    Some(CodeActionProviderCapability::Options(
+                        code_action_options.clone(),
+                    ))
                 },
                 // use client's preferred encoding
                 position_encoding: Some(client.negotiated_encoding()),
@@ -151,10 +161,7 @@ impl Server {
                     text_document_registration_options: TextDocumentRegistrationOptions {
                         document_selector: document_selector.clone(),
                     },
-                    diagnostic_options: DiagnosticOptions {
-                        identifier: Some(env!("CARGO_PKG_NAME").into()),
-                        ..Default::default()
-                    },
+                    diagnostic_options,
                     static_registration_options: StaticRegistrationOptions::default(),
                 })?),
             });
@@ -165,12 +172,9 @@ impl Server {
                 method: CodeActionRequest::METHOD.to_owned(),
                 register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
                     text_document_registration_options: TextDocumentRegistrationOptions {
-                        document_selector: document_selector.clone(),
+                        document_selector,
                     },
-                    code_action_options: CodeActionOptions {
-                        code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
-                        ..Default::default()
-                    },
+                    code_action_options,
                 })?),
             });
         }
