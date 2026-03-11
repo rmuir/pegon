@@ -9,21 +9,29 @@ use std::{
 
 use anyhow::{Error, Result};
 use crossbeam_channel::{Receiver, after, select};
+use ls_types::request::{ExecuteCommand, RegisterCapability, Request as _};
+use ls_types::{ExecuteCommandParams, RegistrationParams};
 use ls_types::{
     InitializeParams, InitializeResult, InitializedParams,
     notification::{Exit, Initialized},
     request::{Initialize, Shutdown},
 };
-use lsp_server::{Connection, Message, Request as ServerRequest};
+use lsp_server::{Connection, Message, Request, Response};
 use pegon::lsp::start;
 use serde::Serialize;
 use serde_json::Value;
 
+/// slimmed down and reworked from rust-analyzer test code
 pub struct Client {
+    /// counter for request IDs that we make
     req_id: Cell<i32>,
-    messages: RefCell<Vec<Message>>,
+    /// response to `initialize()` with server capabilities
     init_response: RefCell<Option<InitializeResult>>,
+    /// dynamic registrations from the server, if any
+    registrations: RefCell<Option<RegistrationParams>>,
+    /// Connection to Server
     conn: Connection,
+    /// Server run in separate thread
     #[expect(dead_code, reason = "for the drop")]
     thread: JoinHandle<Result<(), Error>>,
 }
@@ -35,14 +43,21 @@ impl Client {
         let (client, server) = Connection::memory();
         let instance = Self {
             req_id: Cell::new(1),
-            messages: RefCell::default(),
             init_response: RefCell::default(),
+            registrations: RefCell::default(),
             conn: client,
             thread: thread::spawn(move || start(server)),
         };
+        // initialize with the server and save the results
         let response = instance.request::<Initialize>(params);
         *instance.init_response.borrow_mut() = Some(response);
         instance.notify::<Initialized>(InitializedParams {});
+        // ensure dynamic registration is complete
+        instance.request::<ExecuteCommand>(ExecuteCommandParams {
+            command: "bogus".to_owned(),
+            arguments: vec![],
+            ..Default::default()
+        });
         instance
     }
 
@@ -52,6 +67,11 @@ impl Client {
             .borrow()
             .clone()
             .expect("initialize occurred in new")
+    }
+
+    /// Returns dynamic registrations from the server
+    pub fn registrations(&self) -> Option<RegistrationParams> {
+        self.registrations.borrow().clone()
     }
 
     pub(crate) fn notify<N>(&self, params: N::Params)
@@ -89,12 +109,12 @@ impl Client {
         let id = self.req_id.get();
         self.req_id.set(id.wrapping_add(1));
 
-        let req = ServerRequest::new(id.into(), R::METHOD.to_owned(), params);
+        let req = Request::new(id.into(), R::METHOD.to_owned(), params);
         let value = self.send_request_(&req);
         serde_json::from_value(value).expect("able to deserialize")
     }
 
-    fn send_request_(&self, req: &ServerRequest) -> Value {
+    fn send_request_(&self, req: &Request) -> Value {
         let id = req.id.clone();
         self.conn
             .sender
@@ -102,14 +122,12 @@ impl Client {
             .expect("able to send request");
         while let Some(msg) = self.recv().unwrap_or_else(|_| panic!("timeout: {req:?}")) {
             match msg {
-                Message::Request(request) => {
-                    panic!("unexpected request: {request:?}")
-                }
+                Message::Request(request) => self.process_request(request),
                 Message::Notification(_) => (),
                 Message::Response(res) => {
                     assert_eq!(res.id, id);
                     if let Some(err) = res.error {
-                        panic!("error response: {err:#?}");
+                        return serde_json::to_value(err).expect("should serialize");
                     }
                     return res.result.expect("able to deserialize");
                 }
@@ -118,11 +136,23 @@ impl Client {
         panic!("no response for {req:?}");
     }
 
+    fn process_request(&self, request: Request) {
+        match request.method.as_str() {
+            RegisterCapability::METHOD => {
+                let params: RegistrationParams =
+                    serde_json::from_value(request.params).expect("could deserialize");
+                *self.registrations.borrow_mut() = Some(params);
+                self.conn
+                    .sender
+                    .send(Message::Response(Response::new_ok::<()>(request.id, ())))
+                    .expect("able to send response");
+            }
+            _ => panic!("unexpected request: {request:?}"),
+        }
+    }
+
     fn recv(&self) -> Result<Option<Message>, ErrorKind> {
         let msg = recv_timeout(&self.conn.receiver)?;
-        let msg = msg.inspect(|msg| {
-            self.messages.borrow_mut().push(msg.clone());
-        });
         Ok(msg)
     }
 }
