@@ -2,8 +2,8 @@ use core::convert::From;
 
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use ls_types::{
-    ClientCapabilities, InitializeParams, Position, PositionEncodingKind,
-    TextDocumentContentChangeEvent,
+    ClientCapabilities, DiagnosticClientCapabilities, InitializeParams, Position,
+    PositionEncodingKind, PublishDiagnosticsClientCapabilities, TextDocumentContentChangeEvent,
 };
 use tree_sitter::Point;
 
@@ -201,43 +201,49 @@ impl Client {
     /// can choose when to make requests, versus having them
     /// pushed on every didChange.
     pub(crate) fn supports_pull_diagnostics(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .diagnostic
-                .as_ref()
-        })()
-        .is_some()
+        self.pull_diagnostics().is_some()
+    }
+
+    fn pull_diagnostics(&self) -> Option<&DiagnosticClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .diagnostic
+            .as_ref()
+    }
+
+    fn push_diagnostics(&self) -> Option<&PublishDiagnosticsClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .publish_diagnostics
+            .as_ref()
     }
 
     /// true if the client supports receiving additional ranges
     /// with related information ("context").
-    pub(crate) fn supports_related_information(&self) -> bool {
+    pub(crate) fn supports_related_information(&self, push: bool) -> bool {
         (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .related_information
+            if push {
+                self.push_diagnostics()?.related_information
+            } else {
+                self.pull_diagnostics()?.related_information
+            }
         })()
         .unwrap_or_default()
     }
 
     /// true if the client supports receiving URLs for more information
     /// on the diagnostic code.
-    pub(crate) fn supports_code_description(&self) -> bool {
+    pub(crate) fn supports_code_description(&self, push: bool) -> bool {
         (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .code_description_support
+            if push {
+                self.push_diagnostics()?.code_description_support
+            } else {
+                self.pull_diagnostics()?.code_description_support
+            }
         })()
         .unwrap_or_default()
     }
@@ -247,32 +253,7 @@ impl Client {
     ///
     /// not relevant to pull diagnostics where the version is implicit.
     pub(crate) fn supports_version(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .version_support
-        })()
-        .unwrap_or_default()
-    }
-
-    /// true if the client supports preserving the `data` property
-    /// from diagnostics into the code action request
-    #[expect(dead_code, reason = "wip")]
-    pub(crate) fn data_support(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .publish_diagnostics
-                .as_ref()?
-                .data_support
-        })()
-        .unwrap_or_default()
+        (|| -> _ { self.push_diagnostics()?.version_support })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of doc sync
@@ -293,46 +274,7 @@ impl Client {
     /// true if the client supports dynamic registration of diagnostics
     #[expect(dead_code, reason = "wip")]
     pub(crate) fn diagnostic_registration(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .diagnostic
-                .as_ref()?
-                .dynamic_registration
-        })()
-        .unwrap_or_default()
-    }
-
-    /// true if the client supports dynamic registration of code actions
-    #[expect(dead_code, reason = "wip")]
-    pub(crate) fn code_action_registration(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .code_action
-                .as_ref()?
-                .dynamic_registration
-        })()
-        .unwrap_or_default()
-    }
-
-    /// true if the client supports dynamic registration of formatting
-    #[expect(dead_code, reason = "wip")]
-    pub(crate) fn formatting_registration(&self) -> bool {
-        (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
-                .formatting
-                .as_ref()?
-                .dynamic_registration
-        })()
-        .unwrap_or_default()
+        (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
     }
 }
 
@@ -415,8 +357,10 @@ mod tests {
         let client = Client::new(InitializeParams::default());
         assert_eq!(PositionEncodingKind::UTF16, client.negotiated_encoding());
         assert!(!client.supports_pull_diagnostics());
-        assert!(!client.supports_related_information());
-        assert!(!client.supports_code_description());
+        assert!(!client.supports_related_information(false));
+        assert!(!client.supports_related_information(true));
+        assert!(!client.supports_code_description(false));
+        assert!(!client.supports_code_description(true));
         assert!(!client.supports_version());
     }
 

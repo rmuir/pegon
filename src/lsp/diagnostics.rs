@@ -56,7 +56,13 @@ pub fn pull(
         Ok(DocumentDiagnosticReportResult::Report(
             DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    items: encode(client, &params.text_document.uri, &doc.line_index, &results)?,
+                    items: encode(
+                        client,
+                        &params.text_document.uri,
+                        &doc.line_index,
+                        false,
+                        &results,
+                    )?,
                     result_id: Some(result_id),
                 },
                 related_documents: None,
@@ -70,7 +76,7 @@ pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnos
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
     Ok(PublishDiagnosticsParams {
-        diagnostics: encode(client, uri, &doc.line_index, &results)?,
+        diagnostics: encode(client, uri, &doc.line_index, true, &results)?,
         uri: uri.clone(),
         version: client.supports_version().then_some(doc.version),
     })
@@ -87,6 +93,7 @@ fn encode(
     client: &Client,
     uri: &Uri,
     line_index: &LineIndex,
+    push: bool,
     results: &[Lint],
 ) -> Result<Vec<Diagnostic>> {
     results
@@ -132,13 +139,15 @@ fn encode(
                 range,
                 severity: Some(lsp_severity),
                 code: Some(NumberOrString::String(rule.name.clone())),
-                code_description: client.supports_code_description().then(|| CodeDescription {
-                    href: Uri::from_str(&rule.url).expect("rule url should exist"),
-                }),
+                code_description: client
+                    .supports_code_description(push)
+                    .then(|| CodeDescription {
+                        href: Uri::from_str(&rule.url).expect("rule url should exist"),
+                    }),
                 source: Some("pegon".to_owned()),
                 message: diagnostic.title.clone(),
                 related_information: client
-                    .supports_related_information()
+                    .supports_related_information(push)
                     .then_some(related_information),
                 tags: None,
                 data: None,
