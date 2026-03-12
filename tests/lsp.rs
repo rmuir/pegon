@@ -14,11 +14,13 @@ use ls_types::{
     InitializeParams, Location, NumberOrString, PartialResultParams, Position,
     PositionEncodingKind, PublishDiagnosticsClientCapabilities, Range, TagSupport,
     TextDocumentClientCapabilities, TextDocumentContentChangeEvent, TextDocumentIdentifier,
-    TextDocumentItem, Uri, VersionedTextDocumentIdentifier, WorkDoneProgressParams,
+    TextDocumentItem, TextDocumentSyncClientCapabilities, Uri, VersionedTextDocumentIdentifier,
+    WorkDoneProgressParams,
     notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, PublishDiagnostics,
+        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
+        PublishDiagnostics,
     },
-    request::DocumentDiagnosticRequest,
+    request::{DocumentDiagnosticRequest, Request as _},
 };
 use lsp_server::Connection;
 use pegon::lsp::start;
@@ -183,13 +185,19 @@ fn push_clear_on_close() {
 fn full_capabilities() -> ClientCapabilities {
     ClientCapabilities {
         text_document: Some(TextDocumentClientCapabilities {
+            synchronization: Some(TextDocumentSyncClientCapabilities {
+                dynamic_registration: Some(true),
+                will_save: Some(true),
+                will_save_wait_until: Some(true),
+                did_save: Some(true),
+            }),
             diagnostic: Some(DiagnosticClientCapabilities {
                 related_document_support: Some(true),
                 dynamic_registration: Some(true),
                 related_information: Some(true),
                 code_description_support: Some(true),
                 data_support: Some(true),
-                tag_support: None,
+                tag_support: None, // bug in ls_types
             }),
             publish_diagnostics: Some(PublishDiagnosticsClientCapabilities {
                 related_information: Some(true),
@@ -405,6 +413,22 @@ fn diagnostics_on_change() {
     assert_eq!(1, changed.diagnostics.len());
     let code = Some(NumberOrString::String("lowercase-class".into()));
     assert_eq!(code, changed.diagnostics[0].code);
+}
+
+#[test]
+fn dynamic_registration() {
+    let client = Client::new(InitializeParams {
+        capabilities: full_capabilities(),
+        ..Default::default()
+    });
+    let result = client.registrations();
+    assert!(result.is_some());
+    let params = result.unwrap().registrations;
+    assert_eq!(params.len(), 4);
+    assert_eq!(params[0].method, DidOpenTextDocument::METHOD);
+    assert_eq!(params[1].method, DidChangeTextDocument::METHOD);
+    assert_eq!(params[2].method, DidCloseTextDocument::METHOD);
+    assert_eq!(params[3].method, DocumentDiagnosticRequest::METHOD);
 }
 
 /// make sure if the stream disconnects that the error makes it out
