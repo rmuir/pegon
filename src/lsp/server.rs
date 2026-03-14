@@ -55,6 +55,20 @@ pub struct Document {
     pub(crate) line_index: LineIndex,
 }
 
+pub struct State {
+    pub(crate) docs: HashMap<String, Resource>,
+    pub(crate) parser: Parser,
+}
+
+impl State {
+    fn new() -> Result<Self> {
+        let docs: HashMap<String, Resource> = HashMap::default();
+        let mut parser = tree_sitter::Parser::new();
+        parser.set_language(&crate::LANGUAGE.into())?;
+        Ok(Self { docs, parser })
+    }
+}
+
 impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
@@ -188,9 +202,7 @@ impl Server {
     }
 
     pub fn main_loop(&self, client: &Client) -> Result<(), Error> {
-        let mut docs: HashMap<String, Resource> = HashMap::default();
-        let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&crate::LANGUAGE.into())?;
+        let mut state = State::new()?;
 
         for msg in &self.connection.receiver {
             match msg {
@@ -199,7 +211,7 @@ impl Server {
                     if self.connection.handle_shutdown(&req)? {
                         break;
                     }
-                    match handle_request(client, &req, &docs) {
+                    match handle_request(client, &req, &state.docs) {
                         Ok(response) => {
                             self.connection.sender.send(response)?;
                         }
@@ -214,7 +226,7 @@ impl Server {
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
-                    match handle_notification(client, note, &mut docs, &mut parser) {
+                    match handle_notification(client, note, &mut state) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
@@ -279,24 +291,23 @@ fn handle_request(
 fn handle_notification(
     client: &Client,
     note: lsp_server::Notification,
-    docs: &mut HashMap<String, Resource>,
-    parser: &mut Parser,
+    state: &mut State,
 ) -> Result<Option<Message>> {
     let response = match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
             let uri = params.text_document.uri.clone();
-            super::sync::did_open(client, params, docs, parser).context(uri.to_string())?
+            super::sync::did_open(client, params, state).context(uri.to_string())?
         }
         DidChangeTextDocument::METHOD => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
             let uri = params.text_document.uri.clone();
-            super::sync::did_change(client, params, docs, parser).context(uri.to_string())?
+            super::sync::did_change(client, params, state).context(uri.to_string())?
         }
         DidCloseTextDocument::METHOD => {
             let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
             let uri = params.text_document.uri.clone();
-            super::sync::did_close(client, params, docs).context(uri.to_string())?
+            super::sync::did_close(client, params, state).context(uri.to_string())?
         }
         // can be safely ignored according to specification
         method if method.starts_with("$/") => None,

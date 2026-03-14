@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::bail;
@@ -8,27 +6,27 @@ use ls_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     PublishDiagnosticsParams,
 };
-use tree_sitter::{InputEdit, Parser};
+use tree_sitter::InputEdit;
 
 use crate::lsp::diagnostics;
-use crate::lsp::server::Resource;
+use crate::lsp::server::{Resource, State};
 use crate::lsp::{client::Client, server::Document};
 
 pub fn did_open(
     client: &Client,
     params: DidOpenTextDocumentParams,
-    docs: &mut HashMap<String, Resource>,
-    parser: &mut Parser,
+    state: &mut State,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
     let lang = params.text_document.language_id;
     if lang != "java" {
-        docs.insert(uri.to_string(), Resource::Other);
+        state.docs.insert(uri.to_string(), Resource::Other);
         bail!("non-java language_id: {lang}");
     }
 
-    parser.reset();
-    let tree = parser
+    state.parser.reset();
+    let tree = state
+        .parser
         .parse(&params.text_document.text, None)
         .context("broken parser setup")?;
     let line_index = LineIndex::new(&params.text_document.text);
@@ -43,7 +41,11 @@ pub fn did_open(
     } else {
         Some(diagnostics::push(client, &doc, &uri)?)
     };
-    if docs.insert(uri.to_string(), Resource::Java(doc)).is_some() {
+    if state
+        .docs
+        .insert(uri.to_string(), Resource::Java(doc))
+        .is_some()
+    {
         bail!("was previously already open");
     }
     Ok(push)
@@ -52,11 +54,13 @@ pub fn did_open(
 pub fn did_change(
     client: &Client,
     params: DidChangeTextDocumentParams,
-    docs: &mut HashMap<String, Resource>,
-    parser: &mut Parser,
+    state: &mut State,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
-    let resource = docs.remove(&uri.to_string()).context("document not open")?;
+    let resource = state
+        .docs
+        .remove(&uri.to_string())
+        .context("document not open")?;
     let Resource::Java(doc) = resource else {
         return Ok(None);
     };
@@ -92,8 +96,9 @@ pub fn did_change(
             new_end_position,
         });
     }
-    parser.reset();
-    let tree = parser
+    state.parser.reset();
+    let tree = state
+        .parser
         .parse(&text, Some(&old_tree))
         .context("broken parser setup")?;
     let newdoc = Document {
@@ -108,17 +113,17 @@ pub fn did_change(
     } else {
         Some(diagnostics::push(client, &newdoc, &uri)?)
     };
-    docs.insert(uri.to_string(), Resource::Java(newdoc));
+    state.docs.insert(uri.to_string(), Resource::Java(newdoc));
     Ok(push)
 }
 
 pub fn did_close(
     client: &Client,
     params: DidCloseTextDocumentParams,
-    docs: &mut HashMap<String, Resource>,
+    state: &mut State,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
-    if docs.remove(&uri.to_string()).is_none() {
+    if state.docs.remove(&uri.to_string()).is_none() {
         bail!("was not previously open");
     }
     // according to LSP spec, we should clear on close if we are pushing
