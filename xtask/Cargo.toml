@@ -13,7 +13,5 @@ workspace = true
 pegon = { path = ".." }
 # Generate manual pages
 clap = { version = "4.5.58", features = ["derive"] }
-# Generate manual pages
-clap_mangen = "0.2.31"
 # Generate shell completions
 clap_complete = "4.5.66"

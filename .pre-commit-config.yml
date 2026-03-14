@@ -24,12 +24,6 @@ repos:
       - id: trailing-whitespace
         name: Fix trailing whitespace
         types: [text]
-        exclude:
-          glob:
-            # clap-mangen
-            - docs/man/**
-            # clap-helpgen (TODO)
-            - docs/README.md
 
       - id: end-of-file-fixer
         name: Fix newline at EOF
@@ -156,10 +150,6 @@ repos:
           UV_FROZEN: "1"
         require_serial: true
         types: ["markdown"]
-        exclude:
-          glob:
-            # clap-markdown
-            - docs/README.md
 
       - id: yamlfmt
         name: Fix YAML
