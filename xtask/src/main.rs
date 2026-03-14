@@ -9,9 +9,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// output completions to `$CWD/contrib/completions`
+/// output completions to `$CWD/target/completions`
 fn completions() -> Result<(), Box<dyn Error>> {
-    let out_dir = env::current_dir()?.join("contrib").join("completions");
+    let out_dir = env::current_dir()?.join("target").join("completions");
     if out_dir.exists() {
         fs::remove_dir_all(&out_dir)?;
     }
