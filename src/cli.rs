@@ -4,9 +4,9 @@ use clap::{
 };
 use std::path::PathBuf;
 
-/// A slightly fast Java linter and code formatter, written in Rust.
+/// Fast linter for the Google Java Style.
 ///
-/// More sentence
+/// More information
 #[derive(Parser)]
 #[command(name = "pegon", author, version)]
 #[command(arg_required_else_help = true)]
@@ -35,17 +35,6 @@ pub enum Commands {
         /// Diagnostic error format
         #[arg(long, value_enum, id = "FMT", env = "PEGON_OUTPUT_FORMAT", default_value_t = OutputFormat::Full)]
         output_format: OutputFormat,
-    },
-
-    /// Run the pegon formatter on the given files or directories.
-    Format {
-        /// List of files or directories to format, or `-` to read from stdin
-        files: Vec<PathBuf>,
-
-        /// Avoid writing any formatted files back; instead, exit with a non-zero status code if any
-        /// files would be modified, and zero otherwise.
-        #[arg(long)]
-        check: bool,
     },
 
     /// Run the language server

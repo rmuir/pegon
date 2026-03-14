@@ -1,6 +1,6 @@
 [package]
 name = "pegon"
-description = "A slightly fast Java linter and code formatter, written in Rust."
+description = "Fast linter for the Google Java Style"
 version = "0.1.0"
 edition = "2024"
 readme = "README.md"
@@ -9,7 +9,7 @@ homepage = "https://github.com/rmuir/pegon"
 repository = "https://github.com/rmuir/pegon"
 documentation = "https://github.com/rmuir/pegon/wiki"
 authors = ["Robert Muir <rmuir@apache.org>"]
-keywords = ["java", "linter", "formatter", "language-server", "static-analysis"]
+keywords = ["java", "linter", "language-server", "static-analysis"]
 categories = ["command-line-utilities", "development-tools", "text-editors"]
 
 [lib]

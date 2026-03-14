@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pegon"
-description = "A slightly fast Java linter and code formatter, written in Rust."
+description = "Fast linter for the Google Java Style"
 version = "0.1.0"
 keywords = ["lint", "tree-sitter", "java",]
 authors = [{ name = "Robert Muir", email = "rmuir@apache.org" }]

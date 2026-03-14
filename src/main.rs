@@ -117,7 +117,6 @@ fn main() -> Result<(), Error> {
             fix: _,
             output_format,
         } => check(files, *output_format == cli::OutputFormat::Concise),
-        cli::Commands::Format { files: _, check: _ } => todo!(),
         cli::Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
             let result = lsp::start(connection);
