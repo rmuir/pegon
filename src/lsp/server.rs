@@ -8,9 +8,9 @@ use ls_types::{
     DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, InitializeResult,
     LogMessageParams, MessageType, OneOf, Registration, RegistrationParams, ServerCapabilities,
-    ServerInfo, StaticRegistrationOptions, TextDocumentChangeRegistrationOptions,
-    TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    ServerInfo, TextDocumentChangeRegistrationOptions, TextDocumentRegistrationOptions,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
         Notification as _, PublishDiagnostics,
@@ -72,8 +72,19 @@ impl State {
 impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
-        let diagnostic_options = DiagnosticOptions {
-            identifier: Some(env!("CARGO_PKG_NAME").into()),
+        let document_selector = Some(vec![DocumentFilter {
+            language: Some("java".into()),
+            scheme: None,
+            pattern: None,
+        }]);
+        let diagnostic_options = DiagnosticRegistrationOptions {
+            diagnostic_options: DiagnosticOptions {
+                identifier: Some(env!("CARGO_PKG_NAME").into()),
+                ..Default::default()
+            },
+            text_document_registration_options: TextDocumentRegistrationOptions {
+                document_selector: document_selector.clone(),
+            },
             ..Default::default()
         };
         let code_action_options = CodeActionOptions {
@@ -109,7 +120,7 @@ impl Server {
                 diagnostic_provider: if client.registers_diagnostics() {
                     None
                 } else {
-                    Some(DiagnosticServerCapabilities::Options(
+                    Some(DiagnosticServerCapabilities::RegistrationOptions(
                         diagnostic_options.clone(),
                     ))
                 },
@@ -136,11 +147,6 @@ impl Server {
         });
         connection.initialize_finish(id, result)?;
         let mut registrations: Vec<Registration> = Vec::with_capacity(3);
-        let document_selector = Some(vec![DocumentFilter {
-            language: Some("java".into()),
-            scheme: None,
-            pattern: None,
-        }]);
         if client.registers_sync() {
             registrations.push(Registration {
                 id: DidOpenTextDocument::METHOD.to_owned(),
@@ -171,13 +177,7 @@ impl Server {
             registrations.push(Registration {
                 id: DocumentDiagnosticRequest::METHOD.to_owned(),
                 method: DocumentDiagnosticRequest::METHOD.to_owned(),
-                register_options: Some(serde_json::to_value(DiagnosticRegistrationOptions {
-                    text_document_registration_options: TextDocumentRegistrationOptions {
-                        document_selector: document_selector.clone(),
-                    },
-                    diagnostic_options,
-                    static_registration_options: StaticRegistrationOptions::default(),
-                })?),
+                register_options: Some(serde_json::to_value(diagnostic_options)?),
             });
         }
         if client.registers_code_actions() {
