@@ -6,17 +6,19 @@ use ls_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticRegistrationOptions,
     DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, InitializeResult,
-    LogMessageParams, MessageType, OneOf, Registration, RegistrationParams, ServerCapabilities,
-    ServerInfo, TextDocumentChangeRegistrationOptions, TextDocumentRegistrationOptions,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions,
+    DocumentSymbolParams, InitializeResult, LogMessageParams, MessageType, OneOf, Registration,
+    RegistrationParams, ServerCapabilities, ServerInfo, TextDocumentChangeRegistrationOptions,
+    TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
         Notification as _, PublishDiagnostics,
     },
     request::{
-        CodeActionRequest, DocumentDiagnosticRequest, Formatting, RegisterCapability, Request as _,
+        CodeActionRequest, DocumentDiagnosticRequest, DocumentSymbolRequest, Formatting,
+        RegisterCapability, Request as _,
     },
 };
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -80,12 +82,12 @@ impl Server {
         let diagnostic_options = DiagnosticRegistrationOptions {
             diagnostic_options: DiagnosticOptions {
                 identifier: Some(env!("CARGO_PKG_NAME").into()),
-                ..Default::default()
+                ..DiagnosticOptions::default()
             },
             text_document_registration_options: TextDocumentRegistrationOptions {
                 document_selector: document_selector.clone(),
             },
-            ..Default::default()
+            ..DiagnosticRegistrationOptions::default()
         };
         let code_action_options = CodeActionOptions {
             code_action_kinds: Some(vec![
@@ -93,7 +95,11 @@ impl Server {
                 CodeActionKind::SOURCE_ORGANIZE_IMPORTS,
                 CodeActionKind::new(concat!(env!("CARGO_PKG_NAME"), ".organizeImports")),
             ]),
-            ..Default::default()
+            ..CodeActionOptions::default()
+        };
+        let document_symbol_options = DocumentSymbolOptions {
+            label: None,
+            work_done_progress_options: WorkDoneProgressOptions::default(),
         };
         // if the client supports dynamic registration of the capability, then we use that.
         // it makes the code very confusing, but this is just the pain of dynamic registration.
@@ -106,15 +112,11 @@ impl Server {
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
             capabilities: ServerCapabilities {
-                text_document_sync: if client.registers_sync() {
+                code_action_provider: if client.registers_code_actions() {
                     None
                 } else {
-                    Some(TextDocumentSyncCapability::Options(
-                        TextDocumentSyncOptions {
-                            open_close: Some(true),
-                            change: Some(TextDocumentSyncKind::INCREMENTAL),
-                            ..Default::default()
-                        },
+                    Some(CodeActionProviderCapability::Options(
+                        code_action_options.clone(),
                     ))
                 },
                 diagnostic_provider: if client.registers_diagnostics() {
@@ -124,15 +126,23 @@ impl Server {
                         diagnostic_options.clone(),
                     ))
                 },
-                code_action_provider: if client.registers_code_actions() {
+                document_symbol_provider: if client.registers_document_symbols() {
                     None
                 } else {
-                    Some(CodeActionProviderCapability::Options(
-                        code_action_options.clone(),
+                    Some(OneOf::Right(document_symbol_options.clone()))
+                },
+                position_encoding: Some(client.negotiated_encoding()),
+                text_document_sync: if client.registers_sync() {
+                    None
+                } else {
+                    Some(TextDocumentSyncCapability::Options(
+                        TextDocumentSyncOptions {
+                            open_close: Some(true),
+                            change: Some(TextDocumentSyncKind::INCREMENTAL),
+                            ..TextDocumentSyncOptions::default()
+                        },
                     ))
                 },
-                // use client's preferred encoding
-                position_encoding: Some(client.negotiated_encoding()),
                 // we don't care about classpaths or anything on disk, so advertise
                 // the workspace support for better client-side reuse of the server.
                 workspace: Some(WorkspaceServerCapabilities {
@@ -178,6 +188,13 @@ impl Server {
                 id: DocumentDiagnosticRequest::METHOD.to_owned(),
                 method: DocumentDiagnosticRequest::METHOD.to_owned(),
                 register_options: Some(serde_json::to_value(diagnostic_options)?),
+            });
+        }
+        if client.registers_document_symbols() {
+            registrations.push(Registration {
+                id: DocumentSymbolRequest::METHOD.to_owned(),
+                method: DocumentSymbolRequest::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(document_symbol_options)?),
             });
         }
         if client.registers_code_actions() {
@@ -271,6 +288,18 @@ fn handle_request(
                 Some(Resource::Java(doc)) => Ok(response::<DocumentDiagnosticRequest>(
                     req.id.clone(),
                     super::diagnostics::pull(client, doc, &params)?,
+                )),
+                Some(Resource::Other) => bail!("non-java document: {}", **uri),
+                None => bail!("document not open: {}", **uri),
+            }
+        }
+        DocumentSymbolRequest::METHOD => {
+            let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
+            let uri = &params.text_document.uri;
+            match docs.get(&uri.to_string()) {
+                Some(Resource::Java(doc)) => Ok(response::<DocumentSymbolRequest>(
+                    req.id.clone(),
+                    Some(super::document_symbols::request(client, doc, &params)?),
                 )),
                 Some(Resource::Other) => bail!("non-java document: {}", **uri),
                 None => bail!("document not open: {}", **uri),

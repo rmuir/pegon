@@ -3,8 +3,8 @@ use core::convert::From;
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use ls_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
-    InitializeParams, Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities,
-    TextDocumentContentChangeEvent,
+    DocumentSymbolClientCapabilities, InitializeParams, Position, PositionEncodingKind,
+    PublishDiagnosticsClientCapabilities, TextDocumentContentChangeEvent,
 };
 use tree_sitter::Point;
 
@@ -231,6 +231,20 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// true if the client supports hierarchical document symbols
+    pub(crate) fn supports_hierarchical_symbols(&self) -> bool {
+        (|| -> _ {
+            self.document_symbols()?
+                .hierarchical_document_symbol_support
+        })()
+        .unwrap_or_default()
+    }
+
+    /// true if the client supports tags on flat document symbols
+    pub(crate) fn supports_tags(&self) -> bool {
+        (|| -> _ { self.document_symbols()?.tag_support.as_ref() })().is_some()
+    }
+
     /// true if the client supports receiving the document version
     /// in push diagnostics.
     ///
@@ -256,6 +270,11 @@ impl Client {
     /// true if the client supports dynamic registration of diagnostics
     pub(crate) fn registers_diagnostics(&self) -> bool {
         (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of document symbols
+    pub(crate) fn registers_document_symbols(&self) -> bool {
+        (|| -> _ { self.document_symbols()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of code actions
@@ -287,6 +306,15 @@ impl Client {
             .text_document
             .as_ref()?
             .code_action
+            .as_ref()
+    }
+
+    fn document_symbols(&self) -> Option<&DocumentSymbolClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .document_symbol
             .as_ref()
     }
 }
