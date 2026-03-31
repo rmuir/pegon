@@ -5,7 +5,7 @@ use ls_types::{
     DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, Location, SymbolInformation,
     SymbolKind, SymbolTag, Uri,
 };
-use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
+use tree_sitter::{Query, QueryCursor, Range, StreamingIterator as _};
 
 use crate::lsp::{Client, server::Document};
 
@@ -56,9 +56,62 @@ fn flatten(
     }
 }
 
+// internal representation
+struct Symbol {
+    name: String,
+    kind: SymbolKind,
+    detail: Option<String>,
+    deprecated: bool,
+    range: Range,
+    selection_range: Range,
+    children: Vec<usize>,
+}
+
+impl Symbol {
+    fn encode(
+        &self,
+        client: &Client,
+        doc: &Document,
+        symbols: &Vec<Self>,
+    ) -> Result<DocumentSymbol> {
+        let children: Vec<DocumentSymbol> = self
+            .children
+            .iter()
+            .map(|index| {
+                symbols
+                    .get(*index)
+                    .expect("valid")
+                    .encode(client, doc, symbols)
+                    .expect("valid")
+            })
+            .collect();
+        Ok(DocumentSymbol {
+            name: self.name.clone(),
+            kind: self.kind,
+            detail: self.detail.clone(),
+            tags: self.deprecated.then(|| vec![SymbolTag::DEPRECATED]),
+            #[expect(deprecated, reason = "unavoidable")]
+            deprecated: None,
+            range: client
+                .encode_range(&self.range, &doc.line_index)
+                .expect("valid range"),
+            selection_range: client
+                .encode_range(&self.selection_range, &doc.line_index)
+                .expect("valid range"),
+            children: if children.is_empty() {
+                None
+            } else {
+                Some(children)
+            },
+        })
+    }
+}
+
 fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
     let bytes = doc.text.as_bytes();
     let mut symbols = Vec::new();
+    let mut roots = Vec::new();
+    let mut stack: Vec<(usize, Range)> = Vec::new();
     let mut cursor = QueryCursor::new();
     let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
     while let Some(hit) = matches.next() {
@@ -68,6 +121,10 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             .next()
             .context("range capture should exist")?;
         let bounds = range.range();
+        while stack
+            .pop_if(|parent| bounds.start_byte >= parent.1.end_byte)
+            .is_some()
+        {}
         let selection = hit
             .nodes_for_capture_index(*SELECTION_CAPTURE)
             .next()
@@ -78,24 +135,37 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         if let Some(detail) = detail {
             name.push_str(detail.utf8_text(bytes)?);
         }
-        let symbol = DocumentSymbol {
+        let symbol = Symbol {
             name,
             detail: None,
             kind: pattern.kind,
-            tags: deprecated.is_some().then(|| vec![SymbolTag::DEPRECATED]),
-            #[expect(deprecated, reason = "unavoidable")]
-            deprecated: None,
-            range: client
-                .encode_range(&bounds, &doc.line_index)
-                .expect("can encode range"),
-            selection_range: client
-                .encode_range(&selection.range(), &doc.line_index)
-                .expect("can encode range"),
-            children: None,
+            deprecated: deprecated.is_some(),
+            range: bounds,
+            selection_range: selection.range(),
+            children: vec![],
         };
+
+        // add new symbol
+        let index = symbols.len();
         symbols.push(symbol);
+
+        if let Some(parent) = stack.last()
+            && bounds.start_byte >= parent.1.start_byte
+            && bounds.end_byte <= parent.1.end_byte
+        {
+            let node: &mut Symbol = symbols.get_mut(parent.0).expect("in bounds");
+            node.children.push(index);
+        } else {
+            roots.push(index);
+        }
+        stack.push((index, bounds));
     }
-    Ok(symbols)
+    let mut result: Vec<DocumentSymbol> = Vec::new();
+    for index in roots {
+        let symbol = symbols.get(index).expect("in bounds");
+        result.push(symbol.encode(client, doc, &symbols)?);
+    }
+    Ok(result)
 }
 
 /// single compiled pattern
