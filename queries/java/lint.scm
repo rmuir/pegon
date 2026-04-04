@@ -352,8 +352,19 @@
     (annotation_type_declaration
       name: (identifier) @context)
   ]
-  (declaration
-    name: (identifier) @error)
+  ; parser uses ABI 14
+  [
+    (class_declaration
+      name: (identifier) @error)
+    (interface_declaration
+      name: (identifier) @error)
+    (record_declaration
+      name: (identifier) @error)
+    (enum_declaration
+      name: (identifier) @error)
+    (annotation_type_declaration
+      name: (identifier) @error)
+  ]
   (#set! name "multiple-classes")
   (#set! title "Multiple top-level classes: `{node.text}`")
   (#set! label "Additional class")
