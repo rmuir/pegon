@@ -68,24 +68,18 @@ struct Symbol {
 }
 
 impl Symbol {
-    fn encode(
-        &self,
-        client: &Client,
-        doc: &Document,
-        symbols: &Vec<Self>,
-    ) -> Result<DocumentSymbol> {
+    fn encode(&self, client: &Client, doc: &Document, symbols: &Vec<Self>) -> DocumentSymbol {
         let children: Vec<DocumentSymbol> = self
             .children
             .iter()
             .map(|index| {
                 symbols
                     .get(*index)
-                    .expect("valid")
+                    .expect("valid index")
                     .encode(client, doc, symbols)
-                    .expect("valid")
             })
             .collect();
-        Ok(DocumentSymbol {
+        DocumentSymbol {
             name: self.name.clone(),
             kind: self.kind,
             detail: self.detail.clone(),
@@ -103,7 +97,7 @@ impl Symbol {
             } else {
                 Some(children)
             },
-        })
+        }
     }
 }
 
@@ -153,7 +147,7 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             && bounds.start_byte >= parent.1.start_byte
             && bounds.end_byte <= parent.1.end_byte
         {
-            let node: &mut Symbol = symbols.get_mut(parent.0).expect("in bounds");
+            let node: &mut Symbol = symbols.get_mut(parent.0).expect("valid index");
             node.children.push(index);
         } else {
             roots.push(index);
@@ -162,8 +156,8 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
     }
     let mut result: Vec<DocumentSymbol> = Vec::new();
     for index in roots {
-        let symbol = symbols.get(index).expect("in bounds");
-        result.push(symbol.encode(client, doc, &symbols)?);
+        let symbol = symbols.get(index).expect("valid index");
+        result.push(symbol.encode(client, doc, &symbols));
     }
     Ok(result)
 }
