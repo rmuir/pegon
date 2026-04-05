@@ -34,6 +34,7 @@
     "symbols": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range",
+      "modifier": "public, protected, private, static, final, etc",
       "deprecated": "valid capture if symbol is deprecated",
       "detail": "additional symbol detail such as parameters"
     }

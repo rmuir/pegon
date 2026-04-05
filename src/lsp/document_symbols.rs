@@ -62,6 +62,8 @@ struct Symbol {
     kind: SymbolKind,
     detail: Option<String>,
     deprecated: bool,
+    #[expect(unused, reason = "TODO")]
+    flags: u16,
     range: Range,
     selection_range: Range,
     children: Vec<usize>,
@@ -125,12 +127,30 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             .context("selection capture should exist")?;
         let detail = hit.nodes_for_capture_index(*DETAIL_CAPTURE).next();
         let deprecated = hit.nodes_for_capture_index(*DEPRECATED_CAPTURE).next();
+        let mut flags: u16 = 0;
+        if let Some(modifier) = hit.nodes_for_capture_index(*MODIFIER_CAPTURE).next() {
+            flags |= match modifier.utf8_text(bytes)? {
+                "public" => access_flags::ACC_PUBLIC,
+                "protected" => access_flags::ACC_PROTECTED,
+                "private" => access_flags::ACC_PRIVATE,
+                "abstract" => access_flags::ACC_ABSTRACT,
+                "static" => access_flags::ACC_STATIC,
+                "final" => access_flags::ACC_FINAL,
+                "strictfp" => access_flags::ACC_STRICT,
+                "synchronized" => access_flags::ACC_SYNCHRONIZED,
+                "native" => access_flags::ACC_NATIVE,
+                "transient" => access_flags::ACC_TRANSIENT,
+                "volatile" => access_flags::ACC_VOLATILE,
+                _ => 0,
+            }
+        }
         let mut name = selection.utf8_text(bytes)?.to_owned();
         if let Some(detail) = detail {
             name.push_str(detail.utf8_text(bytes)?);
         }
         let symbol = Symbol {
             name,
+            flags,
             detail: None,
             kind: pattern.kind,
             deprecated: deprecated.is_some(),
@@ -160,6 +180,46 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         result.push(symbol.encode(client, doc, &symbols));
     }
     Ok(result)
+}
+
+mod access_flags {
+    /// public class, field, method, or inner class
+    pub const ACC_PUBLIC: u16 = 0x0001;
+    /// private field, method, or inner class
+    pub const ACC_PRIVATE: u16 = 0x0002;
+    /// protected field, method, or inner class
+    pub const ACC_PROTECTED: u16 = 0x0004;
+    /// static field, method, or inner class
+    pub const ACC_STATIC: u16 = 0x0008;
+    /// final class, field, method, inner class, parameter
+    pub const ACC_FINAL: u16 = 0x0010;
+    /// synchronized method
+    pub const ACC_SYNCHRONIZED: u16 = 0x0020;
+    /// volatile field
+    pub const ACC_VOLATILE: u16 = 0x0040;
+    /// transient field
+    pub const ACC_TRANSIENT: u16 = 0x0080;
+    /// native method
+    pub const ACC_NATIVE: u16 = 0x0100;
+    /// interface class, inner class
+    #[expect(unused, reason = "TODO")]
+    pub const ACC_INTERFACE: u16 = 0x0200;
+    /// abstract class, method, inner class
+    pub const ACC_ABSTRACT: u16 = 0x0400;
+    /// strictfp method
+    pub const ACC_STRICT: u16 = 0x0800;
+    /// annotation class, inner class
+    #[expect(unused, reason = "TODO")]
+    pub const ACC_ANNOTATION: u16 = 0x2000;
+    /// enum class, field, inner class
+    #[expect(unused, reason = "TODO")]
+    pub const ACC_ENUM: u16 = 0x4000;
+    /// module class
+    #[expect(unused, reason = "TODO")]
+    pub const ACC_MODULE: u16 = 0x8000;
+    /// mandated parameter
+    #[expect(unused, reason = "TODO")]
+    pub const ACC_MANDATED: u16 = 0x8000;
 }
 
 /// single compiled pattern
@@ -230,6 +290,12 @@ static DEPRECATED_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
         .capture_index_for_name("deprecated")
         .expect("deprecated capture should exist")
+});
+
+static MODIFIER_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    QUERY
+        .capture_index_for_name("modifier")
+        .expect("modifier capture should exist")
 });
 
 static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {

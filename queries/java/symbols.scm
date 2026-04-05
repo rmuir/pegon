@@ -10,7 +10,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   (#set! "kind" "Interface")) @range
 
@@ -19,7 +23,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
   (#set! "kind" "Class")) @range
@@ -29,7 +37,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   (#set! "kind" "Enum")) @range
 
@@ -38,7 +50,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
   (#set! "kind" "Interface")) @range
@@ -48,7 +64,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
   (#set! "kind" "Struct")) @range
@@ -59,7 +79,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   type: (_) @detail
   name: (identifier) @selection
   (#set! "kind" "Method")) @range
@@ -69,7 +93,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   (#set! "kind" "Constructor")) @range
 
@@ -78,7 +106,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -89,7 +121,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   parameters: (formal_parameters) @detail
   (#set! "kind" "Constructor")) @range
@@ -99,7 +135,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   (#set! "kind" "EnumMember")) @range
 
@@ -108,7 +148,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -119,7 +163,11 @@
   (modifiers
     (marker_annotation
       name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated")))?
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)?
   name: (identifier) @selection
   parameters: (formal_parameters) @detail
   (#set! "kind" "Method")) @range
