@@ -145,14 +145,19 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
                 _ => 0,
             }
         }
+        #[expect(unused_mut, reason = "TODO")]
         let mut name = selection.utf8_text(bytes)?.to_owned();
-        if let Some(detail) = detail {
-            name.push_str(detail.utf8_text(bytes)?.trim());
-        }
+        // if let Some(detail) = detail {
+        //     name.push_str(detail.utf8_text(bytes)?.trim());
+        // }
         let symbol = Symbol {
             name,
             flags,
-            detail: None,
+            detail: if let Some(detail) = detail {
+                Some(detail.utf8_text(bytes)?.trim().to_owned())
+            } else {
+                None
+            },
             kind: pattern.kind,
             deprecated: deprecated.is_some(),
             range: bounds,

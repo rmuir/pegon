@@ -143,7 +143,8 @@
   name: (identifier) @selection
   (#set! "kind" "EnumMember")) @range
 
-; kind=8 (Field)
+; kind=14 (Constant)
+; static final field
 (field_declaration
   (modifiers
     (marker_annotation
@@ -152,10 +153,66 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier)?
+    ]* @modifier) @_modifiers
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
+  (#match? @_modifiers "final")
+  (#match? @_modifiers "static")
+  (#set! "kind" "Constant")) @range
+
+; kind=8 (Field)
+; final field
+(field_declaration
+  (modifiers
+    (marker_annotation
+      name: (identifier) @deprecated
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier) @_modifiers
+  type: (_) @detail
+  declarator: (variable_declarator
+    name: (identifier) @selection)
+  (#match? @_modifiers "final")
+  (#not-match? @_modifiers "static")
+  (#set! "kind" "Field")) @range
+
+; kind=8 (Field)
+; static field
+(field_declaration
+  (modifiers
+    (marker_annotation
+      name: (identifier) @deprecated
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier) @_modifiers
+  type: (_) @detail
+  declarator: (variable_declarator
+    name: (identifier) @selection)
+  (#not-match? @_modifiers "final")
+  (#match? @_modifiers "static")
+  (#set! "kind" "Field")) @range
+
+; kind=8 (Field)
+; member field
+(field_declaration
+  (modifiers
+    (marker_annotation
+      name: (identifier) @deprecated
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier)? @_modifiers
+  type: (_) @detail
+  declarator: (variable_declarator
+    name: (identifier) @selection)
+  (#not-match? @_modifiers "final")
+  (#not-match? @_modifiers "static")
   (#set! "kind" "Field")) @range
 
 ; kind=6 (Method)

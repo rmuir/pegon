@@ -14,7 +14,7 @@
       ],
       "preLaunchTask": "Build Server and Extension",
       "env": {
-        "SERVER_PATH": "${workspaceRoot}/../../target/release/pegon"
+        "SERVER_PATH": "${workspaceRoot}/../../target/debug/pegon"
       },
       "skipFiles": [
         "<node_internals>/**/*.js"

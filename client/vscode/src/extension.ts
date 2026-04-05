@@ -17,7 +17,7 @@ import {
 let client: LanguageClient;
 
 export async function activate(_context: ExtensionContext) {
-  const command = process.env.SERVER_PATH || '/home/rmuir/workspace/pegon/target/debug/pegon';
+  const command = process.env.SERVER_PATH || 'pegon';
   const run: Executable = {
     args: [ 'server' ],
     command,
