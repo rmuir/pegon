@@ -55,6 +55,7 @@
       "description": "checks for equality between two nodes, or a node and a string"
     },
     "lt": {
+      "not": false,
       "parameters": [
         {
           "type": "capture",
