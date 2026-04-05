@@ -1,9 +1,9 @@
-; classes
-; anonymous class: not represented here but needed for proper hierarchy
+; anonymous class
+; kind=19 (Object fallback to Class)
 (object_creation_expression
   type: (type_identifier) @selection
   (class_body)
-  (#set! "kind" "Class")) @range
+  (#set! "kind" "Object")) @range
 
 ; kind=11 (Interface) ?
 (annotation_type_declaration
