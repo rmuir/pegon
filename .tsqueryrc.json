@@ -36,7 +36,8 @@
       "selection": "identifier of the symbol, must be within @range",
       "modifier": "public, protected, private, static, final, etc",
       "deprecated": "valid capture if symbol is deprecated",
-      "detail": "additional symbol detail such as parameters"
+      "signature": "additional components of symbols name such as method signature",
+      "detail": "additional symbol detail such as type, type-parameters"
     }
   },
   "valid_predicates": {

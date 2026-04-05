@@ -215,6 +215,21 @@
   (#not-match? @_modifiers "static")
   (#set! "kind" "Field")) @range
 
+; kind=12 (Function)
+(method_declaration
+  (modifiers
+    (marker_annotation
+      name: (identifier) @deprecated
+      (#eq? @deprecated "Deprecated"))?
+    [
+      (modifier)
+      (visibility)
+    ]* @modifier) @_modifiers
+  name: (identifier) @selection
+  parameters: (formal_parameters) @detail
+  (#match? @_modifiers "static")
+  (#set! "kind" "Function")) @range
+
 ; kind=6 (Method)
 (method_declaration
   (modifiers
@@ -224,7 +239,8 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier)?
+    ]* @modifier)? @_modifiers
   name: (identifier) @selection
   parameters: (formal_parameters) @detail
+  (#not-match? @_modifiers "static")
   (#set! "kind" "Method")) @range
