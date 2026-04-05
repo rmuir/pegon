@@ -128,7 +128,7 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         let detail = hit.nodes_for_capture_index(*DETAIL_CAPTURE).next();
         let deprecated = hit.nodes_for_capture_index(*DEPRECATED_CAPTURE).next();
         let mut flags: u16 = 0;
-        if let Some(modifier) = hit.nodes_for_capture_index(*MODIFIER_CAPTURE).next() {
+        while let Some(modifier) = hit.nodes_for_capture_index(*MODIFIER_CAPTURE).next() {
             flags |= match modifier.utf8_text(bytes)? {
                 "public" => access_flags::ACC_PUBLIC,
                 "protected" => access_flags::ACC_PROTECTED,
