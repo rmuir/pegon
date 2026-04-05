@@ -2,8 +2,8 @@
 ; anonymous class: not represented here but needed for proper hierarchy
 (object_creation_expression
   type: (type_identifier) @selection
-  (class_body) @range
-  (#set! "kind" "Class"))
+  (class_body)
+  (#set! "kind" "Class")) @range
 
 ; kind=11 (Interface) ?
 (annotation_type_declaration
