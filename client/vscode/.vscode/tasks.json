@@ -18,7 +18,7 @@
       "label": "Build Server",
       "group": "build",
       "type": "shell",
-      "command": "cargo build -r"
+      "command": "cargo build"
     },
     {
       "label": "Build Server and Extension",
