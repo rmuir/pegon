@@ -118,7 +118,20 @@
       (visibility)
     ]* @modifier)?
   name: (identifier) @selection
-  parameters: (formal_parameters) @signature
+  parameters: (formal_parameters
+    "(" @signature
+    [
+      (receiver_parameter)
+      (formal_parameter
+        type: (_) @signature
+        dimensions: (dimensions)? @signature)
+      (spread_parameter
+        type: (_) @signature
+        "..." @signature
+        dimensions: (dimensions)? @signature)
+      ","
+    ]*
+    ")" @signature)
   (#set! "kind" "Constructor")) @range
 
 ; kind=22 (EnumMember fallback to Field)
