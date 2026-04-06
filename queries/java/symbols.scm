@@ -212,7 +212,16 @@
     ]* @modifier) @_modifiers
   type: (_) @detail
   name: (identifier) @selection
-  parameters: (formal_parameters) @signature
+  parameters: (formal_parameters
+    "(" @signature
+    [
+      (formal_parameter
+        type: (_) @signature)
+      (spread_parameter
+        type: (_) @signature
+        "..." @signature)
+    ]*
+    ")" @signature)
   (#match? @_modifiers "static")
   (#set! "kind" "Function")) @range
 
@@ -227,6 +236,15 @@
     ]* @modifier)? @_modifiers
   type: (_) @detail
   name: (identifier) @selection
-  parameters: (formal_parameters) @signature
+  parameters: (formal_parameters
+    "(" @signature
+    [
+      (formal_parameter
+        type: (_) @signature)
+      (spread_parameter
+        type: (_) @signature
+        "..." @signature)
+    ]*
+    ")" @signature)
   (#not-match? @_modifiers "static")
   (#set! "kind" "Method")) @range

@@ -148,9 +148,15 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             }
         }
         let mut name = selection.utf8_text(bytes)?.to_owned();
-        if let Some(signature) = hit.nodes_for_capture_index(*SIGNATURE_CAPTURE).next() {
-            // TODO: be better
-            name.push_str(signature.utf8_text(bytes)?.trim());
+        let mut first_param = true;
+        for signature in hit.nodes_for_capture_index(*SIGNATURE_CAPTURE) {
+            if signature.is_named() {
+                if !first_param {
+                    name.push(',');
+                }
+                first_param = false;
+            }
+            name.push_str(signature.utf8_text(bytes)?);
         }
         let symbol = Symbol {
             name,
