@@ -216,10 +216,13 @@
     "(" @signature
     [
       (formal_parameter
-        type: (_) @signature)
+        type: (_) @signature
+        dimensions: (dimensions)? @signature)
       (spread_parameter
         type: (_) @signature
-        "..." @signature)
+        "..." @signature
+        dimensions: (dimensions)? @signature)
+      ","
     ]*
     ")" @signature)
   (#match? @_modifiers "static")
@@ -240,10 +243,13 @@
     "(" @signature
     [
       (formal_parameter
-        type: (_) @signature)
+        type: (_) @signature
+        dimensions: (dimensions)? @signature)
       (spread_parameter
         type: (_) @signature
-        "..." @signature)
+        "..." @signature
+        dimensions: (dimensions)? @signature)
+      ","
     ]*
     ")" @signature)
   (#not-match? @_modifiers "static")

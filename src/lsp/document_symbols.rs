@@ -150,7 +150,8 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         let mut name = selection.utf8_text(bytes)?.to_owned();
         let mut first_param = true;
         for signature in hit.nodes_for_capture_index(*SIGNATURE_CAPTURE) {
-            if signature.is_named() {
+            // TODO: speed up
+            if signature.is_named() && signature.kind() != "dimensions" {
                 if !first_param {
                     name.push(',');
                 }
