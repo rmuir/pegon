@@ -215,6 +215,7 @@
   parameters: (formal_parameters
     "(" @signature
     [
+      (receiver_parameter)
       (formal_parameter
         type: (_) @signature
         dimensions: (dimensions)? @signature)
@@ -242,6 +243,7 @@
   parameters: (formal_parameters
     "(" @signature
     [
+      (receiver_parameter)
       (formal_parameter
         type: (_) @signature
         dimensions: (dimensions)? @signature)
