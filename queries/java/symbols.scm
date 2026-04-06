@@ -9,8 +9,7 @@
 (annotation_type_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -22,8 +21,7 @@
 (class_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -36,8 +34,7 @@
 (enum_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -49,8 +46,7 @@
 (interface_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -63,8 +59,7 @@
 (record_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -78,8 +73,7 @@
 (annotation_type_element_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -92,8 +86,7 @@
 (compact_constructor_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -105,8 +98,7 @@
 (constant_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -120,22 +112,20 @@
 (constructor_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
     ]* @modifier)?
   name: (identifier) @selection
-  parameters: (formal_parameters) @detail
+  parameters: (formal_parameters) @signature
   (#set! "kind" "Constructor")) @range
 
 ; kind=22 (EnumMember fallback to Field)
 (enum_constant
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -148,8 +138,7 @@
 (field_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -166,8 +155,7 @@
 (field_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -184,8 +172,7 @@
 (field_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -202,8 +189,7 @@
 (field_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
@@ -219,14 +205,14 @@
 (method_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
     ]* @modifier) @_modifiers
+  type: (_) @detail
   name: (identifier) @selection
-  parameters: (formal_parameters) @detail
+  parameters: (formal_parameters) @signature
   (#match? @_modifiers "static")
   (#set! "kind" "Function")) @range
 
@@ -234,13 +220,13 @@
 (method_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @deprecated
-      (#eq? @deprecated "Deprecated"))?
+      name: (identifier) @marker)*
     [
       (modifier)
       (visibility)
     ]* @modifier)? @_modifiers
+  type: (_) @detail
   name: (identifier) @selection
-  parameters: (formal_parameters) @detail
+  parameters: (formal_parameters) @signature
   (#not-match? @_modifiers "static")
   (#set! "kind" "Method")) @range

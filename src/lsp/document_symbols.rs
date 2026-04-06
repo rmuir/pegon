@@ -112,13 +112,13 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
     let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
     while let Some(hit) = matches.next() {
         let pattern = pattern(hit.pattern_index);
-        let range = hit
+        let node = hit
             .nodes_for_capture_index(*RANGE_CAPTURE)
             .next()
             .context("range capture should exist")?;
-        let bounds = range.range();
+        let range = node.range();
         while stack
-            .pop_if(|parent| bounds.start_byte >= parent.1.end_byte)
+            .pop_if(|parent| range.start_byte >= parent.1.end_byte)
             .is_some()
         {}
         let selection = hit
@@ -126,10 +126,12 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             .next()
             .context("selection capture should exist")?;
         let detail = hit.nodes_for_capture_index(*DETAIL_CAPTURE).next();
-        let deprecated = hit.nodes_for_capture_index(*DEPRECATED_CAPTURE).next();
+        let mut deprecated = false;
+        for marker in hit.nodes_for_capture_index(*MARKER_CAPTURE) {
+            deprecated |= marker.utf8_text(bytes)? == "Deprecated";
+        }
         let mut flags: u16 = 0;
-        let modifiers = hit.nodes_for_capture_index(*MODIFIER_CAPTURE);
-        for modifier in modifiers {
+        for modifier in hit.nodes_for_capture_index(*MODIFIER_CAPTURE) {
             flags |= match modifier.utf8_text(bytes)? {
                 "public" => access_flags::ACC_PUBLIC,
                 "protected" => access_flags::ACC_PROTECTED,
@@ -145,22 +147,22 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
                 _ => 0,
             }
         }
-        #[expect(unused_mut, reason = "TODO")]
         let mut name = selection.utf8_text(bytes)?.to_owned();
-        // if let Some(detail) = detail {
-        //     name.push_str(detail.utf8_text(bytes)?.trim());
-        // }
+        if let Some(signature) = hit.nodes_for_capture_index(*SIGNATURE_CAPTURE).next() {
+            // TODO: be better
+            name.push_str(signature.utf8_text(bytes)?.trim());
+        }
         let symbol = Symbol {
             name,
-            flags,
+            kind: pattern.kind,
             detail: if let Some(detail) = detail {
                 Some(detail.utf8_text(bytes)?.trim().to_owned())
             } else {
                 None
             },
-            kind: pattern.kind,
-            deprecated: deprecated.is_some(),
-            range: bounds,
+            deprecated,
+            flags,
+            range,
             selection_range: selection.range(),
             children: vec![],
         };
@@ -170,17 +172,17 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         symbols.push(symbol);
 
         if let Some(parent) = stack.last()
-            && bounds.start_byte >= parent.1.start_byte
-            && bounds.end_byte <= parent.1.end_byte
+            && range.start_byte >= parent.1.start_byte
+            && range.end_byte <= parent.1.end_byte
         {
-            let node: &mut Symbol = symbols.get_mut(parent.0).expect("valid index");
-            node.children.push(index);
+            let parent_symbol = symbols.get_mut(parent.0).expect("valid index");
+            parent_symbol.children.push(index);
         } else {
             roots.push(index);
         }
-        stack.push((index, bounds));
+        stack.push((index, range));
     }
-    let mut result: Vec<DocumentSymbol> = Vec::new();
+    let mut result = Vec::new();
     for index in roots {
         let symbol = symbols.get(index).expect("valid index");
         result.push(symbol.encode(client, doc, &symbols));
@@ -292,16 +294,22 @@ static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
         .expect("selection capture should exist")
 });
 
-static DEPRECATED_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+static MARKER_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
-        .capture_index_for_name("deprecated")
-        .expect("deprecated capture should exist")
+        .capture_index_for_name("marker")
+        .expect("marker capture should exist")
 });
 
 static MODIFIER_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
         .capture_index_for_name("modifier")
         .expect("modifier capture should exist")
+});
+
+static SIGNATURE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    QUERY
+        .capture_index_for_name("signature")
+        .expect("signature capture should exist")
 });
 
 static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
