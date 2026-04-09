@@ -9,11 +9,7 @@
 (annotation_type_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   (#set! "kind" "Interface")) @range
 
@@ -21,11 +17,7 @@
 (class_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
   (#set! "kind" "Class")) @range
@@ -34,11 +26,7 @@
 (enum_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   (#set! "kind" "Enum")) @range
 
@@ -46,11 +34,7 @@
 (interface_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
   (#set! "kind" "Interface")) @range
@@ -59,11 +43,7 @@
 (record_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
   (#set! "kind" "Struct")) @range
@@ -73,11 +53,7 @@
 (annotation_type_element_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   type: (_) @detail
   name: (identifier) @selection
   (#set! "kind" "Method")) @range
@@ -86,11 +62,7 @@
 (compact_constructor_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   (#set! "kind" "Constructor")) @range
 
@@ -98,11 +70,7 @@
 (constant_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -112,11 +80,7 @@
 (constructor_declaration
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   parameters: (formal_parameters
     "(" @signature
@@ -138,11 +102,7 @@
 (enum_constant
   (modifiers
     (marker_annotation
-      name: (identifier) @marker)*
-    [
-      (modifier)
-      (visibility)
-    ]* @modifier)?
+      name: (identifier) @marker)*)?
   name: (identifier) @selection
   (#set! "kind" "EnumMember")) @range
 
@@ -155,7 +115,7 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier) @_modifiers
+    ]*) @_modifiers
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -172,7 +132,7 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier) @_modifiers
+    ]*) @_modifiers
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -189,7 +149,7 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier) @_modifiers
+    ]*) @_modifiers
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -206,7 +166,7 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier)? @_modifiers
+    ]*)? @_modifiers
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
@@ -222,7 +182,7 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier) @_modifiers
+    ]*) @_modifiers
   type: (_) @detail
   name: (identifier) @selection
   parameters: (formal_parameters
@@ -250,7 +210,7 @@
     [
       (modifier)
       (visibility)
-    ]* @modifier)? @_modifiers
+    ]*)? @_modifiers
   type: (_) @detail
   name: (identifier) @selection
   parameters: (formal_parameters

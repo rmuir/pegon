@@ -5,7 +5,7 @@ use ls_types::{
     DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, Location, SymbolInformation,
     SymbolKind, SymbolTag, Uri,
 };
-use tree_sitter::{Query, QueryCursor, Range, StreamingIterator as _};
+use tree_sitter::{Language, Query, QueryCursor, Range, StreamingIterator as _};
 
 use crate::lsp::{Client, server::Document};
 
@@ -62,8 +62,6 @@ struct Symbol {
     kind: SymbolKind,
     detail: Option<String>,
     deprecated: bool,
-    #[expect(unused, reason = "TODO")]
-    flags: u16,
     range: Range,
     selection_range: Range,
     children: Vec<usize>,
@@ -130,28 +128,10 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         for marker in hit.nodes_for_capture_index(*MARKER_CAPTURE) {
             deprecated |= marker.utf8_text(bytes)? == "Deprecated";
         }
-        let mut flags: u16 = 0;
-        for modifier in hit.nodes_for_capture_index(*MODIFIER_CAPTURE) {
-            flags |= match modifier.utf8_text(bytes)? {
-                "public" => access_flags::ACC_PUBLIC,
-                "protected" => access_flags::ACC_PROTECTED,
-                "private" => access_flags::ACC_PRIVATE,
-                "abstract" => access_flags::ACC_ABSTRACT,
-                "static" => access_flags::ACC_STATIC,
-                "final" => access_flags::ACC_FINAL,
-                "strictfp" => access_flags::ACC_STRICT,
-                "synchronized" => access_flags::ACC_SYNCHRONIZED,
-                "native" => access_flags::ACC_NATIVE,
-                "transient" => access_flags::ACC_TRANSIENT,
-                "volatile" => access_flags::ACC_VOLATILE,
-                _ => 0,
-            }
-        }
         let mut name = selection.utf8_text(bytes)?.to_owned();
         let mut first_param = true;
         for signature in hit.nodes_for_capture_index(*SIGNATURE_CAPTURE) {
-            // TODO: speed up
-            if signature.is_named() && signature.kind() != "dimensions" {
+            if signature.is_named() && signature.kind_id() != *DIMENSIONS_KIND {
                 if !first_param {
                     name.push(',');
                 }
@@ -168,7 +148,6 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
                 None
             },
             deprecated,
-            flags,
             range,
             selection_range: selection.range(),
             children: vec![],
@@ -195,46 +174,6 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
         result.push(symbol.encode(client, doc, &symbols));
     }
     Ok(result)
-}
-
-mod access_flags {
-    /// public class, field, method, or inner class
-    pub const ACC_PUBLIC: u16 = 0x0001;
-    /// private field, method, or inner class
-    pub const ACC_PRIVATE: u16 = 0x0002;
-    /// protected field, method, or inner class
-    pub const ACC_PROTECTED: u16 = 0x0004;
-    /// static field, method, or inner class
-    pub const ACC_STATIC: u16 = 0x0008;
-    /// final class, field, method, inner class, parameter
-    pub const ACC_FINAL: u16 = 0x0010;
-    /// synchronized method
-    pub const ACC_SYNCHRONIZED: u16 = 0x0020;
-    /// volatile field
-    pub const ACC_VOLATILE: u16 = 0x0040;
-    /// transient field
-    pub const ACC_TRANSIENT: u16 = 0x0080;
-    /// native method
-    pub const ACC_NATIVE: u16 = 0x0100;
-    /// interface class, inner class
-    #[expect(unused, reason = "TODO")]
-    pub const ACC_INTERFACE: u16 = 0x0200;
-    /// abstract class, method, inner class
-    pub const ACC_ABSTRACT: u16 = 0x0400;
-    /// strictfp method
-    pub const ACC_STRICT: u16 = 0x0800;
-    /// annotation class, inner class
-    #[expect(unused, reason = "TODO")]
-    pub const ACC_ANNOTATION: u16 = 0x2000;
-    /// enum class, field, inner class
-    #[expect(unused, reason = "TODO")]
-    pub const ACC_ENUM: u16 = 0x4000;
-    /// module class
-    #[expect(unused, reason = "TODO")]
-    pub const ACC_MODULE: u16 = 0x8000;
-    /// mandated parameter
-    #[expect(unused, reason = "TODO")]
-    pub const ACC_MANDATED: u16 = 0x8000;
 }
 
 /// single compiled pattern
@@ -307,12 +246,6 @@ static MARKER_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
         .expect("marker capture should exist")
 });
 
-static MODIFIER_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("modifier")
-        .expect("modifier capture should exist")
-});
-
 static SIGNATURE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
         .capture_index_for_name("signature")
@@ -323,4 +256,9 @@ static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
         .capture_index_for_name("detail")
         .expect("detail capture should exist")
+});
+
+static DIMENSIONS_KIND: LazyLock<u16> = LazyLock::new(|| {
+    let lang: Language = crate::LANGUAGE.into();
+    lang.id_for_node_kind("dimensions", true)
 });

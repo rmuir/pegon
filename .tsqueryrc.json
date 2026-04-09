@@ -34,7 +34,6 @@
     "symbols": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range",
-      "modifier": "public, protected, private, static, final, etc",
       "marker": "marker annotations such as @Deprecated, @Override",
       "signature": "additional components of symbols name such as method signature",
       "detail": "additional symbol detail such as type, type-parameters"
