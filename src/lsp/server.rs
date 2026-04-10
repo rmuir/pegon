@@ -8,7 +8,9 @@ use ls_types::{
     DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions,
     DocumentSymbolParams, InitializeResult, LogMessageParams, MessageType, OneOf, Registration,
-    RegistrationParams, ServerCapabilities, ServerInfo, TextDocumentChangeRegistrationOptions,
+    RegistrationParams, SelectionRangeOptions, SelectionRangeParams,
+    SelectionRangeProviderCapability, SelectionRangeRegistrationOptions, ServerCapabilities,
+    ServerInfo, StaticTextDocumentRegistrationOptions, TextDocumentChangeRegistrationOptions,
     TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
@@ -17,8 +19,8 @@ use ls_types::{
         Notification as _, PublishDiagnostics,
     },
     request::{
-        CodeActionRequest, DocumentDiagnosticRequest, DocumentSymbolRequest, Formatting,
-        RegisterCapability, Request as _,
+        CodeActionRequest, DocumentDiagnosticRequest, DocumentSymbolRequest, RegisterCapability,
+        Request as _, SelectionRangeRequest,
     },
 };
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -101,6 +103,13 @@ impl Server {
             label: None,
             work_done_progress_options: WorkDoneProgressOptions::default(),
         };
+        let selection_range_options = SelectionRangeRegistrationOptions {
+            selection_range_options: SelectionRangeOptions::default(),
+            registration_options: StaticTextDocumentRegistrationOptions {
+                document_selector: document_selector.clone(),
+                id: Some(SelectionRangeRequest::METHOD.to_owned()),
+            },
+        };
         // if the client supports dynamic registration of the capability, then we use that.
         // it makes the code very confusing, but this is just the pain of dynamic registration.
         // it allows pushing a filter for "java" language documents to the client, to avoid waste.
@@ -132,6 +141,13 @@ impl Server {
                     Some(OneOf::Right(document_symbol_options.clone()))
                 },
                 position_encoding: Some(client.negotiated_encoding()),
+                selection_range_provider: if client.registers_selection_range() {
+                    None
+                } else {
+                    Some(SelectionRangeProviderCapability::RegistrationOptions(
+                        selection_range_options.clone(),
+                    ))
+                },
                 text_document_sync: if client.registers_sync() {
                     None
                 } else {
@@ -209,6 +225,13 @@ impl Server {
                 })?),
             });
         }
+        if client.registers_selection_range() {
+            registrations.push(Registration {
+                id: SelectionRangeRequest::METHOD.to_owned(),
+                method: SelectionRangeRequest::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(selection_range_options)?),
+            });
+        }
         if !registrations.is_empty() {
             connection.sender.send(request::<RegisterCapability>(
                 0.into(),
@@ -278,9 +301,6 @@ fn handle_request(
             let actions: Vec<CodeActionOrCommand> = vec![];
             Ok(response::<CodeActionRequest>(req.id.clone(), Some(actions)))
         }
-        Formatting::METHOD => {
-            todo!()
-        }
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
             let uri = &params.text_document.uri;
@@ -300,6 +320,18 @@ fn handle_request(
                 Some(Resource::Java(doc)) => Ok(response::<DocumentSymbolRequest>(
                     req.id.clone(),
                     Some(super::document_symbols::request(client, doc, &params)?),
+                )),
+                Some(Resource::Other) => bail!("non-java document: {}", **uri),
+                None => bail!("document not open: {}", **uri),
+            }
+        }
+        SelectionRangeRequest::METHOD => {
+            let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
+            let uri = &params.text_document.uri;
+            match docs.get(&uri.to_string()) {
+                Some(Resource::Java(doc)) => Ok(response::<SelectionRangeRequest>(
+                    req.id.clone(),
+                    super::selection_range::request(client, doc, &params)?,
                 )),
                 Some(Resource::Other) => bail!("non-java document: {}", **uri),
                 None => bail!("document not open: {}", **uri),

@@ -68,8 +68,13 @@ struct Symbol {
 }
 
 impl Symbol {
-    fn encode(&self, client: &Client, doc: &Document, symbols: &Vec<Self>) -> DocumentSymbol {
-        let children: Vec<DocumentSymbol> = self
+    fn encode(
+        &self,
+        client: &Client,
+        doc: &Document,
+        symbols: &Vec<Self>,
+    ) -> Result<DocumentSymbol> {
+        let subtree: Result<Vec<DocumentSymbol>> = self
             .children
             .iter()
             .map(|index| {
@@ -79,7 +84,8 @@ impl Symbol {
                     .encode(client, doc, symbols)
             })
             .collect();
-        DocumentSymbol {
+        let children = subtree?;
+        Ok(DocumentSymbol {
             name: self.name.clone(),
             kind: self.kind,
             detail: self.detail.clone(),
@@ -88,16 +94,16 @@ impl Symbol {
             deprecated: None,
             range: client
                 .encode_range(&self.range, &doc.line_index)
-                .expect("valid range"),
+                .context("valid range")?,
             selection_range: client
                 .encode_range(&self.selection_range, &doc.line_index)
-                .expect("valid range"),
+                .context("valid range")?,
             children: if children.is_empty() {
                 None
             } else {
                 Some(children)
             },
-        }
+        })
     }
 }
 
@@ -161,7 +167,7 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             && range.start_byte >= parent.1.start_byte
             && range.end_byte <= parent.1.end_byte
         {
-            let parent_symbol = symbols.get_mut(parent.0).expect("valid index");
+            let parent_symbol = symbols.get_mut(parent.0).context("valid index")?;
             parent_symbol.children.push(index);
         } else {
             roots.push(index);
@@ -170,8 +176,8 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
     }
     let mut result = Vec::new();
     for index in roots {
-        let symbol = symbols.get(index).expect("valid index");
-        result.push(symbol.encode(client, doc, &symbols));
+        let symbol = symbols.get(index).context("valid index")?;
+        result.push(symbol.encode(client, doc, &symbols)?);
     }
     Ok(result)
 }

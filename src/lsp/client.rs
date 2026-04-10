@@ -4,7 +4,8 @@ use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use ls_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
     DocumentSymbolClientCapabilities, InitializeParams, Position, PositionEncodingKind,
-    PublishDiagnosticsClientCapabilities, TextDocumentContentChangeEvent,
+    PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
+    TextDocumentContentChangeEvent,
 };
 use tree_sitter::Point;
 
@@ -146,7 +147,7 @@ impl Client {
     }
 
     /// decodes an LSP Position (line+col) into a UTF-8 line+col.
-    fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
+    pub fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
         match self.encoding {
             Encoding::Utf8 => Some(LineCol {
                 line: position.line,
@@ -282,6 +283,11 @@ impl Client {
         (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
     }
 
+    /// true if the client supports dynamic registration of selection range
+    pub(crate) fn registers_selection_range(&self) -> bool {
+        (|| -> _ { self.selection_range()?.dynamic_registration })().unwrap_or_default()
+    }
+
     fn pull_diagnostics(&self) -> Option<&DiagnosticClientCapabilities> {
         self.init_params
             .capabilities
@@ -315,6 +321,15 @@ impl Client {
             .text_document
             .as_ref()?
             .document_symbol
+            .as_ref()
+    }
+
+    fn selection_range(&self) -> Option<&SelectionRangeClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .selection_range
             .as_ref()
     }
 }

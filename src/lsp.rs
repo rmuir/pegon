@@ -7,6 +7,7 @@ use crate::lsp::server::Server;
 mod client;
 mod diagnostics;
 mod document_symbols;
+mod selection_range;
 mod server;
 mod sync;
 
