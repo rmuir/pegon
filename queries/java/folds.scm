@@ -1,14 +1,21 @@
 ; adjacent imports
-((import_declaration)+
-  (#set! kind "imports")) @range
+((import_declaration)+ @range
+  (#set! kind "imports"))
 
-; /** comments */
-((block_comment)
-  (#set! kind "comment")) @range
+; multiline javadoc /** comments */
+((block_comment) @range
+  (#match? @range "^/[*][*][\\s]*[\n].")
+  (#set! kind "comment")
+  (#set! lineoffset "1"))
+
+; other block comments
+((block_comment) @range
+  (#not-match? @range "^/[*][*][\\s]*[\n].")
+  (#set! kind "comment"))
 
 ; // comments
-((line_comment)+
-  (#set! kind "comment")) @range
+((line_comment)+ @range
+  (#set! kind "comment"))
 
 ; class/function bodies
 (class_body) @range

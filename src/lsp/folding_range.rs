@@ -27,7 +27,11 @@ pub fn request(client: &Client, doc: &Document) -> Result<Vec<FoldingRange>> {
             .encode_range(&range, &doc.line_index)
             .context("valid range")?;
         result.push(FoldingRange {
-            start_line: range.start.line,
+            start_line: range
+                .start
+                .line
+                .checked_add(pattern.line_offset)
+                .context("should not overflow")?,
             start_character: Some(range.start.character),
             end_line: range.end.line,
             end_character: Some(range.end.character),
@@ -42,6 +46,8 @@ pub fn request(client: &Client, doc: &Document) -> Result<Vec<FoldingRange>> {
 struct Pattern {
     /// kind of fold
     kind: Option<FoldingRangeKind>,
+    /// adjustment to start line
+    line_offset: u32,
 }
 
 // Look up rule by pattern index
@@ -68,14 +74,17 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
         let mut kind: Option<&str> = None;
+        let mut line_offset: Option<u32> = None;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
-            #[expect(clippy::single_match, reason = "TODO")]
             match key {
                 "kind" => {
                     kind = value;
+                }
+                "lineoffset" => {
+                    line_offset = Some(1);
                 }
                 _ => {}
             }
@@ -87,6 +96,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 Some(_) => panic!("unsupported fold kind {kind:?}"),
                 None => None,
             },
+            line_offset: line_offset.unwrap_or_default(),
         });
     }
     patterns
