@@ -31,6 +31,9 @@
       "fix": "automatic fix to address the issue",
       "context.label": "label applied to context such as `previously defined here`"
     },
+    "folds": {
+      "range": "range of the folding region"
+    },
     "symbols": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range",

@@ -3,8 +3,8 @@ use core::convert::From;
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use ls_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
-    DocumentSymbolClientCapabilities, InitializeParams, Position, PositionEncodingKind,
-    PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
+    DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, InitializeParams, Position,
+    PositionEncodingKind, PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     TextDocumentContentChangeEvent,
 };
 use tree_sitter::Point;
@@ -283,6 +283,11 @@ impl Client {
         (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
     }
 
+    /// true if the client supports dynamic registration of folding range
+    pub(crate) fn registers_folding_range(&self) -> bool {
+        (|| -> _ { self.folding_range()?.dynamic_registration })().unwrap_or_default()
+    }
+
     /// true if the client supports dynamic registration of selection range
     pub(crate) fn registers_selection_range(&self) -> bool {
         (|| -> _ { self.selection_range()?.dynamic_registration })().unwrap_or_default()
@@ -321,6 +326,15 @@ impl Client {
             .text_document
             .as_ref()?
             .document_symbol
+            .as_ref()
+    }
+
+    fn folding_range(&self) -> Option<&FoldingRangeClientCapabilities> {
+        self.init_params
+            .capabilities
+            .text_document
+            .as_ref()?
+            .folding_range
             .as_ref()
     }
 

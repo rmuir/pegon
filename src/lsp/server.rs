@@ -7,10 +7,11 @@ use ls_types::{
     CodeActionProviderCapability, DiagnosticOptions, DiagnosticRegistrationOptions,
     DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions,
-    DocumentSymbolParams, InitializeResult, LogMessageParams, MessageType, OneOf, Registration,
-    RegistrationParams, SelectionRangeOptions, SelectionRangeParams,
-    SelectionRangeProviderCapability, SelectionRangeRegistrationOptions, ServerCapabilities,
-    ServerInfo, StaticTextDocumentRegistrationOptions, TextDocumentChangeRegistrationOptions,
+    DocumentSymbolParams, FoldingRangeParams, FoldingRangeProviderCapability, InitializeResult,
+    LogMessageParams, MessageType, OneOf, Registration, RegistrationParams, SelectionRangeOptions,
+    SelectionRangeParams, SelectionRangeProviderCapability, SelectionRangeRegistrationOptions,
+    ServerCapabilities, ServerInfo, StaticTextDocumentColorProviderOptions,
+    StaticTextDocumentRegistrationOptions, TextDocumentChangeRegistrationOptions,
     TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
@@ -19,8 +20,8 @@ use ls_types::{
         Notification as _, PublishDiagnostics,
     },
     request::{
-        CodeActionRequest, DocumentDiagnosticRequest, DocumentSymbolRequest, RegisterCapability,
-        Request as _, SelectionRangeRequest,
+        CodeActionRequest, DocumentDiagnosticRequest, DocumentSymbolRequest, FoldingRangeRequest,
+        RegisterCapability, Request as _, SelectionRangeRequest,
     },
 };
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -103,6 +104,13 @@ impl Server {
             label: None,
             work_done_progress_options: WorkDoneProgressOptions::default(),
         };
+        let folding_range_options = FoldingRangeRegistrationOptions {
+            folding_range_options: WorkDoneProgressOptions::default(),
+            registration_options: StaticTextDocumentRegistrationOptions {
+                document_selector: document_selector.clone(),
+                id: Some(FoldingRangeRequest::METHOD.to_owned()),
+            },
+        };
         let selection_range_options = SelectionRangeRegistrationOptions {
             selection_range_options: SelectionRangeOptions::default(),
             registration_options: StaticTextDocumentRegistrationOptions {
@@ -139,6 +147,17 @@ impl Server {
                     None
                 } else {
                     Some(OneOf::Right(document_symbol_options.clone()))
+                },
+                folding_range_provider: if client.registers_folding_range() {
+                    None
+                } else {
+                    // TODO: lsp types are really broken here
+                    Some(FoldingRangeProviderCapability::Options(
+                        StaticTextDocumentColorProviderOptions {
+                            document_selector: document_selector.clone(),
+                            id: Some(FoldingRangeRequest::METHOD.to_owned()),
+                        },
+                    ))
                 },
                 position_encoding: Some(client.negotiated_encoding()),
                 selection_range_provider: if client.registers_selection_range() {
@@ -223,6 +242,13 @@ impl Server {
                     },
                     code_action_options,
                 })?),
+            });
+        }
+        if client.registers_folding_range() {
+            registrations.push(Registration {
+                id: FoldingRangeRequest::METHOD.to_owned(),
+                method: FoldingRangeRequest::METHOD.to_owned(),
+                register_options: Some(serde_json::to_value(folding_range_options)?),
             });
         }
         if client.registers_selection_range() {
@@ -320,6 +346,18 @@ fn handle_request(
                 Some(Resource::Java(doc)) => Ok(response::<DocumentSymbolRequest>(
                     req.id.clone(),
                     Some(super::document_symbols::request(client, doc, &params)?),
+                )),
+                Some(Resource::Other) => bail!("non-java document: {}", **uri),
+                None => bail!("document not open: {}", **uri),
+            }
+        }
+        FoldingRangeRequest::METHOD => {
+            let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
+            let uri = &params.text_document.uri;
+            match docs.get(&uri.to_string()) {
+                Some(Resource::Java(doc)) => Ok(response::<FoldingRangeRequest>(
+                    req.id.clone(),
+                    Some(super::folding_range::request(client, doc)?),
                 )),
                 Some(Resource::Other) => bail!("non-java document: {}", **uri),
                 None => bail!("document not open: {}", **uri),
@@ -433,4 +471,17 @@ pub struct CodeActionRegistrationOptions {
 
     #[serde(flatten)]
     pub code_action_options: CodeActionOptions,
+}
+
+/// Folding Range registration options.
+///
+/// @since 3.17.0
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FoldingRangeRegistrationOptions {
+    #[serde(flatten)]
+    pub registration_options: StaticTextDocumentRegistrationOptions,
+
+    #[serde(flatten)]
+    pub folding_range_options: WorkDoneProgressOptions,
 }
