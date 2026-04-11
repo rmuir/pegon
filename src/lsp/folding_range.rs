@@ -26,18 +26,29 @@ pub fn request(client: &Client, doc: &Document) -> Result<Vec<FoldingRange>> {
         let range = client
             .encode_range(&range, &doc.line_index)
             .context("valid range")?;
-        result.push(FoldingRange {
-            start_line: range
-                .start
-                .line
-                .checked_add(pattern.line_offset)
-                .context("should not overflow")?,
-            start_character: Some(range.start.character),
-            end_line: range.end.line,
-            end_character: Some(range.end.character),
-            kind: pattern.kind.clone(),
-            collapsed_text: None,
-        });
+        if pattern.line_offset > 0 {
+            result.push(FoldingRange {
+                start_line: range
+                    .start
+                    .line
+                    .checked_add(pattern.line_offset)
+                    .context("should not overflow")?,
+                start_character: Some(0),
+                end_line: range.end.line,
+                end_character: Some(range.end.character),
+                kind: pattern.kind.clone(),
+                collapsed_text: None,
+            });
+        } else {
+            result.push(FoldingRange {
+                start_line: range.start.line,
+                start_character: Some(range.start.character),
+                end_line: range.end.line,
+                end_character: Some(range.end.character),
+                kind: pattern.kind.clone(),
+                collapsed_text: None,
+            });
+        }
     }
     Ok(result)
 }
