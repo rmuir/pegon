@@ -10,26 +10,21 @@
 ((line_comment)+
   (#set! kind "comment")) @range
 
-; class-like things
-(object_creation_expression
-  (class_body)) @range
+; class/function bodies
+(class_body) @range
 
-(annotation_type_declaration) @range
+(annotation_type_body) @range
 
-(class_declaration) @range
+(enum_body) @range
 
-(enum_declaration) @range
+(interface_body) @range
 
-(interface_declaration) @range
+(class_body) @range
 
-(record_declaration) @range
+(constructor_body) @range
 
-; function-like things
-(compact_constructor_declaration) @range
+(compact_constructor_declaration
+  body: (block) @range)
 
-(constructor_declaration) @range
-
-(enum_constant
-  body: (_)) @range
-
-(method_declaration) @range
+(method_declaration
+  body: (block) @range)
