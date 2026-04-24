@@ -269,9 +269,9 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
             title: title.expect("pattern should have a title").to_owned(),
             severity: severity.expect("pattern should have a severity"),
             help: help.expect("pattern should have a help").to_owned(),
-            label: label.map(ToString::to_string),
-            context_label: context_label.map(ToString::to_string),
-            fix: fix.map(ToString::to_string),
+            label: label.map(str::to_owned),
+            context_label: context_label.map(str::to_owned),
+            fix: fix.map(str::to_owned),
             url: format!(
                 "https://github.com/rmuir/pegon/wiki/lints#{}",
                 name.expect("pattern should have a name")

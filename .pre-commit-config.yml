@@ -270,13 +270,14 @@ repos:
         pass_filenames: false
         types: [rust]
 
-      - id: query-fix
-        name: Fix Queries
-        language: system
-        entry: ts_query_ls
-        require_serial: true
-        args: ["check", "--fix"]
-        types: [scheme]
+      # TODO: figure out a simple installation path for the parser
+      # - id: query-fix
+      #   name: Fix Queries
+      #   language: system
+      #   entry: ts_query_ls
+      #   require_serial: true
+      #   args: ["check", "--fix"]
+      #   types: [scheme]
 
       - id: query-format
         name: Fix Queries formatting
