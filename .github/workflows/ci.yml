@@ -60,5 +60,8 @@ jobs:
           cache-dependency-glob: uv.lock
           cache-suffix: check
 
+      - name: Setup rust cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+
       - name: Run checks
         run: make lint
