@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context as _, Error, Result, bail};
 use line_index::LineIndex;
@@ -43,7 +43,7 @@ pub struct Server {
 /// subsequent false errors throughout the rest of the lifecycle.
 pub enum Resource {
     /// A client-managed Java document.
-    Java(Document),
+    Java(Arc<Document>),
     /// A client-managed document in some other language.
     Other,
 }

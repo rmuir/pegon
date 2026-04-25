@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::bail;
@@ -43,7 +45,7 @@ pub fn did_open(
     };
     if state
         .docs
-        .insert(uri.to_string(), Resource::Java(doc))
+        .insert(uri.to_string(), Resource::Java(Arc::new(doc)))
         .is_some()
     {
         bail!("was previously already open");
@@ -64,8 +66,8 @@ pub fn did_change(
     let Resource::Java(doc) = resource else {
         return Ok(None);
     };
-    let mut text = doc.text;
-    let mut old_tree = doc.tree;
+    let mut text = doc.text.clone();
+    let mut old_tree = doc.tree.clone();
     let mut line_index = LineIndex::new(&text);
     // process each change in order, updating the line index and tree
     // TODO: this is simple and safe, but rust-analyzer has some interesting optos
@@ -113,7 +115,9 @@ pub fn did_change(
     } else {
         Some(diagnostics::push(client, &newdoc, &uri)?)
     };
-    state.docs.insert(uri.to_string(), Resource::Java(newdoc));
+    state
+        .docs
+        .insert(uri.to_string(), Resource::Java(Arc::new(newdoc)));
     Ok(push)
 }
 
