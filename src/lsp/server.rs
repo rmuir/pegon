@@ -13,7 +13,7 @@ use ls_types::{
     ServerCapabilities, ServerInfo, StaticTextDocumentColorProviderOptions,
     StaticTextDocumentRegistrationOptions, TextDocumentChangeRegistrationOptions,
     TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
+    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
     WorkspaceServerCapabilities,
     notification::{
         DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
@@ -322,58 +322,45 @@ fn handle_request(
     match req.method.as_str() {
         CodeActionRequest::METHOD => {
             let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            let _doc = docs.get(&uri.to_string()).context("document not open")?;
+            let _doc = java_document(docs, &params.text_document.uri)?;
             let actions: Vec<CodeActionOrCommand> = vec![];
             Ok(response::<CodeActionRequest>(req.id.clone(), Some(actions)))
         }
         DocumentDiagnosticRequest::METHOD => {
             let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            match docs.get(&uri.to_string()) {
-                Some(Resource::Java(doc)) => Ok(response::<DocumentDiagnosticRequest>(
-                    req.id.clone(),
-                    super::diagnostics::pull(client, doc, &params)?,
-                )),
-                Some(Resource::Other) => bail!("non-java document: {}", **uri),
-                None => bail!("document not open: {}", **uri),
-            }
+            let doc = java_document(docs, &params.text_document.uri)?;
+            Ok(response::<DocumentDiagnosticRequest>(
+                req.id.clone(),
+                super::diagnostics::pull(client, doc.as_ref(), &params)?,
+            ))
         }
         DocumentSymbolRequest::METHOD => {
             let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            match docs.get(&uri.to_string()) {
-                Some(Resource::Java(doc)) => Ok(response::<DocumentSymbolRequest>(
-                    req.id.clone(),
-                    Some(super::document_symbols::request(client, doc, &params)?),
-                )),
-                Some(Resource::Other) => bail!("non-java document: {}", **uri),
-                None => bail!("document not open: {}", **uri),
-            }
+            let doc = java_document(docs, &params.text_document.uri)?;
+            Ok(response::<DocumentSymbolRequest>(
+                req.id.clone(),
+                Some(super::document_symbols::request(
+                    client,
+                    doc.as_ref(),
+                    &params,
+                )?),
+            ))
         }
         FoldingRangeRequest::METHOD => {
             let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            match docs.get(&uri.to_string()) {
-                Some(Resource::Java(doc)) => Ok(response::<FoldingRangeRequest>(
-                    req.id.clone(),
-                    Some(super::folding_range::request(client, doc)?),
-                )),
-                Some(Resource::Other) => bail!("non-java document: {}", **uri),
-                None => bail!("document not open: {}", **uri),
-            }
+            let doc = java_document(docs, &params.text_document.uri)?;
+            Ok(response::<FoldingRangeRequest>(
+                req.id.clone(),
+                Some(super::folding_range::request(client, doc.as_ref())?),
+            ))
         }
         SelectionRangeRequest::METHOD => {
             let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
-            let uri = &params.text_document.uri;
-            match docs.get(&uri.to_string()) {
-                Some(Resource::Java(doc)) => Ok(response::<SelectionRangeRequest>(
-                    req.id.clone(),
-                    super::selection_range::request(client, doc, &params)?,
-                )),
-                Some(Resource::Other) => bail!("non-java document: {}", **uri),
-                None => bail!("document not open: {}", **uri),
-            }
+            let doc = java_document(docs, &params.text_document.uri)?;
+            Ok(response::<SelectionRangeRequest>(
+                req.id.clone(),
+                super::selection_range::request(client, doc.as_ref(), &params)?,
+            ))
         }
         _ => Ok(error(
             req.id.clone(),
@@ -458,6 +445,15 @@ fn log_error(method: &String, message: &String) -> Message {
             message: format!("pegon[{method}]: {message}"),
         },
     ))
+}
+
+/// returns open java document from the editor, or an error
+fn java_document(docs: &HashMap<String, Resource>, uri: &Uri) -> Result<Arc<Document>> {
+    match docs.get(&uri.to_string()) {
+        Some(Resource::Java(doc)) => Ok(Arc::clone(doc)),
+        Some(Resource::Other) => bail!("non-java document: {}", **uri),
+        None => bail!("document not open: {}", **uri),
+    }
 }
 
 /// Code Action registration options.
