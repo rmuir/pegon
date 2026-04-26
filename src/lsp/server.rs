@@ -1,6 +1,8 @@
-use std::{collections::HashMap, sync::Arc};
+use core::num::NonZero;
+use std::{collections::HashMap, sync::Arc, thread};
 
 use anyhow::{Context as _, Error, Result, bail};
+use crossbeam_channel::Sender;
 use line_index::LineIndex;
 use ls_types::{
     CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
@@ -33,6 +35,7 @@ use crate::lsp::client::Client;
 /// A Language Server Protocol Server
 pub struct Server {
     connection: Connection,
+    workers: ThreadPool,
 }
 
 /// A client-managed resource (file)
@@ -71,6 +74,36 @@ impl State {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&crate::LANGUAGE.into())?;
         Ok(Self { docs, parser })
+    }
+}
+
+type Job = Box<dyn FnOnce() + Send + 'static>;
+
+struct ThreadPool {
+    sender: Sender<Job>,
+}
+
+impl ThreadPool {
+    fn new(size: NonZero<usize>) -> Self {
+        let (sender, receiver) = crossbeam_channel::unbounded::<Job>();
+        for _ in 0..size.get() {
+            let receiver = receiver.clone();
+            thread::spawn(move || {
+                while let Ok(job) = receiver.recv() {
+                    job();
+                }
+            });
+        }
+        Self { sender }
+    }
+
+    fn execute<F>(&self, job: F) -> Result<()>
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.sender
+            .send(Box::new(job))
+            .map_err(|err| Error::msg(format!("threadpool error: {err}")))
     }
 }
 
@@ -264,7 +297,12 @@ impl Server {
                 RegistrationParams { registrations },
             ))?;
         }
-        Ok(Self { connection })
+        let default = NonZero::new(4).context("not zero")?;
+        let workers = ThreadPool::new(thread::available_parallelism().unwrap_or(default));
+        Ok(Self {
+            connection,
+            workers,
+        })
     }
 
     pub fn main_loop(&self, client: &Arc<Client>) -> Result<(), Error> {
@@ -277,10 +315,8 @@ impl Server {
                     if self.connection.handle_shutdown(&req)? {
                         break;
                     }
-                    match handle_request(client.as_ref(), &req, &state.docs) {
-                        Ok(response) => {
-                            self.connection.sender.send(response)?;
-                        }
+                    match self.handle_request(client, &req, &state.docs) {
+                        Ok(()) => {}
                         Err(err) => {
                             self.connection.sender.send(error(
                                 req.id.clone(),
@@ -310,63 +346,89 @@ impl Server {
         }
         Ok(())
     }
-}
 
-// handles an incoming request
-// every request must have an associated response
-fn handle_request(
-    client: &Client,
-    req: &Request,
-    docs: &HashMap<String, Resource>,
-) -> Result<Message> {
-    match req.method.as_str() {
-        CodeActionRequest::METHOD => {
-            let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-            let _doc = java_document(docs, &params.text_document.uri)?;
-            let actions: Vec<CodeActionOrCommand> = vec![];
-            Ok(response::<CodeActionRequest>(req.id.clone(), Some(actions)))
+    // handles an incoming request
+    // every request must have an associated response
+    fn handle_request(
+        &self,
+        client: &Arc<Client>,
+        req: &Request,
+        docs: &HashMap<String, Resource>,
+    ) -> Result<()> {
+        let id = req.id.clone();
+        let client = Arc::clone(client);
+        let sender = self.connection.sender.clone();
+        match req.method.as_str() {
+            CodeActionRequest::METHOD => {
+                let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
+                let _doc = java_document(docs, &params.text_document.uri)?;
+                let actions: Vec<CodeActionOrCommand> = vec![];
+                sender.send(response::<CodeActionRequest>(id, Some(actions)))?;
+                Ok(())
+            }
+            DocumentDiagnosticRequest::METHOD => {
+                let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                self.workers.execute(move || {
+                    let response =
+                        match super::diagnostics::pull(client.as_ref(), doc.as_ref(), &params) {
+                            Ok(result) => response::<DocumentDiagnosticRequest>(id, result),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        };
+                    drop(sender.send(response));
+                })
+            }
+            DocumentSymbolRequest::METHOD => {
+                let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                self.workers.execute(move || {
+                    let response = match super::document_symbols::request(
+                        client.as_ref(),
+                        doc.as_ref(),
+                        &params,
+                    ) {
+                        Ok(result) => response::<DocumentSymbolRequest>(id, Some(result)),
+                        Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                    };
+                    drop(sender.send(response));
+                })
+            }
+            FoldingRangeRequest::METHOD => {
+                let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                self.workers.execute(move || {
+                    let response =
+                        match super::folding_range::request(client.as_ref(), doc.as_ref()) {
+                            Ok(result) => response::<FoldingRangeRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        };
+                    drop(sender.send(response));
+                })
+            }
+            SelectionRangeRequest::METHOD => {
+                let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                self.workers.execute(move || {
+                    let response = match super::selection_range::request(
+                        client.as_ref(),
+                        doc.as_ref(),
+                        &params,
+                    ) {
+                        Ok(result) => response::<SelectionRangeRequest>(id, result),
+                        Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                    };
+                    drop(sender.send(response));
+                })
+            }
+            _ => {
+                sender.send(error(
+                    id,
+                    ErrorCode::MethodNotFound,
+                    "unhandled request".to_owned(),
+                ))?;
+                Ok(())
+            }
         }
-        DocumentDiagnosticRequest::METHOD => {
-            let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
-            let doc = java_document(docs, &params.text_document.uri)?;
-            Ok(response::<DocumentDiagnosticRequest>(
-                req.id.clone(),
-                super::diagnostics::pull(client, doc.as_ref(), &params)?,
-            ))
-        }
-        DocumentSymbolRequest::METHOD => {
-            let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
-            let doc = java_document(docs, &params.text_document.uri)?;
-            Ok(response::<DocumentSymbolRequest>(
-                req.id.clone(),
-                Some(super::document_symbols::request(
-                    client,
-                    doc.as_ref(),
-                    &params,
-                )?),
-            ))
-        }
-        FoldingRangeRequest::METHOD => {
-            let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
-            let doc = java_document(docs, &params.text_document.uri)?;
-            Ok(response::<FoldingRangeRequest>(
-                req.id.clone(),
-                Some(super::folding_range::request(client, doc.as_ref())?),
-            ))
-        }
-        SelectionRangeRequest::METHOD => {
-            let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
-            let doc = java_document(docs, &params.text_document.uri)?;
-            Ok(response::<SelectionRangeRequest>(
-                req.id.clone(),
-                super::selection_range::request(client, doc.as_ref(), &params)?,
-            ))
-        }
-        _ => Ok(error(
-            req.id.clone(),
-            ErrorCode::MethodNotFound,
-            "unhandled request".to_owned(),
-        )),
     }
 }
 
