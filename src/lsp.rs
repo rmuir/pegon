@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Error, Result};
 use lsp_server::Connection;
 
@@ -22,5 +24,5 @@ pub fn start(connection: Connection) -> Result<(), Error> {
     let (id, params) = connection.initialize_start()?;
     let client = Client::new(serde_json::from_value(params)?);
     let server = Server::new(connection, &client, id)?;
-    server.main_loop(&client)
+    server.main_loop(&Arc::new(client))
 }

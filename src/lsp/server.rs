@@ -267,7 +267,7 @@ impl Server {
         Ok(Self { connection })
     }
 
-    pub fn main_loop(&self, client: &Client) -> Result<(), Error> {
+    pub fn main_loop(&self, client: &Arc<Client>) -> Result<(), Error> {
         let mut state = State::new()?;
 
         for msg in &self.connection.receiver {
@@ -277,7 +277,7 @@ impl Server {
                     if self.connection.handle_shutdown(&req)? {
                         break;
                     }
-                    match handle_request(client, &req, &state.docs) {
+                    match handle_request(client.as_ref(), &req, &state.docs) {
                         Ok(response) => {
                             self.connection.sender.send(response)?;
                         }
@@ -292,7 +292,7 @@ impl Server {
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
-                    match handle_notification(client, note, &mut state) {
+                    match handle_notification(client.as_ref(), note, &mut state) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
