@@ -84,17 +84,19 @@ struct ThreadPool {
 }
 
 impl ThreadPool {
-    fn new(size: NonZero<usize>) -> Self {
+    fn new(size: NonZero<usize>) -> Result<Self> {
         let (sender, receiver) = crossbeam_channel::unbounded::<Job>();
-        for _ in 0..size.get() {
+        for id in 0..size.get() {
             let receiver = receiver.clone();
-            thread::spawn(move || {
-                while let Ok(job) = receiver.recv() {
-                    job();
-                }
-            });
+            thread::Builder::new()
+                .name(format!("lsp worker {id}").to_owned())
+                .spawn(move || {
+                    while let Ok(job) = receiver.recv() {
+                        job();
+                    }
+                })?;
         }
-        Self { sender }
+        Ok(Self { sender })
     }
 
     fn execute<F>(&self, job: F) -> Result<()>
@@ -297,8 +299,10 @@ impl Server {
                 RegistrationParams { registrations },
             ))?;
         }
-        let default = NonZero::new(4).context("not zero")?;
-        let workers = ThreadPool::new(thread::available_parallelism().unwrap_or(default));
+        let default = NonZero::new(1).context("not zero")?;
+        let limit = NonZero::new(8).context("not zero")?;
+        let size = thread::available_parallelism().map_or(default, |val| val.min(limit));
+        let workers = ThreadPool::new(size)?;
         Ok(Self {
             connection,
             workers,
