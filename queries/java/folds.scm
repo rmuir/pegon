@@ -26,8 +26,6 @@
 
 (interface_body) @range
 
-(class_body) @range
-
 (constructor_body) @range
 
 (compact_constructor_declaration
