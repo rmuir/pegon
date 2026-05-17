@@ -105,7 +105,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 Some("comment") => Some(FoldingRangeKind::Comment),
                 Some("imports") => Some(FoldingRangeKind::Imports),
                 Some(_) => panic!("unsupported fold kind {kind:?}"),
-                None => None,
+                None => Some(FoldingRangeKind::Region),
             },
             line_offset: line_offset.unwrap_or_default(),
         });
