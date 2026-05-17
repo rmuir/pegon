@@ -17,15 +17,7 @@
 ((line_comment)+ @range
   (#set! kind "comment"))
 
-; class/function bodies
-(class_body) @range
-
-(annotation_type_body) @range
-
-(enum_body) @range
-
-(interface_body) @range
-
+; function-like bodies
 (constructor_body) @range
 
 (compact_constructor_declaration
@@ -33,3 +25,6 @@
 
 (method_declaration
   body: (block) @range)
+
+(static_initializer
+  (block) @range)
