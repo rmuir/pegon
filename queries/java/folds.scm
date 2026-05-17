@@ -2,15 +2,15 @@
 ((import_declaration)+ @range
   (#set! kind "imports"))
 
-; multiline javadoc /** comments */
+; multiline block /* comments */ or /** comments */
 ((block_comment) @range
-  (#match? @range "^/[*][*][\\s]*[\n].")
+  (#match? @range "^/[*][*]?[\\s]*[\n].")
   (#set! kind "comment")
   (#set! lineoffset "1"))
 
 ; other block comments
 ((block_comment) @range
-  (#not-match? @range "^/[*][*][\\s]*[\n].")
+  (#not-match? @range "^/[*][*]?[\\s]*[\n].")
   (#set! kind "comment"))
 
 ; // comments
