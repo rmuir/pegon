@@ -19,15 +19,14 @@ use ls_types::{
     },
     request::DocumentDiagnosticRequest,
 };
-
-use crate::lsp_client::Client;
+use lsp_client::LspClient;
 
 mod lsp_client;
 
 /// diagnose a simple document (push diagnostics, zero fancy features)
 #[test]
 fn diagnostics() {
-    let client = Client::new(InitializeParams::default());
+    let client = LspClient::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
             uri: Uri::from_str("file:///Foo.java").unwrap(),
@@ -69,7 +68,7 @@ fn diagnostics() {
 /// push diagnostics should be cleared by the server on close
 #[test]
 fn push_clear_on_close() {
-    let client = Client::new(InitializeParams::default());
+    let client = LspClient::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
             uri: Uri::from_str("file:///Foo.java").unwrap(),
@@ -131,7 +130,7 @@ fn full_capabilities() -> ClientCapabilities {
 /// test diagnostics pull approach, with all features
 #[test]
 fn pull_diagnostics() {
-    let client = Client::new(InitializeParams {
+    let client = LspClient::new(InitializeParams {
         capabilities: full_capabilities(),
         ..Default::default()
     });
@@ -218,7 +217,7 @@ fn pull_diagnostics() {
 /// it can save some serialization and client processing
 #[test]
 fn diagnostics_unchanged() {
-    let client = Client::new(InitializeParams {
+    let client = LspClient::new(InitializeParams {
         capabilities: full_capabilities(),
         ..Default::default()
     });
@@ -287,7 +286,7 @@ fn diagnostics_unchanged() {
 /// modify a document to become problematic
 #[test]
 fn diagnostics_on_change() {
-    let client = Client::new(InitializeParams::default());
+    let client = LspClient::new(InitializeParams::default());
     client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
             uri: Uri::from_str("file:///Foo.java").unwrap(),

@@ -7,6 +7,7 @@ use crate::lsp::client::Client;
 use crate::lsp::server::Server;
 
 mod client;
+mod code_action;
 mod diagnostics;
 mod document_symbols;
 mod folding_range;

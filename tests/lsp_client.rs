@@ -22,7 +22,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 /// slimmed down and reworked from rust-analyzer test code
-pub struct Client {
+pub struct LspClient {
     /// counter for request IDs that we make
     req_id: Cell<i32>,
     /// response to `initialize()` with server capabilities
@@ -36,8 +36,8 @@ pub struct Client {
     thread: JoinHandle<Result<(), Error>>,
 }
 
-impl Client {
-    /// Creates a new language server [`Client`].
+impl LspClient {
+    /// Creates a new language server [`LspClient`].
     #[must_use]
     pub fn new(params: InitializeParams) -> Self {
         let (client, server) = Connection::memory();
@@ -165,7 +165,7 @@ fn recv_timeout(receiver: &Receiver<Message>) -> Result<Option<Message>, ErrorKi
     }
 }
 
-impl Drop for Client {
+impl Drop for LspClient {
     fn drop(&mut self) {
         assert_eq!((), self.request::<Shutdown>(()));
         self.notify::<Exit>(());

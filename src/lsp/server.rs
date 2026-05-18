@@ -5,12 +5,12 @@ use anyhow::{Context as _, Error, Result, bail};
 use crossbeam_channel::Sender;
 use line_index::LineIndex;
 use ls_types::{
-    CodeActionKind, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
-    CodeActionProviderCapability, DiagnosticOptions, DiagnosticRegistrationOptions,
-    DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions,
-    DocumentSymbolParams, FoldingRangeParams, FoldingRangeProviderCapability, InitializeResult,
-    LogMessageParams, MessageType, OneOf, Registration, RegistrationParams, SelectionRangeOptions,
+    CodeAction, CodeActionKind, CodeActionOptions, CodeActionParams, CodeActionProviderCapability,
+    DiagnosticOptions, DiagnosticRegistrationOptions, DiagnosticServerCapabilities,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions, DocumentSymbolParams,
+    FoldingRangeParams, FoldingRangeProviderCapability, InitializeResult, LogMessageParams,
+    MessageType, OneOf, Registration, RegistrationParams, SelectionRangeOptions,
     SelectionRangeParams, SelectionRangeProviderCapability, SelectionRangeRegistrationOptions,
     ServerCapabilities, ServerInfo, StaticTextDocumentColorProviderOptions,
     StaticTextDocumentRegistrationOptions, TextDocumentChangeRegistrationOptions,
@@ -22,8 +22,9 @@ use ls_types::{
         Notification as _, PublishDiagnostics,
     },
     request::{
-        CodeActionRequest, DocumentDiagnosticRequest, DocumentSymbolRequest, FoldingRangeRequest,
-        RegisterCapability, Request as _, SelectionRangeRequest,
+        CodeActionRequest, CodeActionResolveRequest, DocumentDiagnosticRequest,
+        DocumentSymbolRequest, FoldingRangeRequest, RegisterCapability, Request as _,
+        SelectionRangeRequest,
     },
 };
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -133,6 +134,7 @@ impl Server {
                 CodeActionKind::SOURCE_ORGANIZE_IMPORTS,
                 CodeActionKind::new(concat!(env!("CARGO_PKG_NAME"), ".organizeImports")),
             ]),
+            resolve_provider: Some(true),
             ..CodeActionOptions::default()
         };
         let document_symbol_options = DocumentSymbolOptions {
@@ -366,9 +368,18 @@ impl Server {
             CodeActionRequest::METHOD => {
                 let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
                 let _doc = java_document(docs, &params.text_document.uri)?;
-                let actions: Vec<CodeActionOrCommand> = vec![];
-                sender.send(response::<CodeActionRequest>(id, Some(actions)))?;
-                Ok(())
+                self.workers.execute(move || {
+                    let response = response::<CodeActionRequest>(id, Some(vec![]));
+                    drop(sender.send(response));
+                })
+            }
+            CodeActionResolveRequest::METHOD => {
+                // TODO: deserialize 'data' and process
+                let params: CodeAction = serde_json::from_value(req.params.clone())?;
+                self.workers.execute(move || {
+                    let response = response::<CodeActionResolveRequest>(id, params);
+                    drop(sender.send(response));
+                })
             }
             DocumentDiagnosticRequest::METHOD => {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;

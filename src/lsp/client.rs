@@ -254,6 +254,27 @@ impl Client {
         (|| -> _ { self.push_diagnostics()?.version_support })().unwrap_or_default()
     }
 
+    /// true if the client preserves code action data between request and resolve.
+    #[expect(dead_code, reason = "TODO")]
+    pub(crate) fn supports_code_action_resolve_data(&self) -> bool {
+        (|| -> _ { self.code_actions()?.data_support })().unwrap_or_default()
+    }
+
+    /// true if the client supports resolving workspace edits on code actions.
+    #[expect(dead_code, reason = "TODO")]
+    pub(crate) fn supports_code_action_resolve_edit(&self) -> bool {
+        (|| -> _ {
+            Some(
+                self.code_actions()?
+                    .resolve_support
+                    .as_ref()?
+                    .properties
+                    .contains(&"edit".to_owned()),
+            )
+        })()
+        .unwrap_or_default()
+    }
+
     /// true if the client supports dynamic registration of doc sync
     pub(crate) fn registers_sync(&self) -> bool {
         (|| -> _ {

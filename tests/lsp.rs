@@ -14,14 +14,13 @@ use ls_types::{
 use lsp_server::Connection;
 use pegon::lsp::start;
 
-use crate::lsp_client::Client;
-
+use lsp_client::LspClient;
 mod lsp_client;
 
 /// default to UTF-16 according to the spec
 #[test]
 fn encoding_default() {
-    let client = Client::new(InitializeParams::default());
+    let client = LspClient::new(InitializeParams::default());
     assert_eq!(
         Some(PositionEncodingKind::UTF16),
         client.init_response().capabilities.position_encoding
@@ -32,7 +31,7 @@ fn encoding_default() {
 /// most likely it is the most performant for that client
 #[test]
 fn encoding_preferred() {
-    let client = Client::new(InitializeParams {
+    let client = LspClient::new(InitializeParams {
         capabilities: ClientCapabilities {
             general: Some(GeneralClientCapabilities {
                 position_encodings: Some(vec![
@@ -59,7 +58,7 @@ fn negotiate_encodings() {
         PositionEncodingKind::UTF16,
         PositionEncodingKind::UTF32,
     ] {
-        let client = Client::new(InitializeParams {
+        let client = LspClient::new(InitializeParams {
             capabilities: ClientCapabilities {
                 general: Some(GeneralClientCapabilities {
                     position_encodings: Some(vec![encoding.clone()]),
@@ -78,7 +77,7 @@ fn negotiate_encodings() {
 
 #[test]
 fn dynamic_registration() {
-    let client = Client::new(InitializeParams {
+    let client = LspClient::new(InitializeParams {
         capabilities: ClientCapabilities {
             text_document: Some(TextDocumentClientCapabilities {
                 synchronization: Some(TextDocumentSyncClientCapabilities {
