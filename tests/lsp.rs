@@ -15,7 +15,7 @@ use lsp_server::Connection;
 use pegon::lsp::start;
 
 use lsp_client::LspClient;
-mod lsp_client;
+pub mod lsp_client;
 
 /// default to UTF-16 according to the spec
 #[test]

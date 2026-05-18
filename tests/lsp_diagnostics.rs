@@ -21,7 +21,7 @@ use ls_types::{
 };
 use lsp_client::LspClient;
 
-mod lsp_client;
+pub mod lsp_client;
 
 /// diagnose a simple document (push diagnostics, zero fancy features)
 #[test]
