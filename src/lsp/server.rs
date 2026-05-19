@@ -1,24 +1,28 @@
 use core::num::NonZero;
-use std::{collections::HashMap, sync::Arc, thread};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    thread,
+};
 
-use anyhow::{Context as _, Error, Result, bail};
+use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
 use line_index::LineIndex;
 use ls_types::{
-    CodeAction, CodeActionKind, CodeActionOptions, CodeActionParams, CodeActionProviderCapability,
-    DiagnosticOptions, DiagnosticRegistrationOptions, DiagnosticServerCapabilities,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions, DocumentSymbolParams,
-    FoldingRangeParams, FoldingRangeProviderCapability, InitializeResult, LogMessageParams,
-    MessageType, OneOf, Registration, RegistrationParams, SelectionRangeOptions,
-    SelectionRangeParams, SelectionRangeProviderCapability, SelectionRangeRegistrationOptions,
-    ServerCapabilities, ServerInfo, StaticTextDocumentColorProviderOptions,
-    StaticTextDocumentRegistrationOptions, TextDocumentChangeRegistrationOptions,
-    TextDocumentRegistrationOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    CancelParams, CodeAction, CodeActionKind, CodeActionOptions, CodeActionParams,
+    CodeActionProviderCapability, DiagnosticOptions, DiagnosticRegistrationOptions,
+    DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions,
+    DocumentSymbolParams, FoldingRangeParams, FoldingRangeProviderCapability, InitializeResult,
+    LogMessageParams, MessageType, NumberOrString, OneOf, Registration, RegistrationParams,
+    SelectionRangeOptions, SelectionRangeParams, SelectionRangeProviderCapability,
+    SelectionRangeRegistrationOptions, ServerCapabilities, ServerInfo,
+    StaticTextDocumentColorProviderOptions, StaticTextDocumentRegistrationOptions,
+    TextDocumentChangeRegistrationOptions, TextDocumentRegistrationOptions,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
     notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
+        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
         Notification as _, PublishDiagnostics,
     },
     request::{
@@ -34,9 +38,18 @@ use tree_sitter::{Parser, Tree};
 use crate::lsp::client::Client;
 
 /// A Language Server Protocol Server
+///
+/// The main thread handles notifications directly, and dispatches requests to a thread
+/// pool of workers. Worker threads are backed by a queue, but dispatch guarantees the
+/// worker thread always works the version of the document at the time the initial request
+/// was received.
+///
+/// Request cancellation works at a coarse level by checking `in_flight` both before and
+/// after doing the work, to save both client and server resources when possible.
 pub struct Server {
     connection: Connection,
     workers: ThreadPool,
+    in_flight: InFlight,
 }
 
 /// A client-managed resource (file)
@@ -64,6 +77,7 @@ pub struct Document {
     pub(crate) line_index: LineIndex,
 }
 
+/// LSP state, only accessed by the main thread
 pub struct State {
     pub(crate) docs: HashMap<String, Resource>,
     pub(crate) parser: Parser,
@@ -78,6 +92,7 @@ impl State {
     }
 }
 
+type InFlight = Arc<Mutex<HashMap<RequestId, bool>>>;
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 struct ThreadPool {
@@ -308,6 +323,7 @@ impl Server {
         Ok(Self {
             connection,
             workers,
+            in_flight: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
@@ -321,20 +337,24 @@ impl Server {
                     if self.connection.handle_shutdown(&req)? {
                         break;
                     }
+                    self.in_flight
+                        .lock()
+                        .map_err(|err| anyhow!("poisoned: {err}"))?
+                        .insert(req.id.clone(), false);
                     match self.handle_request(client, &req, &state.docs) {
                         Ok(()) => {}
                         Err(err) => {
-                            self.connection.sender.send(error(
+                            self.connection.sender.send(finish_request(
+                                &self.in_flight,
                                 req.id.clone(),
-                                ErrorCode::RequestFailed,
-                                format!("{err:#}"),
+                                error(req.id.clone(), ErrorCode::RequestFailed, format!("{err:#}")),
                             ))?;
                         }
                     }
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
-                    match handle_notification(client.as_ref(), note, &mut state) {
+                    match handle_notification(client.as_ref(), note, &mut state, &self.in_flight) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
@@ -364,12 +384,21 @@ impl Server {
         let id = req.id.clone();
         let client = Arc::clone(client);
         let sender = self.connection.sender.clone();
+        let in_flight = Arc::clone(&self.in_flight);
         match req.method.as_str() {
             CodeActionRequest::METHOD => {
                 let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
                 let _doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
-                    let response = response::<CodeActionRequest>(id, Some(vec![]));
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        response::<CodeActionRequest>(id, Some(vec![])),
+                    );
                     drop(sender.send(response));
                 })
             }
@@ -377,7 +406,15 @@ impl Server {
                 // TODO: deserialize 'data' and process
                 let params: CodeAction = serde_json::from_value(req.params.clone())?;
                 self.workers.execute(move || {
-                    let response = response::<CodeActionResolveRequest>(id, params);
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        response::<CodeActionResolveRequest>(id, params),
+                    );
                     drop(sender.send(response));
                 })
             }
@@ -385,11 +422,18 @@ impl Server {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
-                    let response =
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
                         match super::diagnostics::pull(client.as_ref(), doc.as_ref(), &params) {
                             Ok(result) => response::<DocumentDiagnosticRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        };
+                        },
+                    );
                     drop(sender.send(response));
                 })
             }
@@ -397,14 +441,22 @@ impl Server {
                 let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
-                    let response = match super::document_symbols::request(
-                        client.as_ref(),
-                        doc.as_ref(),
-                        &params,
-                    ) {
-                        Ok(result) => response::<DocumentSymbolRequest>(id, Some(result)),
-                        Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                    };
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::document_symbols::request(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                        ) {
+                            Ok(result) => response::<DocumentSymbolRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
                     drop(sender.send(response));
                 })
             }
@@ -412,11 +464,18 @@ impl Server {
                 let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
-                    let response =
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
                         match super::folding_range::request(client.as_ref(), doc.as_ref()) {
                             Ok(result) => response::<FoldingRangeRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        };
+                        },
+                    );
                     drop(sender.send(response));
                 })
             }
@@ -424,22 +483,34 @@ impl Server {
                 let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
-                    let response = match super::selection_range::request(
-                        client.as_ref(),
-                        doc.as_ref(),
-                        &params,
-                    ) {
-                        Ok(result) => response::<SelectionRangeRequest>(id, result),
-                        Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                    };
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::selection_range::request(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                        ) {
+                            Ok(result) => response::<SelectionRangeRequest>(id, result),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
                     drop(sender.send(response));
                 })
             }
             _ => {
-                sender.send(error(
-                    id,
-                    ErrorCode::MethodNotFound,
-                    "unhandled request".to_owned(),
+                sender.send(finish_request(
+                    &self.in_flight,
+                    id.clone(),
+                    error(
+                        id,
+                        ErrorCode::MethodNotFound,
+                        "unhandled request".to_owned(),
+                    ),
                 ))?;
                 Ok(())
             }
@@ -455,6 +526,7 @@ fn handle_notification(
     client: &Client,
     note: lsp_server::Notification,
     state: &mut State,
+    in_flight: &InFlight,
 ) -> Result<Option<Message>> {
     let response = match note.method.as_str() {
         DidOpenTextDocument::METHOD => {
@@ -472,6 +544,21 @@ fn handle_notification(
             let uri = params.text_document.uri.clone();
             super::sync::did_close(client, params, state).context(uri.to_string())?
         }
+        Cancel::METHOD => {
+            let params: CancelParams = serde_json::from_value(note.params)?;
+            let request_id: RequestId = match params.id {
+                NumberOrString::Number(id) => id.into(),
+                NumberOrString::String(id) => id.into(),
+            };
+            if let Some(cancelled) = in_flight
+                .lock()
+                .map_err(|err| anyhow!("poisoned: {err}"))?
+                .get_mut(&request_id)
+            {
+                *cancelled = true;
+            }
+            None
+        }
         // can be safely ignored according to specification
         method if method.starts_with("$/") => None,
         // log an error otherwise
@@ -479,6 +566,41 @@ fn handle_notification(
     }
     .map(notification::<PublishDiagnostics>);
     Ok(response)
+}
+
+/// returns a cancellation response when the request was already cancelled in the queue
+fn start_request(in_flight: &InFlight, id: &RequestId) -> Option<Message> {
+    in_flight
+        .lock()
+        .expect("poisoned")
+        .get(id)
+        .copied()
+        .unwrap_or_default()
+        .then(|| {
+            finish_request(
+                in_flight,
+                id.clone(),
+                error(
+                    id.clone(),
+                    ErrorCode::RequestCanceled,
+                    "cancelled".to_owned(),
+                ),
+            )
+        })
+}
+
+// returns response, unless the request was cancelled
+fn finish_request(in_flight: &InFlight, id: RequestId, response: Message) -> Message {
+    if in_flight
+        .lock()
+        .expect("poisoned")
+        .remove(&id)
+        .unwrap_or_default()
+    {
+        error(id, ErrorCode::RequestCanceled, "cancelled".to_owned())
+    } else {
+        response
+    }
 }
 
 /// creates a notification message to the client
