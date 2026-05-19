@@ -123,7 +123,7 @@ repos:
         priority: 0
         language: system
         entry: uv
-        args: ["run", "--only-dev", "zizmor", "--pedantic", "--offline", "."]
+        args: ["run", "--only-dev", "zizmor", "--persona", "auditor", "--offline", "."]
         env:
           UV_FROZEN: "1"
         # run across all actions if any are touched
