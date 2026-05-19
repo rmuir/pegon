@@ -570,33 +570,24 @@ fn handle_notification(
 
 /// returns a cancellation response when the request was already cancelled in the queue
 fn start_request(in_flight: &InFlight, id: &RequestId) -> Option<Message> {
-    in_flight
-        .lock()
-        .expect("poisoned")
-        .get(id)
-        .copied()
-        .unwrap_or_default()
-        .then(|| {
-            finish_request(
-                in_flight,
+    let cancelled = { in_flight.lock().expect("poisoned").get(id).copied() };
+    cancelled.unwrap_or_default().then(|| {
+        finish_request(
+            in_flight,
+            id.clone(),
+            error(
                 id.clone(),
-                error(
-                    id.clone(),
-                    ErrorCode::RequestCanceled,
-                    "cancelled".to_owned(),
-                ),
-            )
-        })
+                ErrorCode::RequestCanceled,
+                "cancelled".to_owned(),
+            ),
+        )
+    })
 }
 
 // returns response, unless the request was cancelled
 fn finish_request(in_flight: &InFlight, id: RequestId, response: Message) -> Message {
-    if in_flight
-        .lock()
-        .expect("poisoned")
-        .remove(&id)
-        .unwrap_or_default()
-    {
+    let cancelled = { in_flight.lock().expect("poisoned").remove(&id) };
+    if cancelled.unwrap_or_default() {
         error(id, ErrorCode::RequestCanceled, "cancelled".to_owned())
     } else {
         response
