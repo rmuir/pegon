@@ -6,7 +6,6 @@ use tree_sitter::{
 };
 
 /// Single diagnostic result
-#[derive(Hash)]
 pub struct Lint {
     /// Matched rule
     pub rule_id: usize,

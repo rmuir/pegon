@@ -3,17 +3,11 @@ use line_index::LineIndex;
 use ls_types::{
     CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
-    Location, NumberOrString, PublishDiagnosticsParams, UnchangedDocumentDiagnosticReport, Uri,
+    Location, NumberOrString, PublishDiagnosticsParams, Uri,
 };
-use ls_types::{
-    DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport,
-    RelatedUnchangedDocumentDiagnosticReport,
-};
+use ls_types::{DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport};
 
-use core::hash::Hash as _;
-use core::hash::Hasher as _;
 use core::str::FromStr as _;
-use std::hash::DefaultHasher;
 
 use crate::{
     lint::{Lint, Severity, lint, rule},
@@ -39,36 +33,22 @@ pub fn pull(
 ) -> Result<DocumentDiagnosticReportResult> {
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
-    let result_id = hash_items(&results);
 
-    if let Some(previous_id) = &params.previous_result_id
-        && *previous_id == result_id
-    {
-        Ok(DocumentDiagnosticReportResult::Report(
-            DocumentDiagnosticReport::Unchanged(RelatedUnchangedDocumentDiagnosticReport {
-                unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport {
-                    result_id,
-                },
-                related_documents: None,
-            }),
-        ))
-    } else {
-        Ok(DocumentDiagnosticReportResult::Report(
-            DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
-                full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    items: encode(
-                        client,
-                        &params.text_document.uri,
-                        &doc.line_index,
-                        false,
-                        &results,
-                    )?,
-                    result_id: Some(result_id),
-                },
-                related_documents: None,
-            }),
-        ))
-    }
+    Ok(DocumentDiagnosticReportResult::Report(
+        DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
+            full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                items: encode(
+                    client,
+                    &params.text_document.uri,
+                    &doc.line_index,
+                    false,
+                    &results,
+                )?,
+                result_id: None, // don't attempt to cache, bugs such as neovim/neovim#32247
+            },
+            related_documents: None,
+        }),
+    ))
 }
 
 /// publish diagnostics (push)
@@ -80,12 +60,6 @@ pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnos
         uri: uri.clone(),
         version: client.supports_version().then_some(doc.version),
     })
-}
-
-fn hash_items(items: &[Lint]) -> String {
-    let mut hasher = DefaultHasher::new();
-    items.hash(&mut hasher);
-    format!("{:016x}", hasher.finish())
 }
 
 /// encode diagnostics into LSP structure
