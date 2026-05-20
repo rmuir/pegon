@@ -12,6 +12,6 @@ workspace = true
 # Make use of main project
 pegon = { path = ".." }
 # Generate manual pages
-clap = { version = "4.5.58", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 # Generate shell completions
-clap_complete = "4.5.66"
+clap_complete = "4.6.5"
