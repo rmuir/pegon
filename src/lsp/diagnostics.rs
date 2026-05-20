@@ -82,7 +82,7 @@ pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnos
     })
 }
 
-fn hash_items(items: &Vec<Lint>) -> String {
+fn hash_items(items: &[Lint]) -> String {
     let mut hasher = DefaultHasher::new();
     items.hash(&mut hasher);
     format!("{:016x}", hasher.finish())
