@@ -41,7 +41,7 @@ Changelog = "https://github.com/rmuir/pegon/releases"
 [dependency-groups]
 dev = [
   # git hooks and repository checks
-  "prek==0.4.0",
+  "prek==0.4.1",
   # github actions
   "zizmor==1.25.2",
   # github actions
