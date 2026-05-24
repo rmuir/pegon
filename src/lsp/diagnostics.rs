@@ -112,11 +112,11 @@ fn encode(
                 range,
                 severity: Some(lsp_severity),
                 code: Some(Code::String(rule.name.clone())),
-                code_description: client
-                    .supports_code_description(push)
-                    .then(|| CodeDescription {
+                code_description: client.supports_code_description(push).then_some(
+                    CodeDescription {
                         href: Uri(rule.url.clone()),
-                    }),
+                    },
+                ),
                 source: Some("pegon".to_owned()),
                 message: diagnostic.title.clone(),
                 related_information: client
