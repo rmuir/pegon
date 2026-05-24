@@ -272,19 +272,6 @@ repos:
         pass_filenames: false
         types: [rust]
 
-      - id: cargo-xtask
-        name: Fix regenerated sources
-        language: system
-        entry: cargo
-        args: ["xtask", "generate"]
-        env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
-        # runs across all files if any are touched
-        require_serial: true
-        pass_filenames: false
-        types: [rust]
-
       - id: query-fix
         name: Fix Queries
         language: system

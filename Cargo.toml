@@ -91,9 +91,6 @@ indoc = "2.0.7"
 [lints]
 workspace = true
 
-[workspace]
-members = [".", "xtask"]
-
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
