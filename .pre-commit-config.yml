@@ -64,7 +64,7 @@ repos:
         priority: 0
 
       - id: check-vcs-permalinks
-        name: check for permanent VCS links
+        name: Check for permanent VCS links
         priority: 0
         require_serial: true
         types: [text]
