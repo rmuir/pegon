@@ -1,8 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/ribru17/ts_query_ls/refs/heads/master/schemas/config.json",
   "parser_install_directories": [
-    ".",
-    "${HOME}/workspace/tree-sitter-java-orchard"
+    "${TREE_SITTER_JAVA_ORCHARD_HOME}",
+    "${HOME}/workspace/tree-sitter-java-orchard",
+    "."
   ],
   "supported_abi_versions": {
     "start": 13,
