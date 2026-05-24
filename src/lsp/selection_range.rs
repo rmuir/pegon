@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result};
-use ls_types::{SelectionRange, SelectionRangeParams};
+use gen_lsp_types::{SelectionRange, SelectionRangeParams};
 
 use crate::lsp::{Client, server::Document};
 

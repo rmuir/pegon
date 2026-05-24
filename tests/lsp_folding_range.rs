@@ -1,14 +1,12 @@
 #![expect(clippy::unwrap_used, reason = "tests")]
 #![expect(clippy::tests_outside_test_module, reason = "false positive")]
 
-use core::str::FromStr as _;
-
-use indoc::indoc;
-use ls_types::{
-    DidOpenTextDocumentParams, FoldingRange, FoldingRangeKind, FoldingRangeParams,
-    InitializeParams, PartialResultParams, TextDocumentIdentifier, TextDocumentItem, Uri,
-    WorkDoneProgressParams, notification::DidOpenTextDocument, request::FoldingRangeRequest,
+use gen_lsp_types::{
+    DidOpenTextDocumentNotification, DidOpenTextDocumentParams, FoldingRange, FoldingRangeKind,
+    FoldingRangeParams, FoldingRangeRequest, InitializeParams, PartialResultParams,
+    TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
 };
+use indoc::indoc;
 use lsp_client::LspClient;
 
 pub mod lsp_client;
@@ -17,9 +15,9 @@ pub mod lsp_client;
 #[test]
 fn flat() {
     let client = LspClient::new(InitializeParams::default());
-    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+    client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
             text: indoc! {r#"
@@ -40,7 +38,7 @@ fn flat() {
     let result = client
         .request::<FoldingRangeRequest>(FoldingRangeParams {
             text_document: TextDocumentIdentifier {
-                uri: Uri::from_str("file:///Foo.java").unwrap(),
+                uri: "file:///Foo.java".into(),
             },
             partial_result_params: PartialResultParams::default(),
             work_done_progress_params: WorkDoneProgressParams::default(),

@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use ls_types::{FoldingRange, FoldingRangeKind};
+use gen_lsp_types::{FoldingRange, FoldingRangeKind};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use crate::lsp::{Client, server::Document};

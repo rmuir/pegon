@@ -1,12 +1,12 @@
 use core::convert::From;
 
-use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
-use ls_types::{
+use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
     DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, InitializeParams, Position,
     PositionEncodingKind, PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     TextDocumentContentChangeEvent,
 };
+use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
 
 /// A Language Server Protocol client
@@ -59,8 +59,8 @@ impl Client {
         &self,
         range: &tree_sitter::Range,
         index: &LineIndex,
-    ) -> Option<ls_types::Range> {
-        Some(ls_types::Range {
+    ) -> Option<gen_lsp_types::Range> {
+        Some(gen_lsp_types::Range {
             start: self.encode_point(&range.start_point, index)?,
             end: self.encode_point(&range.end_point, index)?,
         })
@@ -105,19 +105,22 @@ impl Client {
         change: &TextDocumentContentChangeEvent,
         index: &LineIndex,
     ) -> Option<tree_sitter::Range> {
-        if let Some(range) = change.range {
-            self.decode_range(&range, index)
-        } else {
-            let end = index.try_line_col(index.len())?;
-            Some(tree_sitter::Range {
-                start_byte: 0,
-                end_byte: index.len().into(),
-                start_point: Point { row: 0, column: 0 },
-                end_point: Point {
-                    row: end.line as usize,
-                    column: end.col as usize,
-                },
-            })
+        match change {
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(partial) => {
+                self.decode_range(&partial.range, index)
+            }
+            TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(_) => {
+                let end = index.try_line_col(index.len())?;
+                Some(tree_sitter::Range {
+                    start_byte: 0,
+                    end_byte: index.len().into(),
+                    start_point: Point { row: 0, column: 0 },
+                    end_point: Point {
+                        row: end.line as usize,
+                        column: end.col as usize,
+                    },
+                })
+            }
         }
     }
 
@@ -127,7 +130,7 @@ impl Client {
     /// so the byte offsets must be looked up from the index.
     fn decode_range(
         &self,
-        range: &ls_types::Range,
+        range: &gen_lsp_types::Range,
         index: &LineIndex,
     ) -> Option<tree_sitter::Range> {
         let start = self.decode_pos(range.start, index)?;
@@ -211,9 +214,13 @@ impl Client {
     pub(crate) fn supports_related_information(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
-                self.push_diagnostics()?.related_information
+                self.push_diagnostics()?
+                    .diagnostics_capabilities
+                    .related_information
             } else {
-                self.pull_diagnostics()?.related_information
+                self.pull_diagnostics()?
+                    .diagnostics_capabilities
+                    .related_information
             }
         })()
         .unwrap_or_default()
@@ -224,9 +231,13 @@ impl Client {
     pub(crate) fn supports_code_description(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
-                self.push_diagnostics()?.code_description_support
+                self.push_diagnostics()?
+                    .diagnostics_capabilities
+                    .code_description_support
             } else {
-                self.pull_diagnostics()?.code_description_support
+                self.pull_diagnostics()?
+                    .diagnostics_capabilities
+                    .code_description_support
             }
         })()
         .unwrap_or_default()
@@ -414,7 +425,7 @@ impl From<&PositionEncodingKind> for Encoding {
 
 #[cfg(test)]
 mod tests {
-    use ls_types::GeneralClientCapabilities;
+    use gen_lsp_types::GeneralClientCapabilities;
 
     use super::*;
 

@@ -1,13 +1,10 @@
 use anyhow::{Context as _, Result};
-use line_index::LineIndex;
-use ls_types::{
-    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
-    DocumentDiagnosticParams, DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
-    Location, NumberOrString, PublishDiagnosticsParams, Uri,
+use gen_lsp_types::{
+    Code, CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
+    DocumentDiagnosticParams, DocumentDiagnosticReport, FullDocumentDiagnosticReport, Location,
+    PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Uri,
 };
-use ls_types::{DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport};
-
-use core::str::FromStr as _;
+use line_index::LineIndex;
 
 use crate::{
     lint::{Lint, Severity, lint, rule},
@@ -17,10 +14,10 @@ use crate::{
 impl From<Severity> for DiagnosticSeverity {
     fn from(value: Severity) -> Self {
         match value {
-            Severity::Error => Self::ERROR,
-            Severity::Warn => Self::WARNING,
-            Severity::Info => Self::INFORMATION,
-            Severity::Hint => Self::HINT,
+            Severity::Error => Self::Error,
+            Severity::Warn => Self::Warning,
+            Severity::Info => Self::Information,
+            Severity::Hint => Self::Hint,
         }
     }
 }
@@ -30,25 +27,27 @@ pub fn pull(
     client: &Client,
     doc: &Document,
     params: &DocumentDiagnosticParams,
-) -> Result<DocumentDiagnosticReportResult> {
+) -> Result<DocumentDiagnosticReport> {
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes)?;
 
-    Ok(DocumentDiagnosticReportResult::Report(
-        DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
-            full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                items: encode(
-                    client,
-                    &params.text_document.uri,
-                    &doc.line_index,
-                    false,
-                    &results,
-                )?,
-                result_id: None, // don't attempt to cache, bugs such as neovim/neovim#32247
+    Ok(
+        DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
+            RelatedFullDocumentDiagnosticReport {
+                related_documents: None,
+                full_document_diagnostic_report: FullDocumentDiagnosticReport {
+                    items: encode(
+                        client,
+                        &params.text_document.uri,
+                        &doc.line_index,
+                        false,
+                        &results,
+                    )?,
+                    result_id: None, // don't attempt to cache, bugs such as neovim/neovim#32247
+                },
             },
-            related_documents: None,
-        }),
-    ))
+        ),
+    )
 }
 
 /// publish diagnostics (push)
@@ -112,11 +111,11 @@ fn encode(
             Ok(Diagnostic {
                 range,
                 severity: Some(lsp_severity),
-                code: Some(NumberOrString::String(rule.name.clone())),
+                code: Some(Code::String(rule.name.clone())),
                 code_description: client
                     .supports_code_description(push)
                     .then(|| CodeDescription {
-                        href: Uri::from_str(&rule.url).expect("rule url should exist"),
+                        href: Uri(rule.url.clone()),
                     }),
                 source: Some("pegon".to_owned()),
                 message: diagnostic.title.clone(),

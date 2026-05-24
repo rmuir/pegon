@@ -3,13 +3,11 @@
 
 use std::thread;
 
-use ls_types::{
-    ClientCapabilities, DiagnosticClientCapabilities, GeneralClientCapabilities, InitializeParams,
-    PositionEncodingKind, TextDocumentClientCapabilities, TextDocumentSyncClientCapabilities,
-    notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, Notification as _,
-    },
-    request::{DocumentDiagnosticRequest, Request as _},
+use gen_lsp_types::{
+    ClientCapabilities, DiagnosticClientCapabilities, DidChangeTextDocumentNotification,
+    DidCloseTextDocumentNotification, DidOpenTextDocumentNotification, DocumentDiagnosticRequest,
+    GeneralClientCapabilities, InitializeParams, Notification as _, PositionEncodingKind,
+    Request as _, TextDocumentClientCapabilities, TextDocumentSyncClientCapabilities,
 };
 use lsp_server::Connection;
 use pegon::lsp::start;
@@ -98,10 +96,22 @@ fn dynamic_registration() {
     assert!(result.is_some());
     let params = result.unwrap().registrations;
     assert_eq!(params.len(), 4);
-    assert_eq!(params[0].method, DidOpenTextDocument::METHOD);
-    assert_eq!(params[1].method, DidChangeTextDocument::METHOD);
-    assert_eq!(params[2].method, DidCloseTextDocument::METHOD);
-    assert_eq!(params[3].method, DocumentDiagnosticRequest::METHOD);
+    assert_eq!(
+        params[0].method,
+        DidOpenTextDocumentNotification::METHOD.to_string()
+    );
+    assert_eq!(
+        params[1].method,
+        DidChangeTextDocumentNotification::METHOD.to_string()
+    );
+    assert_eq!(
+        params[2].method,
+        DidCloseTextDocumentNotification::METHOD.to_string()
+    );
+    assert_eq!(
+        params[3].method,
+        DocumentDiagnosticRequest::METHOD.to_string()
+    );
 }
 
 /// make sure if the stream disconnects that the error makes it out

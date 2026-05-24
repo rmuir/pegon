@@ -1,24 +1,19 @@
 #![expect(clippy::panic, reason = "tests")]
-#![expect(clippy::unwrap_used, reason = "tests")]
 #![expect(clippy::tests_outside_test_module, reason = "false positive")]
 
-use core::str::FromStr as _;
-
-use indoc::indoc;
-use ls_types::{
-    ClientCapabilities, CodeDescription, Diagnostic, DiagnosticClientCapabilities,
-    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentDiagnosticParams,
-    DocumentDiagnosticReport, DocumentDiagnosticReportResult, InitializeParams, Location,
-    NumberOrString, PartialResultParams, Position, PublishDiagnosticsClientCapabilities, Range,
-    TagSupport, TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
-    TextDocumentIdentifier, TextDocumentItem, TextDocumentSyncClientCapabilities, Uri,
-    VersionedTextDocumentIdentifier, WorkDoneProgressParams,
-    notification::{
-        DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, PublishDiagnostics,
-    },
-    request::DocumentDiagnosticRequest,
+use gen_lsp_types::{
+    ClientCapabilities, ClientDiagnosticsTagOptions, Code, CodeDescription, Diagnostic,
+    DiagnosticClientCapabilities, DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag,
+    DiagnosticsCapabilities, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticReport,
+    DocumentDiagnosticRequest, InitializeParams, Location, PartialResultParams, Position,
+    PublishDiagnosticsClientCapabilities, PublishDiagnosticsNotification, Range,
+    TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
+    TextDocumentContentChangePartial, TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentSyncClientCapabilities, VersionedTextDocumentIdentifier, WorkDoneProgressParams,
 };
+use indoc::indoc;
 use lsp_client::LspClient;
 
 pub mod lsp_client;
@@ -27,9 +22,9 @@ pub mod lsp_client;
 #[test]
 fn diagnostics() {
     let client = LspClient::new(InitializeParams::default());
-    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+    client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
             text: indoc! {r#"
@@ -39,7 +34,7 @@ fn diagnostics() {
             .into(),
         },
     });
-    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    let diagnostics = client.read_notify::<PublishDiagnosticsNotification>();
     // we didn't sign up for this
     assert_eq!(None, diagnostics.version);
     // one problem
@@ -55,8 +50,8 @@ fn diagnostics() {
                     character: 16
                 }
             },
-            severity: Some(DiagnosticSeverity::WARNING),
-            code: Some(NumberOrString::String("lowercase-class".into())),
+            severity: Some(DiagnosticSeverity::Warning),
+            code: Some(Code::String("lowercase-class".into())),
             source: Some("pegon".into()),
             message: "Lowercase class: `foo`".into(),
             ..Default::default()
@@ -69,9 +64,9 @@ fn diagnostics() {
 #[test]
 fn push_clear_on_close() {
     let client = LspClient::new(InitializeParams::default());
-    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+    client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
             text: indoc! {r#"
@@ -81,16 +76,16 @@ fn push_clear_on_close() {
             .into(),
         },
     });
-    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    let diagnostics = client.read_notify::<PublishDiagnosticsNotification>();
     // one problem
     assert_eq!(1, diagnostics.diagnostics.len());
     // close the file
-    client.notify::<DidCloseTextDocument>(DidCloseTextDocumentParams {
+    client.notify::<DidCloseTextDocumentNotification>(DidCloseTextDocumentParams {
         text_document: TextDocumentIdentifier {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
         },
     });
-    let cleared = client.read_notify::<PublishDiagnostics>();
+    let cleared = client.read_notify::<PublishDiagnosticsNotification>();
     assert_eq!(0, cleared.diagnostics.len());
 }
 
@@ -107,19 +102,25 @@ fn full_capabilities() -> ClientCapabilities {
             diagnostic: Some(DiagnosticClientCapabilities {
                 related_document_support: Some(true),
                 dynamic_registration: Some(true),
-                related_information: Some(true),
-                code_description_support: Some(true),
-                data_support: Some(true),
-                tag_support: None, // bug in ls_types
+                diagnostics_capabilities: DiagnosticsCapabilities {
+                    related_information: Some(true),
+                    code_description_support: Some(true),
+                    data_support: Some(true),
+                    tag_support: Some(ClientDiagnosticsTagOptions {
+                        value_set: vec![DiagnosticTag::Unnecessary, DiagnosticTag::Deprecated],
+                    }),
+                },
             }),
             publish_diagnostics: Some(PublishDiagnosticsClientCapabilities {
-                related_information: Some(true),
-                code_description_support: Some(true),
                 version_support: Some(true),
-                data_support: Some(true),
-                tag_support: Some(TagSupport {
-                    value_set: vec![DiagnosticTag::UNNECESSARY, DiagnosticTag::DEPRECATED],
-                }),
+                diagnostics_capabilities: DiagnosticsCapabilities {
+                    related_information: Some(true),
+                    code_description_support: Some(true),
+                    data_support: Some(true),
+                    tag_support: Some(ClientDiagnosticsTagOptions {
+                        value_set: vec![DiagnosticTag::Unnecessary, DiagnosticTag::Deprecated],
+                    }),
+                },
             }),
             ..Default::default()
         }),
@@ -134,9 +135,9 @@ fn pull_diagnostics() {
         capabilities: full_capabilities(),
         ..Default::default()
     });
-    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+    client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
             text: indoc! {r#"
@@ -148,7 +149,7 @@ fn pull_diagnostics() {
     });
     let result = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
         text_document: TextDocumentIdentifier {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
         },
         previous_result_id: None,
         identifier: None,
@@ -160,8 +161,7 @@ fn pull_diagnostics() {
         },
     });
 
-    let DocumentDiagnosticReportResult::Report(DocumentDiagnosticReport::Full(full)) = result
-    else {
+    let DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) = result else {
         panic!();
     };
 
@@ -180,17 +180,16 @@ fn pull_diagnostics() {
                     character: 16
                 }
             },
-            severity: Some(DiagnosticSeverity::WARNING),
-            code: Some(NumberOrString::String("lowercase-class".into())),
+            severity: Some(DiagnosticSeverity::Warning),
+            code: Some(Code::String("lowercase-class".into())),
             source: Some("pegon".into()),
             message: "Lowercase class: `foo`".into(),
             code_description: Some(CodeDescription {
-                href: Uri::from_str("https://github.com/rmuir/pegon/wiki/lints#lowercase-class")
-                    .unwrap(),
+                href: "https://github.com/rmuir/pegon/wiki/lints#lowercase-class".into()
             }),
             related_information: Some(vec![DiagnosticRelatedInformation {
                 location: Location {
-                    uri: Uri::from_str("file:///Foo.java").unwrap(),
+                    uri: "file:///Foo.java".into(),
                     range: Range {
                         start: Position {
                             line: 0,
@@ -214,9 +213,9 @@ fn pull_diagnostics() {
 #[test]
 fn diagnostics_on_change() {
     let client = LspClient::new(InitializeParams::default());
-    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+    client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
             text: indoc! {r#"
@@ -226,31 +225,38 @@ fn diagnostics_on_change() {
             .into(),
         },
     });
-    let diagnostics = client.read_notify::<PublishDiagnostics>();
+    let diagnostics = client.read_notify::<PublishDiagnosticsNotification>();
     // no problems
     assert!(diagnostics.diagnostics.is_empty());
-    client.notify::<DidChangeTextDocument>(DidChangeTextDocumentParams {
+    client.notify::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
         text_document: VersionedTextDocumentIdentifier {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            text_document_identifier: TextDocumentIdentifier {
+                uri: "file:///Foo.java".into(),
+            },
             version: 1,
         },
-        content_changes: vec![TextDocumentContentChangeEvent {
-            range: Some(Range {
-                start: Position {
-                    line: 0,
-                    character: 13,
+        content_changes: vec![
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(
+                TextDocumentContentChangePartial {
+                    range: Range {
+                        start: Position {
+                            line: 0,
+                            character: 13,
+                        },
+                        end: Position {
+                            line: 0,
+                            character: 14,
+                        },
+                    },
+                    #[expect(deprecated, reason = "unavoidable")]
+                    range_length: None,
+                    text: "f".into(),
                 },
-                end: Position {
-                    line: 0,
-                    character: 14,
-                },
-            }),
-            range_length: None,
-            text: "f".into(),
-        }],
+            ),
+        ],
     });
-    let changed = client.read_notify::<PublishDiagnostics>();
+    let changed = client.read_notify::<PublishDiagnosticsNotification>();
     assert_eq!(1, changed.diagnostics.len());
-    let code = Some(NumberOrString::String("lowercase-class".into()));
+    let code = Some(Code::String("lowercase-class".into()));
     assert_eq!(code, changed.diagnostics[0].code);
 }

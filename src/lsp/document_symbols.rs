@@ -1,9 +1,9 @@
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use ls_types::{
-    DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, Location, SymbolInformation,
-    SymbolKind, SymbolTag, Uri,
+use gen_lsp_types::{
+    BaseSymbolInformation, DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, Location,
+    SymbolInformation, SymbolKind, SymbolTag, Uri,
 };
 use tree_sitter::{Language, Query, QueryCursor, Range, StreamingIterator as _};
 
@@ -16,13 +16,13 @@ pub fn request(
 ) -> Result<DocumentSymbolResponse> {
     let symbols = nested(client, doc)?;
     if client.supports_hierarchical_symbols() {
-        Ok(DocumentSymbolResponse::Nested(symbols))
+        Ok(DocumentSymbolResponse::DocumentSymbolList(symbols))
     } else {
         let mut flat: Vec<SymbolInformation> = Vec::with_capacity(symbols.len());
         for symbol in symbols {
             flatten(&mut flat, client, &params.text_document.uri, &symbol, None);
         }
-        Ok(DocumentSymbolResponse::Flat(flat))
+        Ok(DocumentSymbolResponse::SymbolInformationList(flat))
     }
 }
 
@@ -34,12 +34,15 @@ fn flatten(
     parent: Option<&DocumentSymbol>,
 ) {
     flat.push(SymbolInformation {
-        name: symbol.name.clone(),
-        kind: symbol.kind,
-        tags: if client.supports_tags() {
-            symbol.tags.clone()
-        } else {
-            None
+        base_symbol_information: BaseSymbolInformation {
+            name: symbol.name.clone(),
+            kind: symbol.kind,
+            tags: if client.supports_tags() {
+                symbol.tags.clone()
+            } else {
+                None
+            },
+            container_name: parent.map(|node| node.name.clone()),
         },
         #[expect(deprecated, reason = "unavoidable")]
         deprecated: symbol.deprecated,
@@ -47,7 +50,6 @@ fn flatten(
             uri: uri.clone(),
             range: symbol.range,
         },
-        container_name: parent.map(|node| node.name.clone()),
     });
     if let Some(children) = symbol.children.as_ref() {
         for child in children {
@@ -89,7 +91,7 @@ impl Symbol {
             name: self.name.clone(),
             kind: self.kind,
             detail: self.detail.clone(),
-            tags: self.deprecated.then(|| vec![SymbolTag::DEPRECATED]),
+            tags: self.deprecated.then(|| vec![SymbolTag::Deprecated]),
             #[expect(deprecated, reason = "unavoidable")]
             deprecated: None,
             range: client
@@ -211,7 +213,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
-        let mut kind: Option<&str> = None;
+        let mut kind: Option<SymbolKind> = None;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
@@ -219,16 +221,19 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             #[expect(clippy::single_match, reason = "TODO")]
             match key {
                 "kind" => {
-                    kind = value;
+                    let code = value
+                        .expect("kind should have a value")
+                        .parse::<u32>()
+                        .expect("value should be an integer");
+                    kind = Some(
+                        SymbolKind::try_from(code).expect("kind should be a valid SymbolKind"),
+                    );
                 }
                 _ => {}
             }
         }
         patterns.push(Pattern {
-            kind: kind
-                .expect("pattern should have a kind")
-                .try_into()
-                .expect("should map to lsp kind"),
+            kind: kind.expect("pattern should have a kind"),
         });
     }
     patterns

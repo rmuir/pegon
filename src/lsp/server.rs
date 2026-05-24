@@ -7,32 +7,28 @@ use std::{
 
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
-use line_index::LineIndex;
-use ls_types::{
-    CancelParams, CodeAction, CodeActionKind, CodeActionOptions, CodeActionParams,
-    CodeActionProviderCapability, DiagnosticOptions, DiagnosticRegistrationOptions,
-    DiagnosticServerCapabilities, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentFilter, DocumentSymbolOptions,
-    DocumentSymbolParams, FoldingRangeParams, FoldingRangeProviderCapability, InitializeResult,
-    LogMessageParams, MessageType, NumberOrString, OneOf, Registration, RegistrationParams,
-    SelectionRangeOptions, SelectionRangeParams, SelectionRangeProviderCapability,
-    SelectionRangeRegistrationOptions, ServerCapabilities, ServerInfo,
-    StaticTextDocumentColorProviderOptions, StaticTextDocumentRegistrationOptions,
-    TextDocumentChangeRegistrationOptions, TextDocumentRegistrationOptions,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
-    WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
-    notification::{
-        Cancel, DidChangeTextDocument, DidCloseTextDocument, DidOpenTextDocument, LogMessage,
-        Notification as _, PublishDiagnostics,
-    },
-    request::{
-        CodeActionRequest, CodeActionResolveRequest, DocumentDiagnosticRequest,
-        DocumentSymbolRequest, FoldingRangeRequest, RegisterCapability, Request as _,
-        SelectionRangeRequest,
-    },
+use gen_lsp_types::{
+    CancelParams, ChangeNotifications, CodeAction, CodeActionKind, CodeActionOptions,
+    CodeActionParams, CodeActionProvider, CodeActionRegistrationOptions, CodeActionRequest,
+    CodeActionResolveRequest, DiagnosticOptions, DiagnosticProvider, DiagnosticRegistrationOptions,
+    DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
+    DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentFilter,
+    DocumentSymbolOptions, DocumentSymbolParams, DocumentSymbolProvider, DocumentSymbolRequest,
+    FoldingRangeOptions, FoldingRangeParams, FoldingRangeProvider, FoldingRangeRegistrationOptions,
+    FoldingRangeRequest, Id, InitializeResult, LogMessageNotification, LogMessageParams,
+    MessageType, Notification as _, PublishDiagnosticsNotification, Registration,
+    RegistrationParams, RegistrationRequest, Request as _, SelectionRangeOptions,
+    SelectionRangeParams, SelectionRangeProvider, SelectionRangeRegistrationOptions,
+    SelectionRangeRequest, ServerCapabilities, ServerInfo, StaticRegistrationOptions,
+    TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
+    TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
+    WorkspaceOptions,
 };
+use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
 use crate::lsp::client::Client;
@@ -128,11 +124,13 @@ impl ThreadPool {
 impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
-        let document_selector = Some(vec![DocumentFilter {
-            language: Some("java".into()),
-            scheme: None,
-            pattern: None,
-        }]);
+        let document_selector = Some(vec![DocumentFilter::TextDocumentFilter(
+            TextDocumentFilter::Language(TextDocumentFilterLanguage {
+                language: "java".into(),
+                scheme: None,
+                pattern: None,
+            }),
+        )]);
         let diagnostic_options = DiagnosticRegistrationOptions {
             diagnostic_options: DiagnosticOptions {
                 identifier: Some(env!("CARGO_PKG_NAME").into()),
@@ -145,9 +143,8 @@ impl Server {
         };
         let code_action_options = CodeActionOptions {
             code_action_kinds: Some(vec![
-                CodeActionKind::QUICKFIX,
-                CodeActionKind::SOURCE_ORGANIZE_IMPORTS,
-                CodeActionKind::new(concat!(env!("CARGO_PKG_NAME"), ".organizeImports")),
+                CodeActionKind::QuickFix,
+                CodeActionKind::new("source.organizeImports"),
             ]),
             resolve_provider: Some(true),
             ..CodeActionOptions::default()
@@ -157,17 +154,23 @@ impl Server {
             work_done_progress_options: WorkDoneProgressOptions::default(),
         };
         let folding_range_options = FoldingRangeRegistrationOptions {
-            folding_range_options: WorkDoneProgressOptions::default(),
-            registration_options: StaticTextDocumentRegistrationOptions {
+            folding_range_options: FoldingRangeOptions {
+                work_done_progress_options: WorkDoneProgressOptions::default(),
+            },
+            static_registration_options: StaticRegistrationOptions {
+                id: Some(FoldingRangeRequest::METHOD.into()),
+            },
+            text_document_registration_options: TextDocumentRegistrationOptions {
                 document_selector: document_selector.clone(),
-                id: Some(FoldingRangeRequest::METHOD.to_owned()),
             },
         };
         let selection_range_options = SelectionRangeRegistrationOptions {
             selection_range_options: SelectionRangeOptions::default(),
-            registration_options: StaticTextDocumentRegistrationOptions {
+            static_registration_options: StaticRegistrationOptions {
+                id: Some(SelectionRangeRequest::METHOD.into()),
+            },
+            text_document_registration_options: TextDocumentRegistrationOptions {
                 document_selector: document_selector.clone(),
-                id: Some(SelectionRangeRequest::METHOD.to_owned()),
             },
         };
         // if the client supports dynamic registration of the capability, then we use that.
@@ -175,7 +178,6 @@ impl Server {
         // it allows pushing a filter for "java" language documents to the client, to avoid waste.
         // otherwise, advertise it statically, but not both! (see spec)
         let result = serde_json::json!(InitializeResult {
-            offset_encoding: None,
             server_info: Some(ServerInfo {
                 name: env!("CARGO_PKG_NAME").into(),
                 version: Some(env!("CARGO_PKG_VERSION").into()),
@@ -184,60 +186,57 @@ impl Server {
                 code_action_provider: if client.registers_code_actions() {
                     None
                 } else {
-                    Some(CodeActionProviderCapability::Options(
+                    Some(CodeActionProvider::CodeActionOptions(
                         code_action_options.clone(),
                     ))
                 },
                 diagnostic_provider: if client.registers_diagnostics() {
                     None
                 } else {
-                    Some(DiagnosticServerCapabilities::RegistrationOptions(
+                    Some(DiagnosticProvider::DiagnosticRegistrationOptions(
                         diagnostic_options.clone(),
                     ))
                 },
                 document_symbol_provider: if client.registers_document_symbols() {
                     None
                 } else {
-                    Some(OneOf::Right(document_symbol_options.clone()))
+                    Some(DocumentSymbolProvider::DocumentSymbolOptions(
+                        document_symbol_options.clone(),
+                    ))
                 },
                 folding_range_provider: if client.registers_folding_range() {
                     None
                 } else {
-                    // TODO: lsp types are really broken here
-                    Some(FoldingRangeProviderCapability::Options(
-                        StaticTextDocumentColorProviderOptions {
-                            document_selector: document_selector.clone(),
-                            id: Some(FoldingRangeRequest::METHOD.to_owned()),
-                        },
+                    Some(FoldingRangeProvider::FoldingRangeRegistrationOptions(
+                        folding_range_options.clone(),
                     ))
                 },
                 position_encoding: Some(client.negotiated_encoding()),
                 selection_range_provider: if client.registers_selection_range() {
                     None
                 } else {
-                    Some(SelectionRangeProviderCapability::RegistrationOptions(
+                    Some(SelectionRangeProvider::SelectionRangeRegistrationOptions(
                         selection_range_options.clone(),
                     ))
                 },
                 text_document_sync: if client.registers_sync() {
                     None
                 } else {
-                    Some(TextDocumentSyncCapability::Options(
-                        TextDocumentSyncOptions {
-                            open_close: Some(true),
-                            change: Some(TextDocumentSyncKind::INCREMENTAL),
-                            ..TextDocumentSyncOptions::default()
-                        },
-                    ))
+                    Some(TextDocumentSync::Options(TextDocumentSyncOptions {
+                        open_close: Some(true),
+                        change: Some(TextDocumentSyncKind::Incremental),
+                        ..TextDocumentSyncOptions::default()
+                    }))
                 },
                 // we don't care about classpaths or anything on disk, so advertise
                 // the workspace support for better client-side reuse of the server.
-                workspace: Some(WorkspaceServerCapabilities {
+                workspace: Some(WorkspaceOptions {
                     workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                         supported: Some(true),
-                        change_notifications: Some(OneOf::Left(false)),
+                        change_notifications: Some(ChangeNotifications::Bool(false)),
                     }),
                     file_operations: None,
+                    text_document_content: None, // TODO!
                 }),
                 ..ServerCapabilities::default()
             },
@@ -246,25 +245,27 @@ impl Server {
         let mut registrations: Vec<Registration> = Vec::with_capacity(3);
         if client.registers_sync() {
             registrations.push(Registration {
-                id: DidOpenTextDocument::METHOD.to_owned(),
-                method: DidOpenTextDocument::METHOD.to_owned(),
+                id: DidOpenTextDocumentNotification::METHOD.into(),
+                method: DidOpenTextDocumentNotification::METHOD.into(),
                 register_options: Some(serde_json::to_value(TextDocumentRegistrationOptions {
                     document_selector: document_selector.clone(),
                 })?),
             });
             registrations.push(Registration {
-                id: DidChangeTextDocument::METHOD.to_owned(),
-                method: DidChangeTextDocument::METHOD.to_owned(),
+                id: DidChangeTextDocumentNotification::METHOD.into(),
+                method: DidChangeTextDocumentNotification::METHOD.into(),
                 register_options: Some(serde_json::to_value(
                     TextDocumentChangeRegistrationOptions {
-                        document_selector: document_selector.clone(),
-                        sync_kind: TextDocumentSyncKind::INCREMENTAL,
+                        text_document_registration_options: TextDocumentRegistrationOptions {
+                            document_selector: document_selector.clone(),
+                        },
+                        sync_kind: TextDocumentSyncKind::Incremental,
                     },
                 )?),
             });
             registrations.push(Registration {
-                id: DidCloseTextDocument::METHOD.to_owned(),
-                method: DidCloseTextDocument::METHOD.to_owned(),
+                id: DidCloseTextDocumentNotification::METHOD.into(),
+                method: DidCloseTextDocumentNotification::METHOD.into(),
                 register_options: Some(serde_json::to_value(TextDocumentRegistrationOptions {
                     document_selector: document_selector.clone(),
                 })?),
@@ -272,22 +273,22 @@ impl Server {
         }
         if client.registers_diagnostics() {
             registrations.push(Registration {
-                id: DocumentDiagnosticRequest::METHOD.to_owned(),
-                method: DocumentDiagnosticRequest::METHOD.to_owned(),
+                id: DocumentDiagnosticRequest::METHOD.into(),
+                method: DocumentDiagnosticRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(diagnostic_options)?),
             });
         }
         if client.registers_document_symbols() {
             registrations.push(Registration {
-                id: DocumentSymbolRequest::METHOD.to_owned(),
-                method: DocumentSymbolRequest::METHOD.to_owned(),
+                id: DocumentSymbolRequest::METHOD.into(),
+                method: DocumentSymbolRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(document_symbol_options)?),
             });
         }
         if client.registers_code_actions() {
             registrations.push(Registration {
-                id: CodeActionRequest::METHOD.to_owned(),
-                method: CodeActionRequest::METHOD.to_owned(),
+                id: CodeActionRequest::METHOD.into(),
+                method: CodeActionRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
                     text_document_registration_options: TextDocumentRegistrationOptions {
                         document_selector,
@@ -298,20 +299,20 @@ impl Server {
         }
         if client.registers_folding_range() {
             registrations.push(Registration {
-                id: FoldingRangeRequest::METHOD.to_owned(),
-                method: FoldingRangeRequest::METHOD.to_owned(),
+                id: FoldingRangeRequest::METHOD.into(),
+                method: FoldingRangeRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(folding_range_options)?),
             });
         }
         if client.registers_selection_range() {
             registrations.push(Registration {
-                id: SelectionRangeRequest::METHOD.to_owned(),
-                method: SelectionRangeRequest::METHOD.to_owned(),
+                id: SelectionRangeRequest::METHOD.into(),
+                method: SelectionRangeRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(selection_range_options)?),
             });
         }
         if !registrations.is_empty() {
-            connection.sender.send(request::<RegisterCapability>(
+            connection.sender.send(request::<RegistrationRequest>(
                 0.into(),
                 RegistrationParams { registrations },
             ))?;
@@ -386,7 +387,7 @@ impl Server {
         let sender = self.connection.sender.clone();
         let in_flight = Arc::clone(&self.in_flight);
         match req.method.as_str() {
-            CodeActionRequest::METHOD => {
+            "textDocument/codeAction" => {
                 let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
                 let _doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
@@ -402,7 +403,7 @@ impl Server {
                     drop(sender.send(response));
                 })
             }
-            CodeActionResolveRequest::METHOD => {
+            "codeAction/resolve" => {
                 // TODO: deserialize 'data' and process
                 let params: CodeAction = serde_json::from_value(req.params.clone())?;
                 self.workers.execute(move || {
@@ -418,7 +419,7 @@ impl Server {
                     drop(sender.send(response));
                 })
             }
-            DocumentDiagnosticRequest::METHOD => {
+            "textDocument/diagnostic" => {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
@@ -437,7 +438,7 @@ impl Server {
                     drop(sender.send(response));
                 })
             }
-            DocumentSymbolRequest::METHOD => {
+            "textDocument/documentSymbol" => {
                 let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
@@ -460,7 +461,7 @@ impl Server {
                     drop(sender.send(response));
                 })
             }
-            FoldingRangeRequest::METHOD => {
+            "textDocument/foldingRange" => {
                 let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
@@ -479,7 +480,7 @@ impl Server {
                     drop(sender.send(response));
                 })
             }
-            SelectionRangeRequest::METHOD => {
+            "textDocument/selectionRange" => {
                 let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
@@ -529,26 +530,26 @@ fn handle_notification(
     in_flight: &InFlight,
 ) -> Result<Option<Message>> {
     let response = match note.method.as_str() {
-        DidOpenTextDocument::METHOD => {
+        "textDocument/didOpen" => {
             let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
             let uri = params.text_document.uri.clone();
             super::sync::did_open(client, params, state).context(uri.to_string())?
         }
-        DidChangeTextDocument::METHOD => {
+        "textDocument/didChange" => {
             let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
-            let uri = params.text_document.uri.clone();
+            let uri = params.text_document.text_document_identifier.uri.clone();
             super::sync::did_change(client, params, state).context(uri.to_string())?
         }
-        DidCloseTextDocument::METHOD => {
+        "textDocument/didClose" => {
             let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
             let uri = params.text_document.uri.clone();
             super::sync::did_close(client, params, state).context(uri.to_string())?
         }
-        Cancel::METHOD => {
+        "$/cancelRequest" => {
             let params: CancelParams = serde_json::from_value(note.params)?;
             let request_id: RequestId = match params.id {
-                NumberOrString::Number(id) => id.into(),
-                NumberOrString::String(id) => id.into(),
+                Id::Int(id) => id.into(),
+                Id::String(id) => id.into(),
             };
             if let Some(cancelled) = in_flight
                 .lock()
@@ -564,7 +565,7 @@ fn handle_notification(
         // log an error otherwise
         _ => bail!("unexpected notification"),
     }
-    .map(notification::<PublishDiagnostics>);
+    .map(notification::<PublishDiagnosticsNotification>);
     Ok(response)
 }
 
@@ -597,25 +598,25 @@ fn finish_request(in_flight: &InFlight, id: RequestId, response: Message) -> Mes
 /// creates a notification message to the client
 fn notification<N>(params: N::Params) -> Message
 where
-    N: ls_types::notification::Notification,
+    N: gen_lsp_types::Notification,
     N::Params: Serialize,
 {
-    Message::Notification(Notification::new(N::METHOD.to_owned(), params))
+    Message::Notification(Notification::new(N::METHOD.to_string(), params))
 }
 
 // creates a request to the client
 fn request<R>(id: RequestId, params: R::Params) -> Message
 where
-    R: ls_types::request::Request,
+    R: gen_lsp_types::Request,
     R::Params: Serialize,
 {
-    Message::Request(Request::new(id, R::METHOD.to_owned(), params))
+    Message::Request(Request::new(id, R::METHOD.to_string(), params))
 }
 
 /// creates a successful response to the client
 fn response<R>(id: RequestId, result: R::Result) -> Message
 where
-    R: ls_types::request::Request,
+    R: gen_lsp_types::Request,
     R::Result: Serialize,
 {
     Message::Response(Response::new_ok(id, result))
@@ -629,9 +630,9 @@ fn error(id: RequestId, code: ErrorCode, message: String) -> Message {
 /// logs via notification an error to the LSP client
 fn log_error(method: &String, message: &String) -> Message {
     Message::Notification(Notification::new(
-        LogMessage::METHOD.to_owned(),
+        LogMessageNotification::METHOD.into(),
         LogMessageParams {
-            typ: MessageType::ERROR,
+            kind: MessageType::Error,
             message: format!("pegon[{method}]: {message}"),
         },
     ))
@@ -641,33 +642,7 @@ fn log_error(method: &String, message: &String) -> Message {
 fn java_document(docs: &HashMap<String, Resource>, uri: &Uri) -> Result<Arc<Document>> {
     match docs.get(&uri.to_string()) {
         Some(Resource::Java(doc)) => Ok(Arc::clone(doc)),
-        Some(Resource::Other) => bail!("non-java document: {}", **uri),
-        None => bail!("document not open: {}", **uri),
+        Some(Resource::Other) => bail!("non-java document: {uri}"),
+        None => bail!("document not open: {uri}"),
     }
-}
-
-/// Code Action registration options.
-///
-/// @since 3.17.0
-#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CodeActionRegistrationOptions {
-    #[serde(flatten)]
-    pub text_document_registration_options: TextDocumentRegistrationOptions,
-
-    #[serde(flatten)]
-    pub code_action_options: CodeActionOptions,
-}
-
-/// Folding Range registration options.
-///
-/// @since 3.17.0
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FoldingRangeRegistrationOptions {
-    #[serde(flatten)]
-    pub registration_options: StaticTextDocumentRegistrationOptions,
-
-    #[serde(flatten)]
-    pub folding_range_options: WorkDoneProgressOptions,
 }

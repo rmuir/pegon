@@ -3,7 +3,7 @@
 (object_creation_expression
   type: (type_identifier) @selection
   (class_body)
-  (#set! "kind" "Object")) @range
+  (#set! "kind" "19")) @range
 
 ; kind=11 (Interface) ?
 (annotation_type_declaration
@@ -11,7 +11,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! "kind" "Interface")) @range
+  (#set! "kind" "11")) @range
 
 ; kind=5 (Class)
 (class_declaration
@@ -20,7 +20,7 @@
       name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
-  (#set! "kind" "Class")) @range
+  (#set! "kind" "5")) @range
 
 ; kind=10 (Enum)
 (enum_declaration
@@ -28,7 +28,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! "kind" "Enum")) @range
+  (#set! "kind" "10")) @range
 
 ; kind=11 (Interface)
 (interface_declaration
@@ -37,7 +37,7 @@
       name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
-  (#set! "kind" "Interface")) @range
+  (#set! "kind" "11")) @range
 
 ; kind=23 (Struct fallback to Class)
 (record_declaration
@@ -46,7 +46,7 @@
       name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
-  (#set! "kind" "Struct")) @range
+  (#set! "kind" "23")) @range
 
 ; "members"
 ; kind=6 (Method)
@@ -56,7 +56,7 @@
       name: (identifier) @marker)*)?
   type: (_) @detail
   name: (identifier) @selection
-  (#set! "kind" "Method")) @range
+  (#set! "kind" "6")) @range
 
 ; kind=9 (Constructor)
 (compact_constructor_declaration
@@ -64,7 +64,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! "kind" "Constructor")) @range
+  (#set! "kind" "9")) @range
 
 ; kind=14 (Constant)
 (constant_declaration
@@ -74,7 +74,7 @@
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
-  (#set! "kind" "Constant")) @range
+  (#set! "kind" "14")) @range
 
 ; kind=9 (Constructor)
 (constructor_declaration
@@ -96,7 +96,7 @@
       ","
     ]*
     ")" @signature)
-  (#set! "kind" "Constructor")) @range
+  (#set! "kind" "9")) @range
 
 ; kind=22 (EnumMember fallback to Field)
 (enum_constant
@@ -104,7 +104,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! "kind" "EnumMember")) @range
+  (#set! "kind" "22")) @range
 
 ; kind=14 (Constant)
 ; static final field
@@ -121,7 +121,7 @@
     name: (identifier) @selection)
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
-  (#set! "kind" "Constant")) @range
+  (#set! "kind" "14")) @range
 
 ; kind=8 (Field)
 ; final field
@@ -138,7 +138,7 @@
     name: (identifier) @selection)
   (#match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! "kind" "Field")) @range
+  (#set! "kind" "8")) @range
 
 ; kind=8 (Field)
 ; static field
@@ -155,7 +155,7 @@
     name: (identifier) @selection)
   (#not-match? @_modifiers "final")
   (#match? @_modifiers "static")
-  (#set! "kind" "Field")) @range
+  (#set! "kind" "8")) @range
 
 ; kind=8 (Field)
 ; member field
@@ -172,7 +172,7 @@
     name: (identifier) @selection)
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! "kind" "Field")) @range
+  (#set! "kind" "8")) @range
 
 ; kind=12 (Function)
 (method_declaration
@@ -200,7 +200,7 @@
     ]*
     ")" @signature)
   (#match? @_modifiers "static")
-  (#set! "kind" "Function")) @range
+  (#set! "kind" "12")) @range
 
 ; kind=6 (Method)
 (method_declaration
@@ -228,4 +228,4 @@
     ]*
     ")" @signature)
   (#not-match? @_modifiers "static")
-  (#set! "kind" "Method")) @range
+  (#set! "kind" "6")) @range

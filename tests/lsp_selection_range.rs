@@ -1,25 +1,23 @@
 #![expect(clippy::unwrap_used, reason = "tests")]
 #![expect(clippy::tests_outside_test_module, reason = "false positive")]
 
-use core::str::FromStr as _;
-
-use indoc::indoc;
-use ls_types::{
-    DidOpenTextDocumentParams, InitializeParams, PartialResultParams, Position, Range,
-    SelectionRange, SelectionRangeParams, TextDocumentIdentifier, TextDocumentItem, Uri,
-    WorkDoneProgressParams, notification::DidOpenTextDocument, request::SelectionRangeRequest,
+use gen_lsp_types::{
+    DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InitializeParams,
+    PartialResultParams, Position, Range, SelectionRange, SelectionRangeParams,
+    SelectionRangeRequest, TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
 };
+use indoc::indoc;
 use lsp_client::LspClient;
 
 pub mod lsp_client;
 
 /// simple document
 #[test]
-fn flat() {
+fn simple() {
     let client = LspClient::new(InitializeParams::default());
-    client.notify::<DidOpenTextDocument>(DidOpenTextDocumentParams {
+    client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
         text_document: TextDocumentItem {
-            uri: Uri::from_str("file:///Foo.java").unwrap(),
+            uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
             text: indoc! {r#"
@@ -35,7 +33,7 @@ fn flat() {
     let result = client
         .request::<SelectionRangeRequest>(SelectionRangeParams {
             text_document: TextDocumentIdentifier {
-                uri: Uri::from_str("file:///Foo.java").unwrap(),
+                uri: "file:///Foo.java".into(),
             },
             positions: vec![Position {
                 line: 2,

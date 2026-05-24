@@ -9,12 +9,11 @@ use std::{
 
 use anyhow::{Error, Result};
 use crossbeam_channel::{Receiver, after, select};
-use ls_types::request::{ExecuteCommand, RegisterCapability, Request as _};
-use ls_types::{ExecuteCommandParams, RegistrationParams};
-use ls_types::{
-    InitializeParams, InitializeResult, InitializedParams,
-    notification::{Exit, Initialized},
-    request::{Initialize, Shutdown},
+use gen_lsp_types::ExecuteCommandRequest;
+use gen_lsp_types::{ExecuteCommandParams, RegistrationParams};
+use gen_lsp_types::{
+    ExitNotification, InitializeParams, InitializeRequest, InitializeResult,
+    InitializedNotification, InitializedParams, ShutdownRequest,
 };
 use lsp_server::{Connection, Message, Request, Response};
 use pegon::lsp::start;
@@ -49,13 +48,13 @@ impl LspClient {
             thread: thread::spawn(move || start(server)),
         };
         // initialize with the server and save the results
-        let response = instance.request::<Initialize>(params);
+        let response = instance.request::<InitializeRequest>(params);
         *instance.init_response.borrow_mut() = Some(response);
-        instance.notify::<Initialized>(InitializedParams {});
+        instance.notify::<InitializedNotification>(InitializedParams {});
         // ensure dynamic registration is complete
-        instance.request::<ExecuteCommand>(ExecuteCommandParams {
+        instance.request::<ExecuteCommandRequest>(ExecuteCommandParams {
             command: "bogus".to_owned(),
-            arguments: vec![],
+            arguments: Some(vec![]),
             ..Default::default()
         });
         instance
@@ -76,10 +75,10 @@ impl LspClient {
 
     pub(crate) fn notify<N>(&self, params: N::Params)
     where
-        N: ls_types::notification::Notification,
+        N: gen_lsp_types::Notification,
         N::Params: Serialize,
     {
-        let notification = lsp_server::Notification::new(N::METHOD.to_owned(), params);
+        let notification = lsp_server::Notification::new(N::METHOD.into(), params);
         self.conn
             .sender
             .send(Message::Notification(notification))
@@ -88,7 +87,7 @@ impl LspClient {
 
     pub fn read_notify<N>(&self) -> N::Params
     where
-        N: ls_types::notification::Notification,
+        N: gen_lsp_types::Notification,
         N::Params: Serialize,
     {
         let message = self
@@ -103,13 +102,13 @@ impl LspClient {
 
     pub fn request<R>(&self, params: R::Params) -> R::Result
     where
-        R: ls_types::request::Request,
+        R: gen_lsp_types::Request,
         R::Params: Serialize,
     {
         let id = self.req_id.get();
         self.req_id.set(id.wrapping_add(1));
 
-        let req = Request::new(id.into(), R::METHOD.to_owned(), params);
+        let req = Request::new(id.into(), R::METHOD.into(), params);
         let value = self.send_request_(&req);
         serde_json::from_value(value).expect("able to deserialize")
     }
@@ -138,7 +137,7 @@ impl LspClient {
 
     fn process_request(&self, request: Request) {
         match request.method.as_str() {
-            RegisterCapability::METHOD => {
+            "client/registerCapability" => {
                 let params: RegistrationParams =
                     serde_json::from_value(request.params).expect("could deserialize");
                 *self.registrations.borrow_mut() = Some(params);
@@ -167,7 +166,7 @@ fn recv_timeout(receiver: &Receiver<Message>) -> Result<Option<Message>, ErrorKi
 
 impl Drop for LspClient {
     fn drop(&mut self) {
-        assert_eq!((), self.request::<Shutdown>(()));
-        self.notify::<Exit>(());
+        assert_eq!((), self.request::<ShutdownRequest>(()));
+        self.notify::<ExitNotification>(());
     }
 }

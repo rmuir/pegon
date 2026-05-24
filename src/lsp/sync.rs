@@ -3,11 +3,15 @@ use std::sync::Arc;
 use anyhow::Context as _;
 use anyhow::Result;
 use anyhow::bail;
-use line_index::LineIndex;
-use ls_types::{
+use gen_lsp_types::LanguageKind;
+use gen_lsp_types::TextDocumentContentChangeEvent::{
+    TextDocumentContentChangePartial, TextDocumentContentChangeWholeDocument,
+};
+use gen_lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     PublishDiagnosticsParams,
 };
+use line_index::LineIndex;
 use tree_sitter::InputEdit;
 
 use crate::lsp::diagnostics;
@@ -21,7 +25,7 @@ pub fn did_open(
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
     let lang = params.text_document.language_id;
-    if lang != "java" {
+    if lang != LanguageKind::Java {
         state.docs.insert(uri.to_string(), Resource::Other);
         bail!("non-java language_id: {lang}");
     }
@@ -58,7 +62,7 @@ pub fn did_change(
     params: DidChangeTextDocumentParams,
     state: &mut State,
 ) -> Result<Option<PublishDiagnosticsParams>> {
-    let uri = params.text_document.uri;
+    let uri = params.text_document.text_document_identifier.uri;
     let resource = state
         .docs
         .remove(&uri.to_string())
@@ -78,14 +82,18 @@ pub fn did_change(
         // validate range is legal UTF-8
         text.get(decoded.start_byte..decoded.end_byte)
             .context("illegal slice")?;
+        let change_text = match change {
+            TextDocumentContentChangePartial(partial) => partial.text,
+            TextDocumentContentChangeWholeDocument(whole) => whole.text,
+        };
         // edit document
-        text.replace_range(decoded.start_byte..decoded.end_byte, &change.text);
+        text.replace_range(decoded.start_byte..decoded.end_byte, &change_text);
         // rebuild index
         line_index = LineIndex::new(&text);
         // edit parse tree
         let new_end_byte = decoded
             .start_byte
-            .checked_add(change.text.len())
+            .checked_add(change_text.len())
             .context("overflow")?;
         let new_end_position =
             Client::to_point(new_end_byte, &line_index).context("illegal range")?;
