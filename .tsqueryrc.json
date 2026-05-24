@@ -16,11 +16,7 @@
     "java": "java-orchard"
   },
   "valid_captures": {
-    "injections": {
-      "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
-      "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
-    },
-    "lint": {
+    "diagnostics": {
       "error": "indicates the captured node is the source of the error",
       "visible": "indicates the captured node is relevant and should be visible",
       "context": "indicates captured node should be highlighted",
@@ -31,6 +27,10 @@
       "help": "instructions to address issue",
       "fix": "automatic fix to address the issue",
       "context.label": "label applied to context such as `previously defined here`"
+    },
+    "injections": {
+      "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
+      "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
     },
     "folds": {
       "range": "range of the folding region"

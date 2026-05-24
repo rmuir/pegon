@@ -6,7 +6,7 @@ use anyhow::Error;
 use core::fmt::{Display, Formatter};
 use std::path::Path;
 
-use crate::lint::{Lint, Severity, rule};
+use crate::diagnostics::{Diagnostic, Severity, rule};
 
 static GREY: Style = Ansi256Color(247).on_default();
 static FULL: Renderer = Renderer::styled()
@@ -43,7 +43,12 @@ impl From<Severity> for Level<'_> {
 /// # Errors
 ///
 /// This function will return an error if something goes wrong
-pub fn render(path: &Path, data: &[u8], errors: Vec<Lint>, concise: bool) -> Result<(), Error> {
+pub fn render(
+    path: &Path,
+    data: &[u8],
+    errors: Vec<Diagnostic>,
+    concise: bool,
+) -> Result<(), Error> {
     if errors.is_empty() {
         return Ok(());
     }

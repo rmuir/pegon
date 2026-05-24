@@ -2,7 +2,7 @@
 #![expect(clippy::tests_outside_test_module, reason = "false positive")]
 
 use gen_lsp_types::{
-    ClientCapabilities, ClientDiagnosticsTagOptions, Code, CodeDescription, Diagnostic,
+    ClientCapabilities, ClientDiagnosticsTagOptions, Code, CodeDescription,
     DiagnosticClientCapabilities, DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag,
     DiagnosticsCapabilities, DidChangeTextDocumentNotification, DidChangeTextDocumentParams,
     DidCloseTextDocumentNotification, DidCloseTextDocumentParams, DidOpenTextDocumentNotification,
@@ -39,7 +39,7 @@ fn diagnostics() {
     assert_eq!(None, diagnostics.version);
     // one problem
     assert_eq!(
-        vec![Diagnostic {
+        vec![gen_lsp_types::Diagnostic {
             range: Range {
                 start: Position {
                     line: 0,
@@ -169,7 +169,7 @@ fn pull_diagnostics() {
 
     // one problem
     assert_eq!(
-        vec![Diagnostic {
+        vec![gen_lsp_types::Diagnostic {
             range: Range {
                 start: Position {
                     line: 0,
@@ -185,7 +185,7 @@ fn pull_diagnostics() {
             source: Some("pegon".into()),
             message: "Lowercase class: `foo`".into(),
             code_description: Some(CodeDescription {
-                href: "https://github.com/rmuir/pegon/wiki/lints#lowercase-class".into()
+                href: "https://github.com/rmuir/pegon/wiki/diagnostics#lowercase-class".into()
             }),
             related_information: Some(vec![DiagnosticRelatedInformation {
                 location: Location {

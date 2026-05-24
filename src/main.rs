@@ -15,7 +15,7 @@ use tree_sitter::Parser;
 
 use pegon::cli;
 use pegon::console;
-use pegon::lint;
+use pegon::diagnostics;
 use pegon::lsp;
 
 static FILES: AtomicUsize = AtomicUsize::new(0);
@@ -28,7 +28,7 @@ fn check_file(parser: &mut Parser, path: &Path, concise: bool) -> Result<(), Err
     let tree = parser
         .parse(&data, None)
         .context("parser should be setup")?;
-    let result = lint::lint(&tree, &data)?;
+    let result = diagnostics::lint(&tree, &data)?;
     if !result.is_empty() {
         ERRORS.fetch_add(result.len(), Ordering::Relaxed);
         console::render(path, &data, result, concise)?;

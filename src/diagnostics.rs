@@ -6,7 +6,7 @@ use tree_sitter::{
 };
 
 /// Single diagnostic result
-pub struct Lint {
+pub struct Diagnostic {
     /// Matched rule
     pub rule_id: usize,
     /// Primary matching error node range
@@ -32,7 +32,7 @@ pub struct Lint {
 /// # Errors
 ///
 /// This function will return an error if rules are misconfigured.
-pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
+pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Diagnostic>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
     let mut matches = cursor
@@ -71,7 +71,7 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Lint>, Error> {
             .map(|item| item.range())
             .next();
 
-        lints.push(Lint {
+        lints.push(Diagnostic {
             rule_id: hit.pattern_index,
             range: node.range(),
             title: TEMPLATE_ENGINE.replace_all(&rule.title, &replacements),
@@ -208,7 +208,7 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         &crate::LANGUAGE.into(),
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/queries/java/lint.scm"
+            "/queries/java/diagnostics.scm"
         )),
     )
     .expect("query should compile")
@@ -272,7 +272,7 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
             context_label: context_label.map(str::to_owned),
             fix: fix.map(str::to_owned),
             url: format!(
-                "https://github.com/rmuir/pegon/wiki/lints#{}",
+                "https://github.com/rmuir/pegon/wiki/diagnostics#{}",
                 name.expect("pattern should have a name")
             ),
         });

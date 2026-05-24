@@ -1,13 +1,13 @@
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
-    Code, CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity,
+    Code, CodeDescription, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReport, FullDocumentDiagnosticReport, Location,
     PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Uri,
 };
 use line_index::LineIndex;
 
 use crate::{
-    lint::{Lint, Severity, lint, rule},
+    diagnostics::{Diagnostic, Severity, lint, rule},
     lsp::{Client, server::Document},
 };
 
@@ -67,8 +67,8 @@ fn encode(
     uri: &Uri,
     line_index: &LineIndex,
     push: bool,
-    results: &[Lint],
-) -> Result<Vec<Diagnostic>> {
+    results: &[Diagnostic],
+) -> Result<Vec<gen_lsp_types::Diagnostic>> {
     results
         .iter()
         .map(|diagnostic| {
@@ -108,7 +108,7 @@ fn encode(
                 },
                 message: diagnostic.help.clone(),
             });
-            Ok(Diagnostic {
+            Ok(gen_lsp_types::Diagnostic {
                 range,
                 severity: Some(lsp_severity),
                 code: Some(Code::String(rule.name.clone())),
