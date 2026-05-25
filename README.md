@@ -111,6 +111,13 @@ A. These features are planned, continue to use `ctags` for now.
 
 A. This feature is inherently slow, I recommend a good fuzzy finder or `ctags` instead.
 
+**Q. What about running tests from my editor? This is essential for TDD!**
+
+A. I strongly recommend [vim-test](https://github.com/vim-test/vim-test) for this.
+
+If your java build uses gradle, the daemon allows for very fast iteration with no config hassle.
+Black magic.
+
 **Q. Where's XYZ fancy refactoring? I can't live without it!**
 
 A. Currently the code actions are minimal. Check out some alternatives for now:
