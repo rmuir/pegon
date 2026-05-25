@@ -65,24 +65,24 @@ anyhow = "1.0.102"
 clap = { version = "4.6.1", features = ["derive", "env"] }
 # threading support
 crossbeam-channel = "0.5.15"
-# Traversing directories, respecting ignore files
-ignore = "0.4.25"
-# LSP support
-lsp-server = "0.7.9"
 # LSP data structures
 gen-lsp-types = "0.5.0"
+# Traversing directories, respecting ignore files
+ignore = "0.4.25"
+# convert offsets <-> lsp positions
+line-index = "0.1.2"
+# LSP support
+lsp-server = "0.7.9"
 # serialization
 serde = "1.0.228"
 # json serialization
 serde_json = "1.0.150"
-# convert offsets <-> lsp positions
-line-index = "0.1.2"
 # Parser framework
 tree-sitter = "0.26.9"
-# Parser framework
-tree-sitter-language = "0.1.7"
 # Parser for java language
 tree-sitter-java-orchard = "0.5.6"
+# Parser framework
+tree-sitter-language = "0.1.7"
 
 [dev-dependencies]
 # indented string literals in tests
