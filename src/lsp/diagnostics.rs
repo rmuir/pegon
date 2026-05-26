@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result};
 use gen_lsp_types::{
     Code, CodeDescription, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReport, FullDocumentDiagnosticReport, Location,
-    PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Uri,
+    Message, PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Uri,
 };
 use line_index::LineIndex;
 
@@ -118,7 +118,7 @@ fn encode(
                     },
                 ),
                 source: Some("pegon".to_owned()),
-                message: diagnostic.title.clone(),
+                message: Message::String(diagnostic.title.clone()),
                 related_information: client
                     .supports_related_information(push)
                     .then_some(related_information),

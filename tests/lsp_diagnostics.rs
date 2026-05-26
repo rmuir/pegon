@@ -110,6 +110,7 @@ fn full_capabilities() -> ClientCapabilities {
                         value_set: vec![DiagnosticTag::Unnecessary, DiagnosticTag::Deprecated],
                     }),
                 },
+                markup_message_support: Some(true),
             }),
             publish_diagnostics: Some(PublishDiagnosticsClientCapabilities {
                 version_support: Some(true),
