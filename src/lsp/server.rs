@@ -16,15 +16,15 @@ use gen_lsp_types::{
     DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentFilter,
     DocumentSymbolOptions, DocumentSymbolParams, DocumentSymbolProvider, DocumentSymbolRequest,
     FoldingRangeOptions, FoldingRangeParams, FoldingRangeProvider, FoldingRangeRegistrationOptions,
-    FoldingRangeRequest, Id, InitializeResult, LogMessageNotification, LogMessageParams,
-    MessageType, Notification as _, PublishDiagnosticsNotification, Registration,
-    RegistrationParams, RegistrationRequest, Request as _, SelectionRangeOptions,
-    SelectionRangeParams, SelectionRangeProvider, SelectionRangeRegistrationOptions,
-    SelectionRangeRequest, ServerCapabilities, ServerInfo, StaticRegistrationOptions,
-    TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
-    TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
-    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceOptions,
+    FoldingRangeRequest, HoverOptions, HoverProvider, HoverRegistrationOptions, HoverRequest, Id,
+    InitializeResult, LogMessageNotification, LogMessageParams, MessageType, Notification as _,
+    PublishDiagnosticsNotification, Registration, RegistrationParams, RegistrationRequest,
+    Request as _, SelectionRangeOptions, SelectionRangeParams, SelectionRangeProvider,
+    SelectionRangeRegistrationOptions, SelectionRangeRequest, ServerCapabilities, ServerInfo,
+    StaticRegistrationOptions, TextDocumentChangeRegistrationOptions, TextDocumentFilter,
+    TextDocumentFilterLanguage, TextDocumentRegistrationOptions, TextDocumentSync,
+    TextDocumentSyncKind, TextDocumentSyncOptions, Uri, WorkDoneProgressOptions,
+    WorkspaceFoldersServerCapabilities, WorkspaceOptions,
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -174,6 +174,9 @@ impl Server {
                 document_selector: document_selector.clone(),
             },
         };
+        let hover_options = HoverOptions {
+            work_done_progress_options: WorkDoneProgressOptions::default(),
+        };
         let selection_range_options = SelectionRangeRegistrationOptions {
             selection_range_options: SelectionRangeOptions::default(),
             static_registration_options: StaticRegistrationOptions {
@@ -220,6 +223,11 @@ impl Server {
                     Some(FoldingRangeProvider::FoldingRangeRegistrationOptions(
                         folding_range_options.clone(),
                     ))
+                },
+                hover_provider: if client.registers_hover() {
+                    None
+                } else {
+                    Some(HoverProvider::HoverOptions(hover_options))
                 },
                 position_encoding: Some(client.negotiated_encoding()),
                 selection_range_provider: if client.registers_selection_range() {
@@ -301,7 +309,7 @@ impl Server {
                 method: CodeActionRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
                     text_document_registration_options: TextDocumentRegistrationOptions {
-                        document_selector,
+                        document_selector: document_selector.clone(),
                     },
                     code_action_options,
                 })?),
@@ -312,6 +320,18 @@ impl Server {
                 id: FoldingRangeRequest::METHOD.into(),
                 method: FoldingRangeRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(folding_range_options)?),
+            });
+        }
+        if client.registers_hover() {
+            registrations.push(Registration {
+                id: HoverRequest::METHOD.into(),
+                method: HoverRequest::METHOD.into(),
+                register_options: Some(serde_json::to_value(HoverRegistrationOptions {
+                    text_document_registration_options: TextDocumentRegistrationOptions {
+                        document_selector,
+                    },
+                    hover_options,
+                })?),
             });
         }
         if client.registers_selection_range() {

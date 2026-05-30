@@ -2,8 +2,9 @@ use core::convert::From;
 
 use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
-    DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, InitializeParams, Position,
-    PositionEncodingKind, PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
+    DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
+    InitializeParams, Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities,
+    SelectionRangeClientCapabilities, TextDocumentClientCapabilities,
     TextDocumentContentChangeEvent,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
@@ -289,10 +290,7 @@ impl Client {
     /// true if the client supports dynamic registration of doc sync
     pub(crate) fn registers_sync(&self) -> bool {
         (|| -> _ {
-            self.init_params
-                .capabilities
-                .text_document
-                .as_ref()?
+            self.text_document()?
                 .synchronization
                 .as_ref()?
                 .dynamic_registration
@@ -320,63 +318,46 @@ impl Client {
         (|| -> _ { self.folding_range()?.dynamic_registration })().unwrap_or_default()
     }
 
+    /// true if the client supports dynamic registration of hover
+    pub(crate) fn registers_hover(&self) -> bool {
+        (|| -> _ { self.hover()?.dynamic_registration })().unwrap_or_default()
+    }
+
     /// true if the client supports dynamic registration of selection range
     pub(crate) fn registers_selection_range(&self) -> bool {
         (|| -> _ { self.selection_range()?.dynamic_registration })().unwrap_or_default()
     }
 
+    const fn text_document(&self) -> Option<&TextDocumentClientCapabilities> {
+        self.init_params.capabilities.text_document.as_ref()
+    }
+
     fn pull_diagnostics(&self) -> Option<&DiagnosticClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .diagnostic
-            .as_ref()
+        self.text_document()?.diagnostic.as_ref()
     }
 
     fn push_diagnostics(&self) -> Option<&PublishDiagnosticsClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .publish_diagnostics
-            .as_ref()
+        self.text_document()?.publish_diagnostics.as_ref()
     }
 
     fn code_actions(&self) -> Option<&CodeActionClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .code_action
-            .as_ref()
+        self.text_document()?.code_action.as_ref()
     }
 
     fn document_symbols(&self) -> Option<&DocumentSymbolClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .document_symbol
-            .as_ref()
+        self.text_document()?.document_symbol.as_ref()
     }
 
     fn folding_range(&self) -> Option<&FoldingRangeClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .folding_range
-            .as_ref()
+        self.text_document()?.folding_range.as_ref()
+    }
+
+    fn hover(&self) -> Option<&HoverClientCapabilities> {
+        self.text_document()?.hover.as_ref()
     }
 
     fn selection_range(&self) -> Option<&SelectionRangeClientCapabilities> {
-        self.init_params
-            .capabilities
-            .text_document
-            .as_ref()?
-            .selection_range
-            .as_ref()
+        self.text_document()?.selection_range.as_ref()
     }
 }
 
