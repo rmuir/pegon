@@ -43,8 +43,11 @@ use crate::lsp::client::Client;
 /// Request cancellation works at a coarse level by checking `in_flight` both before and
 /// after doing the work, to save both client and server resources when possible.
 pub struct Server {
+    /// LSP connection to the client (editor)
     connection: Connection,
+    /// Pool of workers for answering requests
     workers: ThreadPool,
+    /// Current in-flight requests, either queued or being processed by workers
     in_flight: InFlight,
 }
 
@@ -75,7 +78,9 @@ pub struct Document {
 
 /// LSP state, only accessed by the main thread
 pub struct State {
+    /// Map of documents currently opened by the editor, keyed by URI
     pub(crate) docs: HashMap<String, Resource>,
+    /// Treesitter parser used for parsing opened/modified documents
     pub(crate) parser: Parser,
 }
 
@@ -88,14 +93,18 @@ impl State {
     }
 }
 
+/// Map of in-flight requests to their cancellation status
 type InFlight = Arc<Mutex<HashMap<RequestId, bool>>>;
+/// Job handled by the request thread pool
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
+/// Request thread pool
 struct ThreadPool {
     sender: Sender<Job>,
 }
 
 impl ThreadPool {
+    /// Create a new pool of the specified size
     fn new(size: NonZero<usize>) -> Result<Self> {
         let (sender, receiver) = crossbeam_channel::unbounded::<Job>();
         for id in 0..size.get() {
@@ -111,6 +120,7 @@ impl ThreadPool {
         Ok(Self { sender })
     }
 
+    /// Enqueue a new job to be executed by the pool
     fn execute<F>(&self, job: F) -> Result<()>
     where
         F: FnOnce() + Send + 'static,
@@ -328,6 +338,11 @@ impl Server {
         })
     }
 
+    /// main thread LSP server loop
+    ///
+    /// main thread pulls off new requests and notifications.
+    /// notifications are handled by the main thread directly, since they cause a state change
+    /// requests are dispatched to the thread pool
     pub fn main_loop(&self, client: &Arc<Client>) -> Result<(), Error> {
         let mut state = State::new()?;
 
@@ -374,8 +389,7 @@ impl Server {
         Ok(())
     }
 
-    // handles an incoming request
-    // every request must have an associated response
+    /// Handles an incoming request
     fn handle_request(
         &self,
         client: &Arc<Client>,
