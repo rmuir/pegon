@@ -134,21 +134,22 @@ impl ThreadPool {
 impl Server {
     /// Initializes a new server
     pub fn new(connection: Connection, client: &Client, id: RequestId) -> Result<Self> {
-        let document_selector = Some(vec![DocumentFilter::TextDocumentFilter(
-            TextDocumentFilter::Language(TextDocumentFilterLanguage {
-                language: "java".into(),
-                scheme: None,
-                pattern: None,
-            }),
-        )]);
+        let text_document_registration_options = TextDocumentRegistrationOptions {
+            document_selector: Some(vec![DocumentFilter::TextDocumentFilter(
+                TextDocumentFilter::Language(TextDocumentFilterLanguage {
+                    language: "java".into(),
+                    scheme: None,
+                    pattern: None,
+                }),
+            )]),
+        };
+        let work_done_progress_options = WorkDoneProgressOptions::default();
         let diagnostic_options = DiagnosticRegistrationOptions {
             diagnostic_options: DiagnosticOptions {
                 identifier: Some(env!("CARGO_PKG_NAME").into()),
                 ..DiagnosticOptions::default()
             },
-            text_document_registration_options: TextDocumentRegistrationOptions {
-                document_selector: document_selector.clone(),
-            },
+            text_document_registration_options: text_document_registration_options.clone(),
             ..DiagnosticRegistrationOptions::default()
         };
         let code_action_options = CodeActionOptions {
@@ -161,7 +162,7 @@ impl Server {
         };
         let document_symbol_options = DocumentSymbolOptions {
             label: None,
-            work_done_progress_options: WorkDoneProgressOptions::default(),
+            work_done_progress_options,
         };
         let folding_range_options = FoldingRangeRegistrationOptions {
             folding_range_options: FoldingRangeOptions {
@@ -170,21 +171,17 @@ impl Server {
             static_registration_options: StaticRegistrationOptions {
                 id: Some(FoldingRangeRequest::METHOD.into()),
             },
-            text_document_registration_options: TextDocumentRegistrationOptions {
-                document_selector: document_selector.clone(),
-            },
+            text_document_registration_options: text_document_registration_options.clone(),
         };
         let hover_options = HoverOptions {
-            work_done_progress_options: WorkDoneProgressOptions::default(),
+            work_done_progress_options,
         };
         let selection_range_options = SelectionRangeRegistrationOptions {
             selection_range_options: SelectionRangeOptions::default(),
             static_registration_options: StaticRegistrationOptions {
                 id: Some(SelectionRangeRequest::METHOD.into()),
             },
-            text_document_registration_options: TextDocumentRegistrationOptions {
-                document_selector: document_selector.clone(),
-            },
+            text_document_registration_options: text_document_registration_options.clone(),
         };
         // if the client supports dynamic registration of the capability, then we use that.
         // it makes the code very confusing, but this is just the pain of dynamic registration.
@@ -265,18 +262,17 @@ impl Server {
             registrations.push(Registration {
                 id: DidOpenTextDocumentNotification::METHOD.into(),
                 method: DidOpenTextDocumentNotification::METHOD.into(),
-                register_options: Some(serde_json::to_value(TextDocumentRegistrationOptions {
-                    document_selector: document_selector.clone(),
-                })?),
+                register_options: Some(serde_json::to_value(
+                    text_document_registration_options.clone(),
+                )?),
             });
             registrations.push(Registration {
                 id: DidChangeTextDocumentNotification::METHOD.into(),
                 method: DidChangeTextDocumentNotification::METHOD.into(),
                 register_options: Some(serde_json::to_value(
                     TextDocumentChangeRegistrationOptions {
-                        text_document_registration_options: TextDocumentRegistrationOptions {
-                            document_selector: document_selector.clone(),
-                        },
+                        text_document_registration_options: text_document_registration_options
+                            .clone(),
                         sync_kind: TextDocumentSyncKind::Incremental,
                     },
                 )?),
@@ -284,9 +280,9 @@ impl Server {
             registrations.push(Registration {
                 id: DidCloseTextDocumentNotification::METHOD.into(),
                 method: DidCloseTextDocumentNotification::METHOD.into(),
-                register_options: Some(serde_json::to_value(TextDocumentRegistrationOptions {
-                    document_selector: document_selector.clone(),
-                })?),
+                register_options: Some(serde_json::to_value(
+                    text_document_registration_options.clone(),
+                )?),
             });
         }
         if client.registers_diagnostics() {
@@ -308,9 +304,7 @@ impl Server {
                 id: CodeActionRequest::METHOD.into(),
                 method: CodeActionRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
-                    text_document_registration_options: TextDocumentRegistrationOptions {
-                        document_selector: document_selector.clone(),
-                    },
+                    text_document_registration_options: text_document_registration_options.clone(),
                     code_action_options,
                 })?),
             });
@@ -327,9 +321,7 @@ impl Server {
                 id: HoverRequest::METHOD.into(),
                 method: HoverRequest::METHOD.into(),
                 register_options: Some(serde_json::to_value(HoverRegistrationOptions {
-                    text_document_registration_options: TextDocumentRegistrationOptions {
-                        document_selector,
-                    },
+                    text_document_registration_options,
                     hover_options,
                 })?),
             });
