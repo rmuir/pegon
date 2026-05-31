@@ -113,6 +113,7 @@
               "fold.lineoffset",
               "hover.kind",
               "hover.spec",
+              "hover.description",
               "symbol.kind",
               "diagnostic.context.label",
               "diagnostic.fix",

@@ -16,15 +16,16 @@ use gen_lsp_types::{
     DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentFilter,
     DocumentSymbolOptions, DocumentSymbolParams, DocumentSymbolProvider, DocumentSymbolRequest,
     FoldingRangeOptions, FoldingRangeParams, FoldingRangeProvider, FoldingRangeRegistrationOptions,
-    FoldingRangeRequest, HoverOptions, HoverProvider, HoverRegistrationOptions, HoverRequest, Id,
-    InitializeResult, LogMessageNotification, LogMessageParams, MessageType, Notification as _,
-    PublishDiagnosticsNotification, Registration, RegistrationParams, RegistrationRequest,
-    Request as _, SelectionRangeOptions, SelectionRangeParams, SelectionRangeProvider,
-    SelectionRangeRegistrationOptions, SelectionRangeRequest, ServerCapabilities, ServerInfo,
-    StaticRegistrationOptions, TextDocumentChangeRegistrationOptions, TextDocumentFilter,
-    TextDocumentFilterLanguage, TextDocumentRegistrationOptions, TextDocumentSync,
-    TextDocumentSyncKind, TextDocumentSyncOptions, Uri, WorkDoneProgressOptions,
-    WorkspaceFoldersServerCapabilities, WorkspaceOptions,
+    FoldingRangeRequest, HoverOptions, HoverParams, HoverProvider, HoverRegistrationOptions,
+    HoverRequest, Id, InitializeResult, LogMessageNotification, LogMessageParams, MessageType,
+    Notification as _, PublishDiagnosticsNotification, Registration, RegistrationParams,
+    RegistrationRequest, Request as _, SelectionRangeOptions, SelectionRangeParams,
+    SelectionRangeProvider, SelectionRangeRegistrationOptions, SelectionRangeRequest,
+    ServerCapabilities, ServerInfo, StaticRegistrationOptions,
+    TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
+    TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
+    WorkspaceOptions,
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -500,6 +501,29 @@ impl Server {
                         id.clone(),
                         match super::folding_range::request(client.as_ref(), doc.as_ref()) {
                             Ok(result) => response::<FoldingRangeRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "textDocument/hover" => {
+                let params: HoverParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(
+                    docs,
+                    &params.text_document_position_params.text_document.uri,
+                )?;
+                let position = params.text_document_position_params.position;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::hover::request(client.as_ref(), doc.as_ref(), position) {
+                            Ok(result) => response::<HoverRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );

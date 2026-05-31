@@ -46,8 +46,10 @@
   "volatile"
   "while"
 ] @range
+  (#set! hover.description
+    "Reserved word in the Java language.\n\nYou can't name a variable with this word.")
   (#set! hover.kind "reserved keyword")
-  (#set! hover.spec "https://docs.oracle.com/javase/specs/jls/se26/html/jls-3.html#jls-3.9"))
+  (#set! hover.spec "jls-3.html#jls-3.9"))
 
 ; sometimes a keyword
 ([
@@ -70,5 +72,7 @@
   "with"
   "yield"
 ] @range
+  (#set! hover.description
+    "Reserved Java word in this context.\n\nYou probably shouldn't name a variable with this word.")
   (#set! hover.kind "contextual keyword")
-  (#set! hover.spec "https://docs.oracle.com/javase/specs/jls/se26/html/jls-3.html#jls-3.9"))
+  (#set! hover.spec "jls-3.html#jls-3.9"))
