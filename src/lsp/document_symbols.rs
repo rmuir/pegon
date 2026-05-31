@@ -218,18 +218,17 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
-            #[expect(clippy::single_match, reason = "TODO")]
             match key {
-                "kind" => {
+                "symbol.kind" => {
                     let code = value
                         .expect("kind should have a value")
                         .parse::<u32>()
-                        .expect("value should be an integer");
+                        .expect("kind should be an integer");
                     kind = Some(
                         SymbolKind::try_from(code).expect("kind should be a valid SymbolKind"),
                     );
                 }
-                _ => {}
+                _ => panic!("{key}: unknown metadata key"),
             }
         }
         patterns.push(Pattern {

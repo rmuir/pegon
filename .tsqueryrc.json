@@ -112,8 +112,23 @@
     "set": {
       "parameters": [
         {
-          "type": "any",
-          "arity": "required"
+          "type": "string",
+          "arity": "required",
+          "constraint": {
+            "enum": [
+              "symbol.kind",
+              "fix",
+              "severity",
+              "name",
+              "help",
+              "title",
+              "label",
+              "context.label",
+              "spec",
+              "lineoffset",
+              "kind"
+            ]
+          }
         },
         {
           "type": "any",
