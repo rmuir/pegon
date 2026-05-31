@@ -3,9 +3,9 @@ use core::convert::From;
 use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
     DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
-    InitializeParams, Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities,
-    SelectionRangeClientCapabilities, TextDocumentClientCapabilities,
-    TextDocumentContentChangeEvent,
+    InitializeParams, MarkupKind, Position, PositionEncodingKind,
+    PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
+    TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -282,6 +282,21 @@ impl Client {
                     .as_ref()?
                     .properties
                     .contains(&"edit".to_owned()),
+            )
+        })()
+        .unwrap_or_default()
+    }
+
+    /// true if the client prefers markdown on hover
+    pub(crate) fn prefers_hover_markdown(&self) -> bool {
+        (|| -> _ {
+            Some(
+                *self
+                    .hover()?
+                    .content_format
+                    .as_ref()?
+                    .first()?
+                    == MarkupKind::Markdown,
             )
         })()
         .unwrap_or_default()

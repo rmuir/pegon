@@ -7,6 +7,7 @@ use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 use crate::lsp::{Client, server::Document};
 
 pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Option<Hover>> {
+    let markdown = client.prefers_hover_markdown();
     let bytes = doc.text.as_bytes();
     let mut result = None;
     let mut cursor = QueryCursor::new();
@@ -34,8 +35,16 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
         let description = &pattern.description;
         result = Some(Hover {
             contents: Contents::MarkupContent(MarkupContent {
-                kind: MarkupKind::Markdown,
-                value: format!("[{kind}]({SPEC_PREFIX}{spec})\n---\n{description}\n"),
+                kind: if markdown {
+                    MarkupKind::Markdown
+                } else {
+                    MarkupKind::PlainText
+                },
+                value: if markdown {
+                    format!("[{kind}]({SPEC_PREFIX}{spec})\n---\n{description}\n")
+                } else {
+                    format!("kind: {SPEC_PREFIX}{spec}\n{description}\n")
+                },
             }),
             range: Some(range),
         });
