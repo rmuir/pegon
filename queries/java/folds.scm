@@ -1,21 +1,21 @@
 ; adjacent imports
 ((import_declaration)+ @range
-  (#set! kind "imports"))
+  (#set! fold.kind "imports"))
 
 ; multiline block /* comments */ or /** comments */
 ((block_comment) @range
   (#match? @range "^/[*][*]?[\\s]*[\n].")
-  (#set! kind "comment")
-  (#set! lineoffset "1"))
+  (#set! fold.kind "comment")
+  (#set! fold.lineoffset 1))
 
 ; other block comments
 ((block_comment) @range
   (#not-match? @range "^/[*][*]?[\\s]*[\n].")
-  (#set! kind "comment"))
+  (#set! fold.kind "comment"))
 
 ; // comments
 ((line_comment)+ @range
-  (#set! kind "comment"))
+  (#set! fold.kind "comment"))
 
 ; function-like bodies
 (constructor_body) @range

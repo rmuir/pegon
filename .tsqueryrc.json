@@ -116,6 +116,10 @@
           "arity": "required",
           "constraint": {
             "enum": [
+              "fold.kind",
+              "fold.lineoffset",
+              "hover.kind",
+              "hover.spec",
               "symbol.kind",
               "fix",
               "severity",
@@ -123,10 +127,7 @@
               "help",
               "title",
               "label",
-              "context.label",
-              "spec",
-              "lineoffset",
-              "kind"
+              "context.label"
             ]
           }
         },

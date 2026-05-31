@@ -91,13 +91,13 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
-                "kind" => {
+                "fold.kind" => {
                     kind = value;
                 }
-                "lineoffset" => {
+                "fold.lineoffset" => {
                     line_offset = Some(1);
                 }
-                _ => {}
+                _ => panic!("{key}: unknown metadata key"),
             }
         }
         patterns.push(Pattern {

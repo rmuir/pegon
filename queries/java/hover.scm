@@ -46,8 +46,8 @@
   "volatile"
   "while"
 ] @range
-  (#set! kind "reserved keyword")
-  (#set! spec "https://docs.oracle.com/javase/specs/jls/se26/html/jls-3.html#jls-3.9"))
+  (#set! hover.kind "reserved keyword")
+  (#set! hover.spec "https://docs.oracle.com/javase/specs/jls/se26/html/jls-3.html#jls-3.9"))
 
 ; sometimes a keyword
 ([
@@ -70,5 +70,5 @@
   "with"
   "yield"
 ] @range
-  (#set! kind "contextual keyword")
-  (#set! spec "https://docs.oracle.com/javase/specs/jls/se26/html/jls-3.html#jls-3.9"))
+  (#set! hover.kind "contextual keyword")
+  (#set! hover.spec "https://docs.oracle.com/javase/specs/jls/se26/html/jls-3.html#jls-3.9"))
