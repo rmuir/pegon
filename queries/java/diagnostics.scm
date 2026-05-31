@@ -28,17 +28,17 @@
 ;
 ; TS parsing error
 ((ERROR) @error
-  (#set! name "syntax-error")
-  (#set! title "Syntax error")
-  (#set! help "Suppressed any further diagnostics for this file")
-  (#set! severity "error"))
+  (#set! diagnostic.name "syntax-error")
+  (#set! diagnostic.title "Syntax error")
+  (#set! diagnostic.help "Suppressed any further diagnostics for this file")
+  (#set! diagnostic.severity "error"))
 
 ; TS parsing error
 ((MISSING) @error
-  (#set! name "syntax-missing")
-  (#set! title "Missing {node.kind}")
-  (#set! help "Suppressed any further diagnostics for this file")
-  (#set! severity "error"))
+  (#set! diagnostic.name "syntax-missing")
+  (#set! diagnostic.title "Missing {node.kind}")
+  (#set! diagnostic.help "Suppressed any further diagnostics for this file")
+  (#set! diagnostic.severity "error"))
 
 ; Whitespace other than ASCII horizontal space inside a literal.
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.1-whitespace-characters
@@ -48,186 +48,186 @@
   (multiline_string_fragment)
 ] @error
   (#match? @error "[\\s&&[^\\u0020\r\n]]")
-  (#set! name "literal-special-space")
-  (#set! title "Literal contains unescaped special whitespace")
-  (#set! help "Escape the special whitespace: only `0x20` may appear in literals")
-  (#set! severity "warn")) ; TODO: implement autofix
+  (#set! diagnostic.name "literal-special-space")
+  (#set! diagnostic.title "Literal contains unescaped special whitespace")
+  (#set! diagnostic.help "Escape the special whitespace: only `0x20` may appear in literals")
+  (#set! diagnostic.severity "warn")) ; TODO: implement autofix
 
 ; Octal backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\010" "\\10")
-  (#set! name "octal-backspace")
-  (#set! title "Octal backspace escape: `{node.text}`")
-  (#set! label "Backspace")
-  (#set! help "Replace `{node.text}` with special escape `\\b`")
-  (#set! fix "\\b")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-backspace")
+  (#set! diagnostic.title "Octal backspace escape: `{node.text}`")
+  (#set! diagnostic.label "Backspace")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\b`")
+  (#set! diagnostic.fix "\\b")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0008")
-  (#set! name "hex-backspace")
-  (#set! title "Hexadecimal backspace escape: `{node.text}`")
-  (#set! label "Backspace")
-  (#set! help "Replace `{node.text}` with special escape `\\b`")
-  (#set! fix "\\b")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-backspace")
+  (#set! diagnostic.title "Hexadecimal backspace escape: `{node.text}`")
+  (#set! diagnostic.label "Backspace")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\b`")
+  (#set! diagnostic.fix "\\b")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal tab escape instead of `\t`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\011" "\\11")
-  (#set! name "octal-tab")
-  (#set! title "Octal tab escape: `{node.text}`")
-  (#set! label "Tab")
-  (#set! help "Replace `{node.text}` with special escape `\\t`")
-  (#set! fix "\\t")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-tab")
+  (#set! diagnostic.title "Octal tab escape: `{node.text}`")
+  (#set! diagnostic.label "Tab")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\t`")
+  (#set! diagnostic.fix "\\t")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex tab escape instead of `\t`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0009")
-  (#set! name "hex-tab")
-  (#set! title "Hexadecimal tab escape: `{node.text}`")
-  (#set! label "Tab")
-  (#set! help "Replace `{node.text}` with special escape `\\t`")
-  (#set! fix "\\t")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-tab")
+  (#set! diagnostic.title "Hexadecimal tab escape: `{node.text}`")
+  (#set! diagnostic.label "Tab")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\t`")
+  (#set! diagnostic.fix "\\t")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal newline escape instead of `\n`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\012" "\\12")
-  (#set! name "octal-newline")
-  (#set! title "Octal newline escape: `{node.text}`")
-  (#set! label "Newline")
-  (#set! help "Replace `{node.text}` with special escape `\\n`")
-  (#set! fix "\\n")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-newline")
+  (#set! diagnostic.title "Octal newline escape: `{node.text}`")
+  (#set! diagnostic.label "Newline")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\n`")
+  (#set! diagnostic.fix "\\n")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex newline escape instead of `\n`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000a" "\\u000A")
-  (#set! name "hex-newline")
-  (#set! title "Hexadecimal newline escape: `{node.text}`")
-  (#set! label "Newline")
-  (#set! help "Replace `{node.text}` with special escape `\\n`")
-  (#set! fix "\\n")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-newline")
+  (#set! diagnostic.title "Hexadecimal newline escape: `{node.text}`")
+  (#set! diagnostic.label "Newline")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\n`")
+  (#set! diagnostic.fix "\\n")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal form feed escape instead of `\f`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\014" "\\14")
-  (#set! name "octal-formfeed")
-  (#set! title "Octal form feed escape: `{node.text}`")
-  (#set! label "Form feed")
-  (#set! help "Replace `{node.text}` with special escape `\\f`")
-  (#set! fix "\\f")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-formfeed")
+  (#set! diagnostic.title "Octal form feed escape: `{node.text}`")
+  (#set! diagnostic.label "Form feed")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\f`")
+  (#set! diagnostic.fix "\\f")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex form feed escape instead of `\f`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000c" "\\u000C")
-  (#set! name "hex-formfeed")
-  (#set! title "Hexadecimal form feed escape: `{node.text}`")
-  (#set! label "Form feed")
-  (#set! help "Replace `{node.text}` with special escape `\\f`")
-  (#set! fix "\\f")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-formfeed")
+  (#set! diagnostic.title "Hexadecimal form feed escape: `{node.text}`")
+  (#set! diagnostic.label "Form feed")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\f`")
+  (#set! diagnostic.fix "\\f")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal carriage return escape instead of `\r`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\015" "\\15")
-  (#set! name "octal-return")
-  (#set! title "Octal carriage return escape: `{node.text}`")
-  (#set! label "Carriage return")
-  (#set! help "Replace `{node.text}` with special escape `\\r`")
-  (#set! fix "\\r")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-return")
+  (#set! diagnostic.title "Octal carriage return escape: `{node.text}`")
+  (#set! diagnostic.label "Carriage return")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\r`")
+  (#set! diagnostic.fix "\\r")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex carriage return escape instead of `\r`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u000d" "\\u000D")
-  (#set! name "hex-return")
-  (#set! title "Hexadecimal carriage return escape: `{node.text}`")
-  (#set! label "Carriage return")
-  (#set! help "Replace `{node.text}` with special escape `\\r`")
-  (#set! fix "\\r")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-return")
+  (#set! diagnostic.title "Hexadecimal carriage return escape: `{node.text}`")
+  (#set! diagnostic.label "Carriage return")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\r`")
+  (#set! diagnostic.fix "\\r")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal double-quote escape instead of `\"`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\042" "\\42")
-  (#set! name "octal-double-quote")
-  (#set! title "Octal double quote escape: `{node.text}`")
-  (#set! label "Double quote")
-  (#set! help "Replace `{node.text}` with special escape `\\\"`")
-  (#set! fix "\\\"")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-double-quote")
+  (#set! diagnostic.title "Octal double quote escape: `{node.text}`")
+  (#set! diagnostic.label "Double quote")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\"`")
+  (#set! diagnostic.fix "\\\"")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex double-quote escape instead of `\"`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0022")
-  (#set! name "hex-double-quote")
-  (#set! title "Hexadecimal double quote escape: `{node.text}`")
-  (#set! label "Double quote")
-  (#set! help "Replace `{node.text}` with special escape `\\\"`")
-  (#set! fix "\\\"")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-double-quote")
+  (#set! diagnostic.title "Hexadecimal double quote escape: `{node.text}`")
+  (#set! diagnostic.label "Double quote")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\"`")
+  (#set! diagnostic.fix "\\\"")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal single-quote escape instead of `\'`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\047" "\\47")
-  (#set! name "octal-single-quote")
-  (#set! title "Octal single quote escape: `{node.text}`")
-  (#set! label "Single quote")
-  (#set! help "Replace `{node.text}` with special escape `\\'`")
-  (#set! fix "\\'")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-single-quote")
+  (#set! diagnostic.title "Octal single quote escape: `{node.text}`")
+  (#set! diagnostic.label "Single quote")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\'`")
+  (#set! diagnostic.fix "\\'")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex single-quote escape instead of `\'`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\u0027")
-  (#set! name "hex-single-quote")
-  (#set! title "Hexadecimal single quote escape: `{node.text}`")
-  (#set! label "Single quote")
-  (#set! help "Replace `{node.text}` with special escape `\\'`")
-  (#set! fix "\\'")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-single-quote")
+  (#set! diagnostic.title "Hexadecimal single quote escape: `{node.text}`")
+  (#set! diagnostic.label "Single quote")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\'`")
+  (#set! diagnostic.fix "\\'")
+  (#set! diagnostic.severity "hint"))
 
 ; Octal backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#eq? @error "\\134")
-  (#set! name "octal-backslash")
-  (#set! title "Octal backslash escape: `{node.text}`")
-  (#set! label "Backslash")
-  (#set! help "Replace `{node.text}` with special escape `\\\\`")
-  (#set! fix "\\\\")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "octal-backslash")
+  (#set! diagnostic.title "Octal backslash escape: `{node.text}`")
+  (#set! diagnostic.label "Backslash")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\\`")
+  (#set! diagnostic.fix "\\\\")
+  (#set! diagnostic.severity "hint"))
 
 ; Unicode hex backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
   (#any-of? @error "\\u005c" "\\u005C")
-  (#set! name "hex-backslash")
-  (#set! title "Hexadecimal backslash escape: `{node.text}`")
-  (#set! label "Backslash")
-  (#set! help "Replace `{node.text}` with special escape `\\\\`")
-  (#set! fix "\\\\")
-  (#set! severity "hint"))
+  (#set! diagnostic.name "hex-backslash")
+  (#set! diagnostic.title "Hexadecimal backslash escape: `{node.text}`")
+  (#set! diagnostic.label "Backslash")
+  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\\`")
+  (#set! diagnostic.fix "\\\\")
+  (#set! diagnostic.severity "hint"))
 
 ; Line-wrapped package declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
@@ -238,28 +238,28 @@
     (scoped_identifier)
   ]) @error
   (#match? @error "\n")
-  (#set! name "wrapped-package")
-  (#set! title "Line-wrapped package declaration: `{node.text}`")
-  (#set! help "Remove newlines from the package statement")
-  (#set! severity "info"))
+  (#set! diagnostic.name "wrapped-package")
+  (#set! diagnostic.title "Line-wrapped package declaration: `{node.text}`")
+  (#set! diagnostic.help "Remove newlines from the package statement")
+  (#set! diagnostic.severity "info"))
 
 ; Wildcard imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
 (import_declaration
   (asterisk) @error
-  (#set! name "wildcard-import")
-  (#set! title "Wildcard import")
-  (#set! help "Replace the wildcard import with standard import(s)")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "wildcard-import")
+  (#set! diagnostic.title "Wildcard import")
+  (#set! diagnostic.help "Replace the wildcard import with standard import(s)")
+  (#set! diagnostic.severity "warn"))
 
 ; Line-wrapped imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.2-import-line-wrapping
 ((import_declaration) @error
   (#match? @error "\n")
-  (#set! name "wrapped-import")
-  (#set! title "Line-wrapped import")
-  (#set! help "Remove newlines from the import statement")
-  (#set! severity "info"))
+  (#set! diagnostic.name "wrapped-import")
+  (#set! diagnostic.title "Line-wrapped import")
+  (#set! diagnostic.help "Remove newlines from the import statement")
+  (#set! diagnostic.severity "info"))
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -277,12 +277,12 @@
     "static"
     (scoped_identifier) @context)
   (#lt? @context @error)
-  (#set! name "unsorted-static-import")
-  (#set! title "Static import out of order: `{node.text}`")
-  (#set! help "Static imports should be in alphabetical order")
-  (#set! label "sorts after")
-  (#set! context.label "sorts before")
-  (#set! severity "info"))
+  (#set! diagnostic.name "unsorted-static-import")
+  (#set! diagnostic.title "Static import out of order: `{node.text}`")
+  (#set! diagnostic.help "Static imports should be in alphabetical order")
+  (#set! diagnostic.label "sorts after")
+  (#set! diagnostic.context.label "sorts before")
+  (#set! diagnostic.severity "info"))
 
 ; Unsorted imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -300,12 +300,12 @@
   (#not-match? @_node1 "^import\\s+static")
   (#not-match? @_node2 "^import\\s+static")
   (#lt? @context @error)
-  (#set! name "unsorted-import")
-  (#set! title "Import out of order: `{node.text}`")
-  (#set! help "Imports should be in alphabetical order")
-  (#set! label "sorts after")
-  (#set! context.label "sorts before")
-  (#set! severity "info"))
+  (#set! diagnostic.name "unsorted-import")
+  (#set! diagnostic.title "Import out of order: `{node.text}`")
+  (#set! diagnostic.help "Imports should be in alphabetical order")
+  (#set! diagnostic.label "sorts after")
+  (#set! diagnostic.context.label "sorts before")
+  (#set! diagnostic.severity "info"))
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -322,12 +322,12 @@
     "static"
     (scoped_identifier) @context)
   (#not-match? @_node1 "^import\\s+static")
-  (#set! name "unsorted-import-group")
-  (#set! title "Import out of order: `{node.text}`")
-  (#set! help "Static imports should be grouped before regular imports")
-  (#set! label "sorts after")
-  (#set! context.label "sorts before")
-  (#set! severity "info"))
+  (#set! diagnostic.name "unsorted-import-group")
+  (#set! diagnostic.title "Import out of order: `{node.text}`")
+  (#set! diagnostic.help "Static imports should be grouped before regular imports")
+  (#set! diagnostic.label "sorts after")
+  (#set! diagnostic.context.label "sorts before")
+  (#set! diagnostic.severity "info"))
 
 ; Multiple top-level classes in the same file
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
@@ -365,12 +365,12 @@
     (annotation_type_declaration
       name: (identifier) @error)
   ]
-  (#set! name "multiple-classes")
-  (#set! title "Multiple top-level classes: `{node.text}`")
-  (#set! label "Additional class")
-  (#set! context.label "First class")
-  (#set! help "Move `{node.text}` to separate `{node.text}.java` file")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "multiple-classes")
+  (#set! diagnostic.title "Multiple top-level classes: `{node.text}`")
+  (#set! diagnostic.label "Additional class")
+  (#set! diagnostic.context.label "First class")
+  (#set! diagnostic.help "Move `{node.text}` to separate `{node.text}.java` file")
+  (#set! diagnostic.severity "warn"))
 
 ; One variable per declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
@@ -383,159 +383,159 @@
     .
     (variable_declarator
       name: (identifier) @error))
-  (#set! name "multiple-declaration")
-  (#set! title "Multiple variable declaration: `{node.text}`")
-  (#set! label "Additional variable")
-  (#set! context.label "First variable")
-  (#set! help "Move `{node.text}` to separate declaration")
-  (#set! severity "info"))
+  (#set! diagnostic.name "multiple-declaration")
+  (#set! diagnostic.title "Multiple variable declaration: `{node.text}`")
+  (#set! diagnostic.label "Additional variable")
+  (#set! diagnostic.context.label "First variable")
+  (#set! diagnostic.help "Move `{node.text}` to separate declaration")
+  (#set! diagnostic.severity "info"))
 
 ; Integer literal with lowercase 'l'
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.8-numeric-literals
 ((decimal_integer_literal) @error
   (#match? @error "l$")
-  (#set! name "lowercase-long-literal")
-  (#set! title "Lowercase long integer literal: `{node.text}`")
-  (#set! help "Replace with uppercase L suffix to improve legibility")
-  (#set! severity "info")) ; TODO: autofix
+  (#set! diagnostic.name "lowercase-long-literal")
+  (#set! diagnostic.title "Lowercase long integer literal: `{node.text}`")
+  (#set! diagnostic.help "Replace with uppercase L suffix to improve legibility")
+  (#set! diagnostic.severity "info")) ; TODO: autofix
 
 ; Dollar sign in identifier
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[$]")
-  (#set! name "dollar-identifier")
-  (#set! title "Dollar sign in identifier: `{node.text}`")
-  (#set! help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
-  (#set! severity "info"))
+  (#set! diagnostic.name "dollar-identifier")
+  (#set! diagnostic.title "Dollar sign in identifier: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
+  (#set! diagnostic.severity "info"))
 
 ; Identifier containing unicode character
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
 ((identifier) @error
   (#match? @error "[^a-zA-Z0-9_$]")
-  (#set! name "unicode-identifier")
-  (#set! title "Unicode in identifier: `{node.text}`")
-  (#set! help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "unicode-identifier")
+  (#set! diagnostic.title "Unicode in identifier: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using only ASCII letters, digits, and underscores")
+  (#set! diagnostic.severity "warn"))
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 (package_declaration
   (identifier) @error
   (#match? @error "[A-Z]")
-  (#set! name "uppercase-package")
-  (#set! title "Uppercase in package: `{node.text}`")
-  (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-package")
+  (#set! diagnostic.title "Uppercase in package: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using only lowercase and digits")
+  (#set! diagnostic.severity "warn"))
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 (package_declaration
   (identifier) @error
   (#match? @error "[_]")
-  (#set! name "underscore-package")
-  (#set! title "Underscore in package: `{node.text}`")
-  (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "underscore-package")
+  (#set! diagnostic.title "Underscore in package: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using only lowercase and digits")
+  (#set! diagnostic.severity "warn"))
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 (module_declaration
   (identifier) @error
   (#match? @error "[A-Z]")
-  (#set! name "uppercase-module")
-  (#set! title "Uppercase in module: `{node.text}`")
-  (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-module")
+  (#set! diagnostic.title "Uppercase in module: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using only lowercase and digits")
+  (#set! diagnostic.severity "warn"))
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
 (module_declaration
   (identifier) @error
   (#match? @error "[_]")
-  (#set! name "underscore-module")
-  (#set! title "Underscore in module: `{node.text}`")
-  (#set! help "Rename `{node.text}` using only lowercase and digits")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "underscore-module")
+  (#set! diagnostic.title "Underscore in module: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using only lowercase and digits")
+  (#set! diagnostic.severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 (class_declaration
   name: (identifier) @error
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-class")
-  (#set! title "Lowercase class: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "lowercase-class")
+  (#set! diagnostic.title "Lowercase class: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UpperCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 (record_declaration
   name: (identifier) @error
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-record")
-  (#set! title "Lowercase record: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "lowercase-record")
+  (#set! diagnostic.title "Lowercase record: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UpperCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 (enum_declaration
   name: (identifier) @error
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-enum")
-  (#set! title "Lowercase enum: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "lowercase-enum")
+  (#set! diagnostic.title "Lowercase enum: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UpperCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 (interface_declaration
   name: (identifier) @error
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-interface")
-  (#set! title "Lowercase interface: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "lowercase-interface")
+  (#set! diagnostic.title "Lowercase interface: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UpperCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
 (annotation_type_declaration
   name: (identifier) @error
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-annotation")
-  (#set! title "Lowercase annotation: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "lowercase-annotation")
+  (#set! diagnostic.title "Lowercase annotation: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UpperCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Method names should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
 (method_declaration
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-method")
-  (#set! title "Uppercase method: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-method")
+  (#set! diagnostic.title "Uppercase method: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Method names should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
 (annotation_type_element_declaration
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-element")
-  (#set! title "Uppercase annotation element: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-element")
+  (#set! diagnostic.title "Uppercase annotation element: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Enumerated type constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
 (enum_constant
   name: (identifier) @error
   (#match? @error "[a-z]")
-  (#set! name "lowercase-enum-constant")
-  (#set! title "Lowercase in enum constant: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "info"))
+  (#set! diagnostic.name "lowercase-enum-constant")
+  (#set! diagnostic.title "Lowercase in enum constant: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! diagnostic.severity "info"))
 
 ; Primitive type constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -552,11 +552,11 @@
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#not-eq? @error "serialVersionUID")
-  (#set! name "lowercase-primitive-constant")
-  (#set! title "Lowercase in constant field: `{node.text}`")
-  (#set! context.label "Immutable type")
-  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "info"))
+  (#set! diagnostic.name "lowercase-primitive-constant")
+  (#set! diagnostic.title "Lowercase in constant field: `{node.text}`")
+  (#set! diagnostic.context.label "Immutable type")
+  (#set! diagnostic.help "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! diagnostic.severity "info"))
 
 ; String constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -569,11 +569,11 @@
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#eq? @_type "String")
-  (#set! name "lowercase-string-constant")
-  (#set! title "Lowercase in constant field: `{node.text}`")
-  (#set! context.label "Immutable type")
-  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "info"))
+  (#set! diagnostic.name "lowercase-string-constant")
+  (#set! diagnostic.title "Lowercase in constant field: `{node.text}`")
+  (#set! diagnostic.context.label "Immutable type")
+  (#set! diagnostic.help "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! diagnostic.severity "info"))
 
 ; Null constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -585,11 +585,11 @@
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
-  (#set! name "lowercase-null-constant")
-  (#set! title "Lowercase in constant field: `{node.text}`")
-  (#set! context.label "Immutable")
-  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "info"))
+  (#set! diagnostic.name "lowercase-null-constant")
+  (#set! diagnostic.title "Lowercase in constant field: `{node.text}`")
+  (#set! diagnostic.context.label "Immutable")
+  (#set! diagnostic.help "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! diagnostic.severity "info"))
 
 ; Empty array constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
@@ -602,11 +602,11 @@
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
   (#match? @_array "^[{]\\s*[}]$")
-  (#set! name "lowercase-array-constant")
-  (#set! title "Lowercase in constant field: `{node.text}`")
-  (#set! context.label "Immutable")
-  (#set! help "Rename `{node.text}` using UPPER_SNAKE_CASE")
-  (#set! severity "info"))
+  (#set! diagnostic.name "lowercase-array-constant")
+  (#set! diagnostic.title "Lowercase in constant field: `{node.text}`")
+  (#set! diagnostic.context.label "Immutable")
+  (#set! diagnostic.help "Rename `{node.text}` using UPPER_SNAKE_CASE")
+  (#set! diagnostic.severity "info"))
 
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -618,11 +618,11 @@
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! name "uppercase-field")
-  (#set! title "Uppercase field: `{node.text}`")
-  (#set! context.label "Not `static final`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-field")
+  (#set! diagnostic.title "Uppercase field: `{node.text}`")
+  (#set! diagnostic.context.label "Not `static final`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -634,11 +634,11 @@
   (#match? @_modifiers "static")
   (#not-match? @_modifiers "final")
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-static-field")
-  (#set! title "Uppercase mutable static field: `{node.text}`")
-  (#set! context.label "Not `static final`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase, or make `static final`")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-static-field")
+  (#set! diagnostic.title "Uppercase mutable static field: `{node.text}`")
+  (#set! diagnostic.context.label "Not `static final`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase, or make `static final`")
+  (#set! diagnostic.severity "warn"))
 
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
@@ -650,21 +650,21 @@
   (#match? @_modifiers "final")
   (#not-match? @_modifiers "static")
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-final-field")
-  (#set! title "Uppercase field: `{node.text}`")
-  (#set! context.label "Not `static final`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "info"))
+  (#set! diagnostic.name "uppercase-final-field")
+  (#set! diagnostic.title "Uppercase field: `{node.text}`")
+  (#set! diagnostic.context.label "Not `static final`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "info"))
 
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (formal_parameter
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-param")
-  (#set! title "Uppercase parameter: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn")) @visible
+  (#set! diagnostic.name "uppercase-param")
+  (#set! diagnostic.title "Uppercase parameter: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn")) @visible
 
 ; Varargs parameter should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
@@ -672,30 +672,30 @@
   (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-vararg")
-  (#set! title "Uppercase vararg: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn")) @visible
+  (#set! diagnostic.name "uppercase-vararg")
+  (#set! diagnostic.title "Uppercase vararg: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn")) @visible
 
 ; Catch parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (catch_formal_parameter
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-catch-param")
-  (#set! title "Uppercase catch parameter: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn")) @visible
+  (#set! diagnostic.name "uppercase-catch-param")
+  (#set! diagnostic.title "Uppercase catch parameter: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn")) @visible
 
 ; Try-with-resource parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
 (resource
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-resource")
-  (#set! title "Uppercase resource: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn")) @visible
+  (#set! diagnostic.name "uppercase-resource")
+  (#set! diagnostic.title "Uppercase resource: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn")) @visible
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -705,10 +705,10 @@
   declarator: (variable_declarator
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-local")
-  (#set! title "Uppercase local variable: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-local")
+  (#set! diagnostic.title "Uppercase local variable: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Local variables should be lowerCamelCase (final variant)
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
@@ -719,31 +719,31 @@
     name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#match? @_modifiers "final")
-  (#set! name "uppercase-final-local")
-  (#set! title "Uppercase local variable: `{node.text}`")
-  (#set! context.label "Not `static final`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "info"))
+  (#set! diagnostic.name "uppercase-final-local")
+  (#set! diagnostic.title "Uppercase local variable: `{node.text}`")
+  (#set! diagnostic.context.label "Not `static final`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "info"))
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
 (enhanced_for_statement
   name: (identifier) @error
   (#match? @error "^[A-Z]")
-  (#set! name "uppercase-for-local")
-  (#set! title "Uppercase local variable: `{node.text}`")
-  (#set! help "Rename `{node.text}` using lowerCamelCase")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "uppercase-for-local")
+  (#set! diagnostic.title "Uppercase local variable: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using lowerCamelCase")
+  (#set! diagnostic.severity "warn"))
 
 ; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
 (type_parameter
   (type_identifier) @error
   (#match? @error "^[a-z]")
-  (#set! name "lowercase-type")
-  (#set! title "Lowercase type parameter: `{node.text}`")
-  (#set! help "Rename `{node.text}` using UpperCamelCase")
-  (#set! severity "warn")) @visible
+  (#set! diagnostic.name "lowercase-type")
+  (#set! diagnostic.title "Lowercase type parameter: `{node.text}`")
+  (#set! diagnostic.help "Rename `{node.text}` using UpperCamelCase")
+  (#set! diagnostic.severity "warn")) @visible
 
 ; Caught exceptions: not ignored
 ; @see https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
@@ -757,11 +757,11 @@
   (#not-match? @error "^expected.*")
   ; no real content at all
   (#not-match? @_block "[a-zA-Z0-9_]")
-  (#set! name "swallowed-exception")
-  (#set! title "Unhandled caught exception: `{node.text}`")
-  (#set! help "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
-  (#set! fix "_")
-  (#set! severity "info")) @visible ; body is small (empty)
+  (#set! diagnostic.name "swallowed-exception")
+  (#set! diagnostic.title "Unhandled caught exception: `{node.text}`")
+  (#set! diagnostic.help "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
+  (#set! diagnostic.fix "_")
+  (#set! diagnostic.severity "info")) @visible ; body is small (empty)
 
 ; Finalizers: not used
 ; @see https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
@@ -773,7 +773,8 @@
   (#eq? @error "finalize")
   ; only parentheses
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
-  (#set! name "finalizer-used")
-  (#set! title "Finalizer used: `{node.text}`")
-  (#set! help "Migrate to other resource management such as try-with-resources or cleaners")
-  (#set! severity "warn"))
+  (#set! diagnostic.name "finalizer-used")
+  (#set! diagnostic.title "Finalizer used: `{node.text}`")
+  (#set! diagnostic.help
+    "Migrate to other resource management such as try-with-resources or cleaners")
+  (#set! diagnostic.severity "warn"))

@@ -231,13 +231,13 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
-                "name" => {
+                "diagnostic.name" => {
                     name = value;
                 }
-                "title" => {
+                "diagnostic.title" => {
                     title = value;
                 }
-                "severity" => {
+                "diagnostic.severity" => {
                     severity = match value {
                         Some("error") => Some(Severity::Error),
                         Some("warn") => Some(Severity::Warn),
@@ -248,19 +248,19 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
                         }
                     }
                 }
-                "help" => {
+                "diagnostic.help" => {
                     help = value;
                 }
-                "label" => {
+                "diagnostic.label" => {
                     label = value;
                 }
-                "context.label" => {
+                "diagnostic.context.label" => {
                     context_label = value;
                 }
-                "fix" => {
+                "diagnostic.fix" => {
                     fix = value;
                 }
-                _ => {}
+                _ => panic!("{key}: unknown metadata key"),
             }
         }
         rules.push(Rule {
