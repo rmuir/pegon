@@ -21,12 +21,23 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
         .into();
     cursor.set_byte_range(source_position..source_position.checked_add(1).expect("no overflow"));
     let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
+    let mut best_match = 0;
     while let Some(hit) = matches.next() {
-        let pattern = pattern(hit.pattern_index);
+        // check if it is a true match, we must be inside the range capture
         let node = hit
             .nodes_for_capture_index(*RANGE_CAPTURE)
             .next()
             .expect("should have range capture");
+        if source_position < node.range().start_byte || source_position > node.range().end_byte {
+            continue;
+        }
+
+        // ensure last pattern-wins
+        if hit.pattern_index < best_match {
+            continue;
+        }
+        best_match = hit.pattern_index;
+        let pattern = pattern(hit.pattern_index);
         let range = client
             .encode_range(&node.range(), &doc.line_index)
             .context("valid range")?;

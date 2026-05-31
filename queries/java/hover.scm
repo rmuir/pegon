@@ -74,3 +74,12 @@
   (#set! hover.description "You probably shouldn't name a variable with this word.")
   (#set! hover.kind "contextual keyword")
   (#set! hover.spec "jls-3.html#jls-3.9"))
+
+; abstract keyword on a class
+((class_declaration
+  (modifiers
+    (modifier) @range))
+  (#eq? @range "abstract")
+  (#set! hover.description "This class isn't concrete: only subclasses can be instantiated.")
+  (#set! hover.kind "abstract class modifier")
+  (#set! hover.spec "jls-8.html#jls-8.1.1.1"))
