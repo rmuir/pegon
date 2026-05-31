@@ -237,6 +237,15 @@ repos:
             - Cargo.lock
             - deny.toml
 
+      - id: query-check
+        name: Check Queries
+        priority: 0
+        language: system
+        entry: ts_query_ls
+        require_serial: true
+        args: ["check"]
+        types: [scheme]
+
       - id: cargo-fix
         name: Fix Rust problems
         language: system
@@ -261,14 +270,6 @@ repos:
         require_serial: true
         pass_filenames: false
         types: [rust]
-
-      - id: query-fix
-        name: Fix Queries
-        language: system
-        entry: ts_query_ls
-        require_serial: true
-        args: ["check", "--fix"]
-        types: [scheme]
 
       - id: query-format
         name: Fix Queries formatting
