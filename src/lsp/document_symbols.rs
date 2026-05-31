@@ -5,7 +5,7 @@ use gen_lsp_types::{
     BaseSymbolInformation, DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, Location,
     SymbolInformation, SymbolKind, SymbolTag, Uri,
 };
-use tree_sitter::{Language, Query, QueryCursor, QueryPredicateArg, Range, StreamingIterator as _};
+use tree_sitter::{Language, Query, QueryCursor, Range, StreamingIterator as _};
 
 use crate::lsp::{Client, server::Document};
 
@@ -214,23 +214,22 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
         let mut kind: Option<SymbolKind> = None;
-        for directive in QUERY.general_predicates(index) {
-            let key = directive.operator.as_ref();
-            let QueryPredicateArg::String(value) =
-                directive.args.first().expect("should have argument")
-            else {
-                panic!("{key}: argument should be string")
-            };
+        let props = QUERY.property_settings(index);
+        for prop in props {
+            let key = prop.key.as_ref();
+            let value = prop.value.as_deref();
+            #[expect(clippy::single_match, reason = "TODO")]
             match key {
-                "symbol.kind!" => {
-                    let code = value.parse::<u32>().expect("kind should be an integer");
+                "kind" => {
+                    let code = value
+                        .expect("kind should have a value")
+                        .parse::<u32>()
+                        .expect("value should be an integer");
                     kind = Some(
                         SymbolKind::try_from(code).expect("kind should be a valid SymbolKind"),
                     );
                 }
-                _ => {
-                    panic!("{key}: invalid directive")
-                }
+                _ => {}
             }
         }
         patterns.push(Pattern {

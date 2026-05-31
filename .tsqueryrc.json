@@ -125,17 +125,6 @@
         }
       ],
       "description": "sets key/value metadata for a specific match or capture"
-    },
-    "symbol.kind": {
-      "parameters": [
-        {
-          "type": "string",
-          "arity": "required",
-          "constraint": "integer",
-          "description": "Integer code according to LSP spec"
-        }
-      ],
-      "description": "Sets LSP symbol kind"
     }
   }
 }
