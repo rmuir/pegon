@@ -166,7 +166,15 @@
   (#set! hover.kind "type comparison operator")
   (#set! hover.spec "jls-15.html#jls-15.20.2"))
 
-; instanceof
+; instanceof (non-record pattern)
+((instanceof_expression
+  "instanceof" @range
+  name: (_))
+  (#set! hover.description "True if expression is non-null and matches.")
+  (#set! hover.kind "pattern match operator")
+  (#set! hover.spec "jls-15.html#jls-15.20.2"))
+
+; instanceof (record pattern)
 ((instanceof_expression
   "instanceof" @range
   pattern: (_))
