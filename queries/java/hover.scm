@@ -1,6 +1,5 @@
 ; always a keyword
 ([
-  "break"
   "case"
   "catch"
   "class"
@@ -181,3 +180,18 @@
   (#set! hover.description "True if expression is non-null and matches.")
   (#set! hover.kind "pattern match operator")
   (#set! hover.spec "jls-15.html#jls-15.20.2"))
+
+; break (no label)
+((break_statement
+  "break" @range)
+  (#set! hover.description "Breaks out of switch or loop.")
+  (#set! hover.kind "break statement")
+  (#set! hover.spec "jls-14.html#jls-14.15"))
+
+; break to label
+((break_statement
+  "break" @range
+  (identifier))
+  (#set! hover.description "Breaks to target: it is a `goto`.")
+  (#set! hover.kind "break statement")
+  (#set! hover.spec "jls-14.html#jls-14.15"))
