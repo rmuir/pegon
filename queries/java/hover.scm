@@ -16,7 +16,6 @@
   "if"
   "implements"
   "import"
-  "instanceof"
   "interface"
   "native"
   "new"
@@ -158,3 +157,19 @@
   (#set! hover.description "64-bit IEEE binary64 float: 11-bit exponent.")
   (#set! hover.kind "double-precision floating-point type")
   (#set! hover.spec "jls-4.html#jls-4.2.3"))
+
+; instanceof
+((instanceof_expression
+  "instanceof" @range
+  right: (_))
+  (#set! hover.description "True if expression is non-null and compatible.")
+  (#set! hover.kind "type comparison operator")
+  (#set! hover.spec "jls-15.html#jls-15.20.2"))
+
+; instanceof
+((instanceof_expression
+  "instanceof" @range
+  pattern: (_))
+  (#set! hover.description "True if expression is non-null and matches.")
+  (#set! hover.kind "pattern match operator")
+  (#set! hover.spec "jls-15.html#jls-15.20.2"))
