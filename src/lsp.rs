@@ -12,6 +12,7 @@ mod diagnostics;
 mod document_symbols;
 mod folding_range;
 mod hover;
+mod initialize;
 mod selection_range;
 mod server;
 mod sync;
