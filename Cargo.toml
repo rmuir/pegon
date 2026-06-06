@@ -68,7 +68,7 @@ crossbeam-channel = "0.5.15"
 # LSP data structures
 gen-lsp-types = "0.7.0"
 # Traversing directories, respecting ignore files
-ignore = "0.4.25"
+ignore = "0.4.26"
 # convert offsets <-> lsp positions
 line-index = "0.1.2"
 # LSP support
