@@ -19,14 +19,19 @@ use crate::{
     diagnostics::{self, Diagnostic, Severity, rule},
 };
 
+/// grey color used for context and line numbers
 static GREY: Style = Ansi256Color(247).on_default();
+
+/// cargo-style output
 static FULL: Renderer = Renderer::styled()
     .decor_style(DecorStyle::Unicode)
     .context(GREY)
     .line_num(GREY);
 
+/// gcc-style output
 static CONCISE: Renderer = Renderer::plain().short_message(true);
 
+/// display severity levels
 impl Display for Severity {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         match *self {
@@ -38,6 +43,7 @@ impl Display for Severity {
     }
 }
 
+/// map severity levels to annotate-snippets severities
 impl From<Severity> for Level<'_> {
     fn from(value: Severity) -> Self {
         match value {
