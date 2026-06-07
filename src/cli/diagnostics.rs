@@ -147,8 +147,8 @@ impl Stats {
         self.errors = self.errors.checked_add(count).expect("no overflow");
     }
     const fn add(&mut self, other: Self) {
-        self.files = self.files.checked_add(other.files).expect("no overflow");
-        self.errors = self.errors.checked_add(other.errors).expect("no overflow");
+        self.add_file(other.files);
+        self.add_error(other.errors);
     }
 }
 
