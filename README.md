@@ -52,7 +52,7 @@ vim.lsp.enable({ 'pegon' })
 | `textDocument/diagnostic`     | syntax errors, style deviations, related information |
 | `textDocument/codeAction`     | quick fix, organize imports                          |
 | `codeAction/resolve`          | defers logic for fast "light bulb"                   |
-| `textDocument/documentSymbol` | signature info, `detail`ed type info, deprecations   |
+| `textDocument/documentSymbol` | signature info, detailed type info, deprecations   |
 | `textDocument/foldingRange`   | regions, imports, comments, javadoc handling         |
 | `textDocument/hover`          | operators, JLS links                                 |
 | `textDocument/selectionRange` | incremental selection of tree nodes                  |
