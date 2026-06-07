@@ -4,20 +4,17 @@ use annotate_snippets::{
 };
 use anyhow::{Context as _, Error, bail};
 use core::fmt::{Display, Formatter};
-use core::sync::atomic::{AtomicUsize, Ordering};
 
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::mpsc::Sender,
     time::Instant,
 };
 use tree_sitter::Parser;
 
-use crate::{
-    cli,
-    diagnostics::{self, Diagnostic, Severity, rule},
-};
+use crate::diagnostics::{self, Diagnostic, Severity, rule};
 
 /// grey color used for context and line numbers
 static GREY: Style = Ansi256Color(247).on_default();
@@ -136,23 +133,92 @@ fn render(path: &Path, data: &[u8], errors: Vec<Diagnostic>, concise: bool) -> R
     Ok(())
 }
 
-static FILES: AtomicUsize = AtomicUsize::new(0);
-static ERRORS: AtomicUsize = AtomicUsize::new(0);
-static INTERNAL_ERRORS: AtomicUsize = AtomicUsize::new(0);
+#[derive(Clone, Copy, Default)]
+struct Stats {
+    files: usize,
+    errors: usize,
+}
 
-fn check_file(parser: &mut Parser, path: &Path, concise: bool) -> Result<(), Error> {
-    let data = fs::read(path)?;
-    parser.reset();
-    let tree = parser
-        .parse(&data, None)
-        .context("parser should be setup")?;
-    let result = diagnostics::lint(&tree, &data)?;
-    if !result.is_empty() {
-        ERRORS.fetch_add(result.len(), Ordering::Relaxed);
-        cli::diagnostics::render(path, &data, result, concise)?;
+impl Stats {
+    const fn add_file(&mut self, count: usize) {
+        self.files = self.files.checked_add(count).expect("no overflow");
     }
-    FILES.fetch_add(1, Ordering::Relaxed);
-    Ok(())
+    const fn add_error(&mut self, count: usize) {
+        self.errors = self.errors.checked_add(count).expect("no overflow");
+    }
+    const fn add(&mut self, other: Self) {
+        self.files = self.files.checked_add(other.files).expect("no overflow");
+        self.errors = self.errors.checked_add(other.errors).expect("no overflow");
+    }
+}
+
+struct Worker {
+    concise: bool,
+    parser: Parser,
+    sender: Sender<Stats>,
+    stats: Stats,
+}
+
+impl Worker {
+    fn new(concise: bool, sender: Sender<Stats>) -> Self {
+        let mut parser = Parser::new();
+        parser
+            .set_language(&crate::LANGUAGE.into())
+            .expect("parser should be included in the binary");
+        Self {
+            concise,
+            parser,
+            sender,
+            stats: Stats::default(),
+        }
+    }
+
+    fn visit(&mut self, result: Result<ignore::DirEntry, ignore::Error>) -> WalkState {
+        match result {
+            Ok(entry) => {
+                let shouldcheck = entry.file_type().is_none_or(|filetype| !filetype.is_dir());
+                let path = if entry.is_stdin() {
+                    // TODO
+                    Path::new("/dev/stdin")
+                } else {
+                    entry.path()
+                };
+
+                if shouldcheck && let Err(error) = self.check_file(path) {
+                    let filename = entry.path().to_string_lossy();
+                    eprintln!("internal error: {filename} {error}");
+                    self.stats.add_error(1);
+                }
+            }
+            Err(err) => {
+                eprintln!("file error: {err}");
+                self.stats.add_error(1);
+            }
+        }
+        WalkState::Continue
+    }
+
+    fn check_file(&mut self, path: &Path) -> Result<(), Error> {
+        let data = fs::read(path)?;
+        self.parser.reset();
+        let tree = self
+            .parser
+            .parse(&data, None)
+            .context("parser should be setup")?;
+        let result = diagnostics::lint(&tree, &data)?;
+        if !result.is_empty() {
+            self.stats.add_error(result.len());
+            render(path, &data, result, self.concise)?;
+        }
+        self.stats.add_file(1);
+        Ok(())
+    }
+}
+
+impl Drop for Worker {
+    fn drop(&mut self) {
+        _ = self.sender.send(self.stats);
+    }
 }
 
 /// Check the set of files
@@ -185,41 +251,21 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
     builder.types(matcher);
     builder.overrides(overrides.build()?);
 
-    // TODO: use parallelvisitor builder
+    let (tx, rx) = std::sync::mpsc::channel();
     builder.build_parallel().run(|| {
-        let mut parser = Parser::new();
-        parser
-            .set_language(&crate::LANGUAGE.into())
-            .expect("parser should be included in the binary");
-
-        Box::new(move |result| {
-            match result {
-                Ok(entry) => {
-                    let shouldcheck = entry.file_type().is_none_or(|filetype| !filetype.is_dir());
-                    let path = if entry.is_stdin() {
-                        // TODO
-                        Path::new("/dev/stdin")
-                    } else {
-                        entry.path()
-                    };
-
-                    if shouldcheck && let Err(error) = check_file(&mut parser, path, concise) {
-                        let filename = entry.path().to_string_lossy();
-                        eprintln!("internal error: {filename} {error}");
-                        INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
-                    }
-                }
-                Err(err) => {
-                    eprintln!("file error: {err}");
-                    INTERNAL_ERRORS.fetch_add(1, Ordering::Relaxed);
-                }
-            }
-            WalkState::Continue
-        })
+        let mut worker = Worker::new(concise, tx.clone());
+        Box::new(move |result| worker.visit(result))
     });
+    drop(tx);
 
-    let errors = ERRORS.load(Ordering::Relaxed);
-    let files = FILES.load(Ordering::Relaxed);
+    let mut stats = Stats::default();
+    for result in rx {
+        stats.add(result);
+    }
+
+    let errors = stats.errors;
+    let files = stats.files;
+
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
 
