@@ -7,15 +7,17 @@ use std::{
     time::Instant,
 };
 
+use crate::cli::parser::Cli;
+use crate::cli::parser::Commands::{Check, Server};
+use crate::cli::parser::OutputFormat::Concise;
 use anyhow::{Context as _, Error, bail};
 use clap::Parser as _;
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use lsp_server::Connection;
 use tree_sitter::Parser;
 
-use pegon::cli;
 use pegon::diagnostics;
-use pegon::lsp;
+use pegon::{cli, lsp};
 
 static FILES: AtomicUsize = AtomicUsize::new(0);
 static ERRORS: AtomicUsize = AtomicUsize::new(0);
@@ -109,20 +111,20 @@ fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
 }
 
 fn main() -> Result<(), Error> {
-    let options = cli::Cli::parse();
+    let options = Cli::parse();
     match &options.command {
-        cli::Commands::Check {
+        Check {
             files,
             fix: _,
             output_format,
-        } => check(files, *output_format == cli::OutputFormat::Concise),
-        cli::Commands::Server { socket: None, .. } => {
+        } => check(files, *output_format == Concise),
+        Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
             let result = lsp::start(connection);
             iothreads.join()?;
             result
         }
-        cli::Commands::Server {
+        Server {
             socket: Some(port), ..
         } => {
             let addr = (Ipv4Addr::LOCALHOST, *port);
