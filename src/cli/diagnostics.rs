@@ -35,7 +35,7 @@ impl Display for Severity {
             Self::Error => write!(f, "error"),
             Self::Warn => write!(f, "warn"),
             Self::Info => write!(f, "info"),
-            Self::Hint => write!(f, "note"),
+            Self::Hint => write!(f, "hint"),
         }
     }
 }
@@ -136,19 +136,70 @@ fn render(path: &Path, data: &[u8], errors: Vec<Diagnostic>, concise: bool) -> R
 #[derive(Clone, Copy, Default)]
 struct Stats {
     files: usize,
-    errors: usize,
+    error_count: usize,
+    warning_count: usize,
+    info_count: usize,
+    hint_count: usize,
 }
 
 impl Stats {
     const fn add_file(&mut self, count: usize) {
         self.files = self.files.checked_add(count).expect("no overflow");
     }
-    const fn add_error(&mut self, count: usize) {
-        self.errors = self.errors.checked_add(count).expect("no overflow");
+    const fn add_problem(&mut self, severity: Severity) {
+        match severity {
+            Severity::Error => {
+                self.error_count = self.error_count.checked_add(1).expect("no overflow");
+            }
+            Severity::Warn => {
+                self.warning_count = self.warning_count.checked_add(1).expect("no overflow");
+            }
+            Severity::Info => {
+                self.info_count = self.info_count.checked_add(1).expect("no overflow");
+            }
+            Severity::Hint => {
+                self.hint_count = self.hint_count.checked_add(1).expect("no overflow");
+            }
+        }
     }
     const fn add(&mut self, other: Self) {
         self.add_file(other.files);
-        self.add_error(other.errors);
+        self.error_count = self
+            .error_count
+            .checked_add(other.error_count)
+            .expect("no overflow");
+        self.warning_count = self
+            .warning_count
+            .checked_add(other.warning_count)
+            .expect("no overflow");
+        self.info_count = self
+            .info_count
+            .checked_add(other.info_count)
+            .expect("no overflow");
+        self.hint_count = self
+            .hint_count
+            .checked_add(other.hint_count)
+            .expect("no overflow");
+    }
+
+    fn problem_count(&self) -> usize {
+        (|| -> _ {
+            self.error_count
+                .checked_add(self.warning_count)?
+                .checked_add(self.info_count)?
+                .checked_add(self.hint_count)
+        })()
+        .expect("should not overflow")
+    }
+}
+
+impl Display for Stats {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "Error:{} Warning:{} Info:{} Hint:{}",
+            self.error_count, self.warning_count, self.info_count, self.hint_count
+        )
     }
 }
 
@@ -187,12 +238,12 @@ impl Worker {
                 if shouldcheck && let Err(error) = self.check_file(path) {
                     let filename = entry.path().to_string_lossy();
                     eprintln!("internal error: {filename} {error}");
-                    self.stats.add_error(1);
+                    self.stats.add_problem(Severity::Error);
                 }
             }
             Err(err) => {
                 eprintln!("file error: {err}");
-                self.stats.add_error(1);
+                self.stats.add_problem(Severity::Error);
             }
         }
         WalkState::Continue
@@ -207,7 +258,9 @@ impl Worker {
             .context("parser should be setup")?;
         let result = diagnostics::lint(&tree, &data)?;
         if !result.is_empty() {
-            self.stats.add_error(result.len());
+            for item in result.iter().as_ref() {
+                self.stats.add_problem(rule(item.rule_id).severity);
+            }
             render(path, &data, result, self.concise)?;
         }
         self.stats.add_file(1);
@@ -263,14 +316,14 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
         stats.add(result);
     }
 
-    let errors = stats.errors;
     let files = stats.files;
+    let problem_count = stats.problem_count();
 
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
 
-    if errors > 0 {
-        bail!("Found {errors} problems across {files} java files in {millis} ms");
+    if problem_count > 0 {
+        bail!("Found {problem_count} problems across {files} java files in {millis} ms [{stats}]");
     } else if files == 0 {
         bail!("Found no java files to check");
     }
