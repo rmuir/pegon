@@ -62,7 +62,7 @@ anstream = "1.0.0"
 # Error handling
 anyhow = "1.0.102"
 # CLI argument processing
-clap = { version = "4.6.1", features = ["derive", "env"] }
+clap = { version = "4.6.1", features = ["derive"] }
 # threading support
 crossbeam-channel = "0.5.15"
 # LSP data structures

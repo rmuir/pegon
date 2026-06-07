@@ -52,7 +52,7 @@ fn diagnostics() {
             },
             severity: Some(DiagnosticSeverity::Warning),
             code: Some(Code::String("lowercase-class".into())),
-            source: Some("pegon".into()),
+            source: Some(env!("CARGO_PKG_NAME").into()),
             message: "Lowercase class: `foo`".into(),
             ..Default::default()
         }],
@@ -183,7 +183,7 @@ fn pull_diagnostics() {
             },
             severity: Some(DiagnosticSeverity::Warning),
             code: Some(Code::String("lowercase-class".into())),
-            source: Some("pegon".into()),
+            source: Some(env!("CARGO_PKG_NAME").into()),
             message: "Lowercase class: `foo`".into(),
             code_description: Some(CodeDescription {
                 href: "https://github.com/rmuir/pegon/wiki/diagnostics#lowercase-class".into()

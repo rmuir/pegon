@@ -8,7 +8,7 @@ use std::path::PathBuf;
 ///
 /// More information
 #[derive(Parser)]
-#[command(name = "pegon", author, version)]
+#[command(author, version)]
 #[command(arg_required_else_help = true)]
 #[command(disable_help_subcommand = true)]
 #[command(styles = CLI_STYLES)]
@@ -33,7 +33,7 @@ pub enum Commands {
         fix: bool,
 
         /// Diagnostic error format
-        #[arg(long, value_enum, id = "FMT", env = "PEGON_OUTPUT_FORMAT", default_value_t = OutputFormat::Full)]
+        #[arg(long, value_enum, id = "FMT", default_value_t = OutputFormat::Full)]
         output_format: OutputFormat,
     },
 
