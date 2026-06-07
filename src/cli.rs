@@ -4,7 +4,7 @@ use clap::{
 };
 use std::path::PathBuf;
 
-pub mod console;
+pub mod diagnostics;
 
 /// Fast linter for the Google Java Style.
 ///

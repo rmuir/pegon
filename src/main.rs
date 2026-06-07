@@ -30,7 +30,7 @@ fn check_file(parser: &mut Parser, path: &Path, concise: bool) -> Result<(), Err
     let result = diagnostics::lint(&tree, &data)?;
     if !result.is_empty() {
         ERRORS.fetch_add(result.len(), Ordering::Relaxed);
-        cli::console::render(path, &data, result, concise)?;
+        cli::diagnostics::render(path, &data, result, concise)?;
     }
     FILES.fetch_add(1, Ordering::Relaxed);
     Ok(())
