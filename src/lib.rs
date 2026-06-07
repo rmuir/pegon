@@ -1,5 +1,4 @@
 pub mod cli;
-pub mod console;
 pub mod diagnostics;
 pub mod lsp;
 
