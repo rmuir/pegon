@@ -1,3 +1,4 @@
+//! CLI "check" command
 use annotate_snippets::{
     Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
     renderer::{Ansi256Color, DecorStyle, Style},

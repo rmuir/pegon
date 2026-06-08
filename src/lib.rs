@@ -1,5 +1,4 @@
-//! Test
-//!
+#![cfg_attr(doc, doc = include_str!("../README.md"))]
 
 mod cli;
 mod lsp;

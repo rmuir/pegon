@@ -2,7 +2,7 @@
 
 use core::net::Ipv4Addr;
 
-mod diagnostics;
+mod check;
 mod parser;
 
 use anyhow::Error;
@@ -24,7 +24,7 @@ pub fn main() -> Result<(), Error> {
             files,
             fix: _,
             output_format,
-        } => diagnostics::check(files, *output_format == OutputFormat::Concise),
+        } => check::check(files, *output_format == OutputFormat::Concise),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
             let result = crate::lsp::run_server(connection);
