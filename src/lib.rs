@@ -1,5 +1,11 @@
+//! Test
+//!
+
 pub mod cli;
+/// Shared support code
 mod diagnostics;
+/// Language Server functionality
 pub mod lsp;
 
-pub const LANGUAGE: tree_sitter_language::LanguageFn = tree_sitter_java_orchard::LANGUAGE;
+/// Tree-sitter grammar in use
+const LANGUAGE: tree_sitter_language::LanguageFn = tree_sitter_java_orchard::LANGUAGE;

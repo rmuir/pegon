@@ -1,3 +1,5 @@
+//! Command line interface
+
 use std::path::PathBuf;
 
 mod diagnostics;
