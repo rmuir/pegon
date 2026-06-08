@@ -1,11 +1,10 @@
 use core::net::Ipv4Addr;
 
-use crate::cli::diagnostics::check;
-use crate::cli::parser::Cli;
-use crate::cli::parser::Commands::{Check, Server};
-use crate::cli::parser::OutputFormat::Concise;
 use anyhow::Error;
 use clap::Parser as _;
+use cli::Cli;
+use cli::Commands::{Check, Server};
+use cli::OutputFormat::Concise;
 use lsp_server::Connection;
 
 use pegon::{cli, lsp};
@@ -17,10 +16,10 @@ fn main() -> Result<(), Error> {
             files,
             fix: _,
             output_format,
-        } => check(files, *output_format == Concise),
+        } => cli::check(files, *output_format == Concise),
         Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
-            let result = lsp::start(connection);
+            let result = self::lsp::start(connection);
             iothreads.join()?;
             result
         }

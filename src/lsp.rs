@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::{Error, Result};
 use lsp_server::Connection;
 
-use crate::lsp::client::Client;
-use crate::lsp::server::Server;
+use client::Client;
+use server::Server;
 
 mod client;
 mod code_action;
