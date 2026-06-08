@@ -151,7 +151,7 @@ impl Client {
     }
 
     /// decodes an LSP Position (line+col) into a UTF-8 line+col.
-    pub fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
+    pub(crate) fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
         match self.encoding {
             Encoding::Utf8 => Some(LineCol {
                 line: position.line,
