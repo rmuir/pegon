@@ -10,7 +10,7 @@ use gen_lsp_types::{
     Request as _, TextDocumentClientCapabilities, TextDocumentSyncClientCapabilities,
 };
 use lsp_server::Connection;
-use pegon::lsp::run_server;
+use pegon::run_server;
 
 use lsp_client::LspClient;
 pub mod lsp_client;

@@ -1,1 +1,1 @@
-pub use pegon::cli::main;
+pub use pegon::main;

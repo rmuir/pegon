@@ -16,7 +16,7 @@ use gen_lsp_types::{
     InitializedNotification, InitializedParams, ShutdownRequest,
 };
 use lsp_server::{Connection, Message, Request, Response};
-use pegon::lsp::run_server;
+use pegon::run_server;
 use serde::Serialize;
 use serde_json::Value;
 
