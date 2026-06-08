@@ -85,7 +85,7 @@ fn pattern(index: usize) -> &'static Pattern {
 /// compiled query that matches all folding patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::LANGUAGE.into(),
+        &crate::support::LANGUAGE.into(),
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/hover.scm"

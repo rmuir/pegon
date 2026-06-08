@@ -44,7 +44,7 @@ pub struct Client {
 impl Client {
     /// create a new client with the parameters it sent in the
     /// initialize request.
-    pub(crate) fn new(init_params: InitializeParams) -> Self {
+    pub fn new(init_params: InitializeParams) -> Self {
         let encoding = Encoding::preferred(&init_params.capabilities);
         Self {
             init_params,
@@ -56,7 +56,7 @@ impl Client {
     ///
     /// for the UTF-8 encoding, this is a no-op. for other encodings the index
     /// must be used.
-    pub(crate) fn encode_range(
+    pub fn encode_range(
         &self,
         range: &tree_sitter::Range,
         index: &LineIndex,
@@ -101,7 +101,7 @@ impl Client {
     /// we specify incremental sync, but it is unclear from the spec
     /// if clients are allowed to send us a full sync. if it happens,
     /// convert it into a full document range.
-    pub(crate) fn decode_change(
+    pub fn decode_change(
         &self,
         change: &TextDocumentContentChangeEvent,
         index: &LineIndex,
@@ -151,7 +151,7 @@ impl Client {
     }
 
     /// decodes an LSP Position (line+col) into a UTF-8 line+col.
-    pub(crate) fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
+    pub fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
         match self.encoding {
             Encoding::Utf8 => Some(LineCol {
                 line: position.line,
@@ -175,7 +175,7 @@ impl Client {
     }
 
     /// converts from an byte offset to a row/column
-    pub(crate) fn to_point(offset: usize, line_index: &LineIndex) -> Option<Point> {
+    pub fn to_point(offset: usize, line_index: &LineIndex) -> Option<Point> {
         let offset = TextSize::try_from(offset).ok()?;
         let position = line_index.try_line_col(offset)?;
         Some(Point {
@@ -194,7 +194,7 @@ impl Client {
     /// we don't go that far: UTF-8 is used internally for sanity, and
     /// the character offsets are adjusted when (de)serializing requests
     /// and responses.
-    pub(crate) fn negotiated_encoding(&self) -> PositionEncodingKind {
+    pub fn negotiated_encoding(&self) -> PositionEncodingKind {
         self.encoding.into()
     }
 
@@ -206,13 +206,13 @@ impl Client {
     /// caching (similar to HTTP 304) and because the client
     /// can choose when to make requests, versus having them
     /// pushed on every didChange.
-    pub(crate) fn supports_pull_diagnostics(&self) -> bool {
+    pub fn supports_pull_diagnostics(&self) -> bool {
         self.pull_diagnostics().is_some()
     }
 
     /// true if the client supports receiving additional ranges
     /// with related information ("context").
-    pub(crate) fn supports_related_information(&self, push: bool) -> bool {
+    pub fn supports_related_information(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
                 self.push_diagnostics()?
@@ -229,7 +229,7 @@ impl Client {
 
     /// true if the client supports receiving URLs for more information
     /// on the diagnostic code.
-    pub(crate) fn supports_code_description(&self, push: bool) -> bool {
+    pub fn supports_code_description(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
                 self.push_diagnostics()?
@@ -245,7 +245,7 @@ impl Client {
     }
 
     /// true if the client supports hierarchical document symbols
-    pub(crate) fn supports_hierarchical_symbols(&self) -> bool {
+    pub fn supports_hierarchical_symbols(&self) -> bool {
         (|| -> _ {
             self.document_symbols()?
                 .hierarchical_document_symbol_support
@@ -254,7 +254,7 @@ impl Client {
     }
 
     /// true if the client supports tags on flat document symbols
-    pub(crate) fn supports_tags(&self) -> bool {
+    pub fn supports_tags(&self) -> bool {
         (|| -> _ { self.document_symbols()?.tag_support.as_ref() })().is_some()
     }
 
@@ -262,19 +262,19 @@ impl Client {
     /// in push diagnostics.
     ///
     /// not relevant to pull diagnostics where the version is implicit.
-    pub(crate) fn supports_version(&self) -> bool {
+    pub fn supports_version(&self) -> bool {
         (|| -> _ { self.push_diagnostics()?.version_support })().unwrap_or_default()
     }
 
     /// true if the client preserves code action data between request and resolve.
     #[expect(dead_code, reason = "TODO")]
-    pub(crate) fn supports_code_action_resolve_data(&self) -> bool {
+    pub fn supports_code_action_resolve_data(&self) -> bool {
         (|| -> _ { self.code_actions()?.data_support })().unwrap_or_default()
     }
 
     /// true if the client supports resolving workspace edits on code actions.
     #[expect(dead_code, reason = "TODO")]
-    pub(crate) fn supports_code_action_resolve_edit(&self) -> bool {
+    pub fn supports_code_action_resolve_edit(&self) -> bool {
         (|| -> _ {
             Some(
                 self.code_actions()?
@@ -288,7 +288,7 @@ impl Client {
     }
 
     /// true if the client prefers markdown on hover
-    pub(crate) fn prefers_hover_markdown(&self) -> bool {
+    pub fn prefers_hover_markdown(&self) -> bool {
         (|| -> _ {
             Some(
                 *self
@@ -303,7 +303,7 @@ impl Client {
     }
 
     /// true if the client supports dynamic registration of doc sync
-    pub(crate) fn registers_sync(&self) -> bool {
+    pub fn registers_sync(&self) -> bool {
         (|| -> _ {
             self.text_document()?
                 .synchronization
@@ -314,32 +314,32 @@ impl Client {
     }
 
     /// true if the client supports dynamic registration of diagnostics
-    pub(crate) fn registers_diagnostics(&self) -> bool {
+    pub fn registers_diagnostics(&self) -> bool {
         (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of document symbols
-    pub(crate) fn registers_document_symbols(&self) -> bool {
+    pub fn registers_document_symbols(&self) -> bool {
         (|| -> _ { self.document_symbols()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of code actions
-    pub(crate) fn registers_code_actions(&self) -> bool {
+    pub fn registers_code_actions(&self) -> bool {
         (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of folding range
-    pub(crate) fn registers_folding_range(&self) -> bool {
+    pub fn registers_folding_range(&self) -> bool {
         (|| -> _ { self.folding_range()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of hover
-    pub(crate) fn registers_hover(&self) -> bool {
+    pub fn registers_hover(&self) -> bool {
         (|| -> _ { self.hover()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of selection range
-    pub(crate) fn registers_selection_range(&self) -> bool {
+    pub fn registers_selection_range(&self) -> bool {
         (|| -> _ { self.selection_range()?.dynamic_registration })().unwrap_or_default()
     }
 

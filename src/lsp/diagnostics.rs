@@ -6,7 +6,7 @@ use gen_lsp_types::{
 };
 use line_index::LineIndex;
 
-use crate::diagnostics::{Diagnostic, Severity, lint, rule};
+use crate::support::diagnostics::{Diagnostic, Severity, lint, rule};
 
 use super::{Client, server::Document};
 

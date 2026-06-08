@@ -14,7 +14,7 @@ use std::{
 };
 use tree_sitter::Parser;
 
-use crate::diagnostics::{self, Diagnostic, Severity, rule};
+use crate::support::diagnostics::{self, Diagnostic, Severity, rule};
 
 /// grey color used for context and line numbers
 static GREY: Style = Ansi256Color(247).on_default();
@@ -214,7 +214,7 @@ impl Worker {
     fn new(concise: bool, sender: Sender<Stats>) -> Self {
         let mut parser = Parser::new();
         parser
-            .set_language(&crate::LANGUAGE.into())
+            .set_language(&crate::support::LANGUAGE.into())
             .expect("parser should be included in the binary");
         Self {
             concise,

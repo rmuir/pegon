@@ -57,28 +57,28 @@ pub enum Resource {
 /// A client-managed java document
 pub struct Document {
     /// Full text of document
-    pub(crate) text: String,
+    pub text: String,
     /// Document's version
-    pub(crate) version: i32,
+    pub version: i32,
     /// Parse tree
-    pub(crate) tree: Tree,
+    pub tree: Tree,
     /// Index of newlines
-    pub(crate) line_index: LineIndex,
+    pub line_index: LineIndex,
 }
 
 /// LSP state, only accessed by the main thread
 pub struct State {
     /// Map of documents currently opened by the editor, keyed by URI
-    pub(crate) docs: HashMap<String, Resource>,
+    pub docs: HashMap<String, Resource>,
     /// Treesitter parser used for parsing opened/modified documents
-    pub(crate) parser: Parser,
+    pub parser: Parser,
 }
 
 impl State {
     fn new() -> Result<Self> {
         let docs: HashMap<String, Resource> = HashMap::default();
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&crate::LANGUAGE.into())?;
+        parser.set_language(&crate::support::LANGUAGE.into())?;
         Ok(Self { docs, parser })
     }
 }

@@ -73,7 +73,7 @@ impl LspClient {
         self.registrations.borrow().clone()
     }
 
-    pub(crate) fn notify<N>(&self, params: N::Params)
+    pub fn notify<N>(&self, params: N::Params)
     where
         N: gen_lsp_types::Notification,
         N::Params: Serialize,

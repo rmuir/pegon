@@ -199,7 +199,7 @@ fn pattern(index: usize) -> &'static Pattern {
 /// compiled query that matches all symbol patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::LANGUAGE.into(),
+        &crate::support::LANGUAGE.into(),
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/symbols.scm"
@@ -269,6 +269,6 @@ static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
 });
 
 static DIMENSIONS_KIND: LazyLock<u16> = LazyLock::new(|| {
-    let lang: Language = crate::LANGUAGE.into();
+    let lang: Language = crate::support::LANGUAGE.into();
     lang.id_for_node_kind("dimensions", true)
 });

@@ -1,3 +1,4 @@
+//! Language Server
 use std::sync::Arc;
 
 use anyhow::{Error, Result};
@@ -17,7 +18,7 @@ mod selection_range;
 mod server;
 mod sync;
 
-/// Run lsp server with provided connection
+/// Run LSP server
 ///
 /// # Errors
 ///
