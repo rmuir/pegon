@@ -1,15 +1,17 @@
 //! Command line interface
 
+use core::net::Ipv4Addr;
 use std::path::PathBuf;
 
 mod diagnostics;
 
+use anyhow::Error;
 use clap::{
     Parser, Subcommand, ValueEnum,
     builder::styling::{AnsiColor, Styles},
 };
 
-pub use diagnostics::check;
+use lsp_server::Connection;
 
 /// Fast linter for the Google Java Style.
 ///
@@ -70,3 +72,35 @@ const CLI_STYLES: Styles = Styles::styled()
     .usage(AnsiColor::Green.on_default().bold())
     .literal(AnsiColor::Blue.on_default().bold())
     .placeholder(AnsiColor::Cyan.on_default());
+
+/// CLI entrypoint
+///
+/// # Errors
+///
+/// Returns error if checking found problems, or if the server did
+/// non exit gracefully.
+pub fn main() -> Result<(), Error> {
+    let options = Cli::parse();
+    match &options.command {
+        Commands::Check {
+            files,
+            fix: _,
+            output_format,
+        } => diagnostics::check(files, *output_format == OutputFormat::Concise),
+        Commands::Server { socket: None, .. } => {
+            let (connection, iothreads) = Connection::stdio();
+            let result = crate::lsp::start(connection);
+            iothreads.join()?;
+            result
+        }
+        Commands::Server {
+            socket: Some(port), ..
+        } => {
+            let addr = (Ipv4Addr::LOCALHOST, *port);
+            let (connection, iothreads) = Connection::listen(addr)?;
+            let result = crate::lsp::start(connection);
+            iothreads.join()?;
+            result
+        }
+    }
+}
