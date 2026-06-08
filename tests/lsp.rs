@@ -10,7 +10,7 @@ use gen_lsp_types::{
     Request as _, TextDocumentClientCapabilities, TextDocumentSyncClientCapabilities,
 };
 use lsp_server::Connection;
-use pegon::lsp::start;
+use pegon::lsp::run_server;
 
 use lsp_client::LspClient;
 pub mod lsp_client;
@@ -119,7 +119,7 @@ fn dynamic_registration() {
 #[test]
 fn hard_disconnect() {
     let (client, server) = Connection::memory();
-    let server_thread = thread::spawn(move || start(server));
+    let server_thread = thread::spawn(move || run_server(server));
     drop(client);
     let err = server_thread.join().unwrap().unwrap_err();
     assert_eq!(err.to_string(), "disconnected channel");

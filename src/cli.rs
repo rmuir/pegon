@@ -27,7 +27,7 @@ pub fn main() -> Result<(), Error> {
         } => diagnostics::check(files, *output_format == OutputFormat::Concise),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
-            let result = crate::lsp::start(connection);
+            let result = crate::lsp::run_server(connection);
             iothreads.join()?;
             result
         }
@@ -36,7 +36,7 @@ pub fn main() -> Result<(), Error> {
         } => {
             let addr = (Ipv4Addr::LOCALHOST, *port);
             let (connection, iothreads) = Connection::listen(addr)?;
-            let result = crate::lsp::start(connection);
+            let result = crate::lsp::run_server(connection);
             iothreads.join()?;
             result
         }

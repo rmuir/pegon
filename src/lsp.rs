@@ -17,12 +17,13 @@ mod selection_range;
 mod server;
 mod sync;
 
-/// Start lsp server with provided connection
+/// Run lsp server with provided connection
 ///
 /// # Errors
 ///
-/// This function will return an error if something bad happens
-pub fn start(connection: Connection) -> Result<(), Error> {
+/// This function will return an error if the server does not
+/// terminate in a graceful way: e.g. if the client disconnects.
+pub fn run_server(connection: Connection) -> Result<(), Error> {
     // get the client capabilities
     let (id, params) = connection.initialize_start()?;
     let client = Client::new(serde_json::from_value(params)?);

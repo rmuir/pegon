@@ -16,7 +16,7 @@ use gen_lsp_types::{
     InitializedNotification, InitializedParams, ShutdownRequest,
 };
 use lsp_server::{Connection, Message, Request, Response};
-use pegon::lsp::start;
+use pegon::lsp::run_server;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -45,7 +45,7 @@ impl LspClient {
             init_response: RefCell::default(),
             registrations: RefCell::default(),
             conn: client,
-            thread: thread::spawn(move || start(server)),
+            thread: thread::spawn(move || run_server(server)),
         };
         // initialize with the server and save the results
         let response = instance.request::<InitializeRequest>(params);
