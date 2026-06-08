@@ -7,7 +7,7 @@ use gen_lsp_types::{
 };
 use tree_sitter::{Language, Query, QueryCursor, Range, StreamingIterator as _};
 
-use crate::lsp::{Client, server::Document};
+use super::{Client, server::Document};
 
 pub fn request(
     client: &Client,

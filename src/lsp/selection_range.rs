@@ -1,7 +1,7 @@
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{SelectionRange, SelectionRangeParams};
 
-use crate::lsp::{Client, server::Document};
+use super::{Client, server::Document};
 
 pub fn request(
     client: &Client,

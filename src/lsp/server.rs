@@ -21,7 +21,7 @@ use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestI
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
-use crate::lsp::client::Client;
+use super::client::Client;
 
 /// A Language Server Protocol Server
 ///

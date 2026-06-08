@@ -4,7 +4,7 @@ use anyhow::{Context as _, Result};
 use gen_lsp_types::{Contents, Hover, MarkupContent, MarkupKind, Position};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
-use crate::lsp::{Client, server::Document};
+use super::{Client, server::Document};
 
 pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Option<Hover>> {
     let markdown = client.prefers_hover_markdown();

@@ -14,9 +14,9 @@ use gen_lsp_types::{
 use line_index::LineIndex;
 use tree_sitter::InputEdit;
 
-use crate::lsp::diagnostics;
-use crate::lsp::server::{Resource, State};
-use crate::lsp::{client::Client, server::Document};
+use super::diagnostics;
+use super::server::{Resource, State};
+use super::{client::Client, server::Document};
 
 pub fn did_open(
     client: &Client,

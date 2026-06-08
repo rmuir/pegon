@@ -6,10 +6,9 @@ use gen_lsp_types::{
 };
 use line_index::LineIndex;
 
-use crate::{
-    diagnostics::{Diagnostic, Severity, lint, rule},
-    lsp::{Client, server::Document},
-};
+use crate::diagnostics::{Diagnostic, Severity, lint, rule};
+
+use super::{Client, server::Document};
 
 impl From<Severity> for DiagnosticSeverity {
     fn from(value: Severity) -> Self {

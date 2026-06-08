@@ -16,7 +16,7 @@ use gen_lsp_types::{
     WorkspaceOptions,
 };
 
-use crate::lsp::client::Client;
+use super::client::Client;
 
 /// Initializes a new server
 pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {

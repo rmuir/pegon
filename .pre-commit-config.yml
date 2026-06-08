@@ -204,6 +204,23 @@ repos:
             - Cargo.lock
             - "**/*.rs"
 
+      - id: cargo-doc
+        name: Check Rust docs
+        priority: 0
+        language: system
+        entry: cargo
+        args: ["doc", "--no-deps", "--document-private-items", "--all-features"]
+        env:
+          RUSTFLAGS: "-D warnings"
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - Cargo.toml
+            - Cargo.lock
+            - "**/*.rs"
+
       - id: cargo-test
         name: Check Rust tests
         priority: 0
