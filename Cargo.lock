@@ -192,9 +192,9 @@ checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 
 [[package]]
 name = "gen-lsp-types"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec53bdaaaeff7f92177151182ca5c6f061990bb00b5cf4521c1acbb9267913ba"
+checksum = "0af56ad77049db9a3ccf0ec5605561d71c674688b467c429175df54ea5886151"
 dependencies = [
  "serde",
  "serde_json",
