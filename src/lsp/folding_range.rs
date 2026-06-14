@@ -61,7 +61,7 @@ struct Pattern {
     line_offset: u32,
 }
 
-// Look up rule by pattern index
+/// Look up rule by pattern index
 #[must_use]
 fn pattern(index: usize) -> &'static Pattern {
     PATTERNS.get(index).expect("pattern should exist")

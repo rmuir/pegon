@@ -58,7 +58,7 @@ fn flatten(
     }
 }
 
-// internal representation
+/// internal representation
 struct Symbol {
     name: String,
     kind: SymbolKind,
@@ -190,7 +190,7 @@ struct Pattern {
     kind: SymbolKind,
 }
 
-// Look up rule by pattern index
+/// Look up rule by pattern index
 #[must_use]
 fn pattern(index: usize) -> &'static Pattern {
     PATTERNS.get(index).expect("pattern should exist")

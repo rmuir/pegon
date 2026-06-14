@@ -90,6 +90,9 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Diagnostic>, Error> {
     Ok(lints)
 }
 
+/// Implement matching for custom predicates
+///
+/// TODO: this should be factored out of here and sort not/etc
 fn custom_predicate(
     hit: &QueryMatch,
     data: &[u8],
@@ -120,7 +123,7 @@ fn custom_predicate(
     }
 }
 
-// single rule (compiled pattern)
+/// single rule (compiled pattern)
 pub struct Rule {
     /// Name such as `[missing-foobar]`
     pub name: String,
@@ -153,7 +156,7 @@ pub enum Severity {
     Hint,
 }
 
-// Look up rule by pattern index
+/// Look up rule by pattern index
 #[must_use]
 pub fn rule(index: usize) -> &'static Rule {
     RULES.get(index).expect("rule should exist")

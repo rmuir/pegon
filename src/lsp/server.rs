@@ -427,7 +427,7 @@ fn start_request(in_flight: &InFlight, id: &RequestId) -> Option<Message> {
     })
 }
 
-// returns response, unless the request was cancelled
+/// returns response, unless the request was cancelled
 fn finish_request(in_flight: &InFlight, id: RequestId, response: Message) -> Message {
     let cancelled = { in_flight.lock().expect("poisoned").remove(&id) };
     if cancelled.unwrap_or_default() {
@@ -446,7 +446,7 @@ where
     Message::Notification(Notification::new(N::METHOD.to_string(), params))
 }
 
-// creates a request to the client
+/// creates a request to the client
 fn request<R>(id: RequestId, params: R::Params) -> Message
 where
     R: gen_lsp_types::Request,
