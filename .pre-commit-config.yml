@@ -150,6 +150,31 @@ repos:
           UV_FROZEN: "1"
         require_serial: true
 
+      - id: tombi-lint
+        name: Check TOML schema
+        priority: 0
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "tombi", "lint"]
+        env:
+          UV_FROZEN: "1"
+        require_serial: true
+        types: ["toml"]
+
+      - id: tombi-format
+        name: Fix TOML formatting
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "tombi", "format"]
+        env:
+          UV_FROZEN: "1"
+        require_serial: true
+        types: ["toml"]
+        exclude:
+          glob:
+            - "**/uv.lock"
+            - "**/Cargo.lock"
+
       - id: rumdl
         name: Fix Markdown
         language: system

@@ -48,6 +48,8 @@ dev = [
   "rumdl==0.2.16",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
+  # toml
+  "tombi==1.1.3",
   # spelling
   "typos==1.47.2",
   # this file
