@@ -1,64 +1,64 @@
-[build-system]
-requires = ["maturin>=1.9,<2.0"]
-build-backend = "maturin"
-
 [project]
 name = "pegon"
-description = "Fast linter for the Google Java Style"
 version = "0.1.0"
-keywords = ["lint", "tree-sitter", "java",]
-authors = [{ name = "Robert Muir", email = "rmuir@apache.org" }]
+description = "Fast linter for the Google Java Style"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-license-files = [ "LICENSE.txt" ]
+license-files = ["LICENSE.txt"]
+authors = [{ name = "Robert Muir", email = "rmuir@apache.org" }]
+keywords = ["java", "lint", "tree-sitter"]
 classifiers = [
-  "Topic :: Software Development :: Quality Assurance",
-  "Topic :: Text Processing :: General",
-  "Topic :: Utilities",
   "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
   "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Java",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Java",
   "Programming Language :: Rust",
-  "Operating System :: OS Independent",
-  "Intended Audience :: Developers",
-  "Environment :: Console",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Text Processing :: General",
+  "Topic :: Utilities",
 ]
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/rmuir/pegon"
-Documentation = "https://github.com/rmuir/pegon/wiki"
 Changelog = "https://github.com/rmuir/pegon/releases"
+Documentation = "https://github.com/rmuir/pegon/wiki"
+Repository = "https://github.com/rmuir/pegon"
 
 [dependency-groups]
 dev = [
-  # git hooks and repository checks
-  "prek==0.4.4",
-  # github actions
-  "zizmor==1.25.2",
   # github actions
   "actionlint-py==1.7.12.24",
-  # bash in github actions
-  "shellcheck-py==0.11.0.1",
-  # markdown
-  "rumdl==0.2.16",
-  # yaml
-  "google-yamlfmt==0.21.0",
   # yaml schema
   "check-jsonschema==0.37.3",
+  # yaml
+  "google-yamlfmt==0.21.0",
+  # git hooks and repository checks
+  "prek==0.4.4",
+  # markdown
+  "rumdl==0.2.16",
+  # bash in github actions
+  "shellcheck-py==0.11.0.1",
   # spelling
   "typos==1.47.2",
   # this file
   "validate-pyproject[all]==0.25",
+  # github actions
+  "zizmor==1.25.2",
 ]
+
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
 
 [tool.maturin]
 bindings = "bin"
