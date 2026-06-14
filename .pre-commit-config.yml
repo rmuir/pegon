@@ -1,6 +1,9 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/j178/prek/refs/heads/master/prek.schema.json
 minimum_prek_version: 0.4.0
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
 # define priority: 0 for linters that don't modify sources
 # leave fixers with priority: null so they run sequentially
 repos:
@@ -331,6 +334,15 @@ repos:
         require_serial: true
         args: ["format"]
         types: [scheme]
+
+      - id: committed
+        name: Check Commit message
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "committed", "--commit-file"]
+        env:
+          UV_FROZEN: "1"
+        stages: [commit-msg]
 
   # self-checks for this configuration file
   - repo: meta

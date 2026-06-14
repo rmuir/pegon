@@ -40,6 +40,8 @@ dev = [
   "actionlint-py==1.7.12.24",
   # yaml schema
   "check-jsonschema==0.37.3",
+  # commits
+  "committed==1.1.11",
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks

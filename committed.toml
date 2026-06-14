@@ -1,0 +1,17 @@
+allowed_types = [
+  "build",
+  "ci",
+  "chore",
+  "docs",
+  "feat",
+  "fix",
+  "perf",
+  "refactor",
+  "style",
+  "test",
+]
+style = "conventional"
+subject_length = 72
+subject_capitalized = false
+subject_not_punctuated = false
+imperative_subject = false
