@@ -10,7 +10,7 @@ updates:
     cooldown:
       default-days: 7
     commit-message:
-      prefix: ci
+      prefix: ci(actions)
     labels:
       - dependencies
       - skip-changelog
@@ -23,7 +23,7 @@ updates:
     cooldown:
       default-days: 7
     commit-message:
-      prefix: ci
+      prefix: ci(pypi)
     labels:
       - dependencies
       - skip-changelog

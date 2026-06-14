@@ -175,6 +175,17 @@ repos:
             - "**/uv.lock"
             - "**/Cargo.lock"
 
+      - id: yamllint
+        name: Check YAML lints
+        priority: 0
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "yamllint", "--strict", "."]
+        env:
+          UV_FROZEN: "1"
+        require_serial: true
+        types: ["yaml"]
+
       - id: rumdl
         name: Fix Markdown
         language: system
@@ -186,7 +197,7 @@ repos:
         types: ["markdown"]
 
       - id: yamlfmt
-        name: Fix YAML
+        name: Fix YAML formatting
         language: system
         entry: uv
         args: ["run", "--only-dev", "yamlfmt"]

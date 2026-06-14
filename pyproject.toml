@@ -40,7 +40,7 @@ dev = [
   "actionlint-py==1.7.12.24",
   # yaml schema
   "check-jsonschema==0.37.3",
-  # yaml
+  # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
   "prek==0.4.4",
@@ -54,6 +54,8 @@ dev = [
   "typos==1.47.2",
   # this file
   "validate-pyproject[all]==0.25",
+  # yaml linting
+  "yamllint==1.38.0",
   # github actions
   "zizmor==1.25.2",
 ]
