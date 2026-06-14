@@ -11,6 +11,10 @@ updates:
       default-days: 7
     commit-message:
       prefix: ci(actions)
+    groups:
+      Actions:
+        patterns:
+          - "*"
     labels:
       - dependencies
       - skip-changelog
@@ -23,7 +27,11 @@ updates:
     cooldown:
       default-days: 7
     commit-message:
-      prefix: ci(pypi)
+      prefix: ci(python)
+    groups:
+      Python:
+        patterns:
+          - "*"
     labels:
       - dependencies
       - skip-changelog
@@ -37,5 +45,9 @@ updates:
       default-days: 7
     commit-message:
       prefix: chore(deps)
+    groups:
+      Rust:
+        patterns:
+          - "*"
     labels:
       - dependencies

@@ -87,6 +87,32 @@ repos:
           glob:
             - .github/**/*.yml
 
+      - id: jsonschema-dependabot
+        name: Check Dependabot Schema
+        priority: 0
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "check-jsonschema", "--builtin-schema", "vendor.dependabot"]
+        env:
+          UV_FROZEN: "1"
+        types: [yaml]
+        files:
+          glob:
+            - ".github/dependabot.yml"
+
+      - id: jsonschema-release
+        name: Check Release Schema
+        priority: 0
+        language: system
+        entry: uv
+        args: ["run", "--only-dev", "check-jsonschema", "--schemafile", "https://www.schemastore.org/github-release-config.json"]
+        env:
+          UV_FROZEN: "1"
+        types: [yaml]
+        files:
+          glob:
+            - ".github/release.yml"
+
       - id: jsonschema-github-workflows
         name: Check Workflows Schema
         priority: 0
