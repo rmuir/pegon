@@ -1,0 +1,11 @@
+[default]
+# words with length <= 3 chars can be noisy
+extend-ignore-words-re = ["^[a-zA-Z]{1,3}$"]
+
+[files]
+# enable checking of e.g. .github
+ignore-hidden = false
+extend-exclude = [
+  # branch names etc
+  ".git/**",
+]
