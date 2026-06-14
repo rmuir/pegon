@@ -8,4 +8,6 @@ ignore-hidden = false
 extend-exclude = [
   # branch names etc
   ".git/**",
+  # but good for commit messages
+  "!.git/COMMIT_EDITMSG"
 ]
