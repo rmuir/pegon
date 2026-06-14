@@ -15,7 +15,7 @@ repos:
         priority: 0
 
       - id: check-case-conflict
-        name: Check for files that would conflict in case-insensitive filesystems
+        name: Check for case conflicts
         priority: 0
 
       - id: trailing-whitespace
@@ -374,14 +374,14 @@ repos:
   - repo: meta
     hooks:
       - id: check-hooks-apply
-        name: Check prek hooks match at least one file
+        name: Check hooks match files
         priority: 0
         files:
           glob:
             - .pre-commit-config.yml
 
       - id: check-useless-excludes
-        name: Check prek excludes match include pattern
+        name: Check excludes match includes
         priority: 0
         files:
           glob:
