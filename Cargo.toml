@@ -8,48 +8,58 @@ license = "Apache-2.0"
 homepage = "https://github.com/rmuir/pegon"
 repository = "https://github.com/rmuir/pegon"
 authors = ["Robert Muir <rmuir@apache.org>"]
-keywords = ["java", "linter", "language-server", "static-analysis"]
+keywords = ["java", "language-server", "linter", "static-analysis"]
 categories = ["command-line-utilities", "development-tools", "text-editors"]
+
+[workspace.lints.clippy]
+cargo = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+restriction = { level = "warn", priority = -1 }
+
+# discourages writing tests
+missing_panics_doc = "allow"
+# useless lint, standardize the tests
+needless_raw_string_hashes = "allow"
+
+# lots of the restriction ones are no good
+absolute_paths = "allow"
+arbitrary_source_item_ordering = "allow"
+blanket_clippy_restriction_lints = "allow"
+default_numeric_fallback = "allow"
+doc_paragraphs_missing_punctuation = "allow"
+else_if_without_else = "allow"
+exhaustive_enums = "allow"
+exhaustive_structs = "allow"
+field_scoped_visibility_modifiers = "allow"
+implicit_return = "allow"
+missing_assert_message = "allow"
+missing_docs_in_private_items = "allow"
+missing_inline_in_public_items = "allow"
+needless_raw_strings = "allow"
+pub_use = "allow"
+pub_with_shorthand = "allow"
+question_mark_used = "allow"
+self_named_module_files = "allow"
+shadow_reuse = "allow"
+single_call_fn = "allow"
+too_many_lines = "allow"
+
+# TODO: uses can be reduced
+as_conversions = "allow"
+expect_used = "allow"
+indexing_slicing = "allow"
+panic = "allow"
+pattern_type_mismatch = "allow"
+print_stderr = "allow"
+print_stdout = "allow"
+std_instead_of_alloc = "allow"
+todo = "allow"
+unneeded_field_pattern = "allow"
+use_debug = "allow"
 
 [lib]
 path = "src/lib.rs"
-
-[profile.release]
-opt-level = "s"
-lto = "fat"
-codegen-units = 1
-panic = "abort"
-
-# optimize the hotspots for speed
-[profile.release.package."regex-automata"]
-opt-level = 3
-
-[profile.release.package."tree-sitter"]
-opt-level = 3
-
-[profile.release.package."tree-sitter-java-orchard"]
-opt-level = 3
-
-[profile.dev]
-debug = "none"
-lto = "off"
-
-# optimize the hotspots to speed up dev runs
-[profile.dev.package."regex-automata"]
-opt-level = 1
-
-[profile.dev.package."tree-sitter"]
-opt-level = 1
-
-[profile.dev.package."tree-sitter-java-orchard"]
-opt-level = 1
-
-# for use with linux perf
-# RUSTFLAGS="-C force-frame-pointers=yes" must also be set.
-[profile.profiling]
-inherits = "release"
-debug = "full"
-lto = "off"
 
 [dependencies]
 # Templates diagnostic errors
@@ -90,49 +100,39 @@ indoc = "2.0.7"
 [lints]
 workspace = true
 
-[workspace.lints.clippy]
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-cargo = { level = "warn", priority = -1 }
-restriction = { level = "warn", priority = -1 }
+[profile.dev]
+debug = "none"
+lto = "off"
 
-# discourages writing tests
-missing_panics_doc = "allow"
-# useless lint, standardize the tests
-needless_raw_string_hashes = "allow"
+# optimize the hotspots to speed up dev runs
+[profile.dev.package."regex-automata"]
+opt-level = 1
 
-# lots of the restriction ones are no good
-absolute_paths = "allow"
-arbitrary_source_item_ordering = "allow"
-blanket_clippy_restriction_lints = "allow"
-default_numeric_fallback = "allow"
-doc_paragraphs_missing_punctuation = "allow"
-else_if_without_else = "allow"
-exhaustive_enums = "allow"
-exhaustive_structs = "allow"
-field_scoped_visibility_modifiers = "allow"
-implicit_return = "allow"
-missing_assert_message = "allow"
-missing_docs_in_private_items = "allow"
-missing_inline_in_public_items = "allow"
-needless_raw_strings = "allow"
-pub_use = "allow"
-pub_with_shorthand = "allow"
-question_mark_used = "allow"
-self_named_module_files = "allow"
-shadow_reuse = "allow"
-single_call_fn = "allow"
-too_many_lines = "allow"
+[profile.dev.package."tree-sitter"]
+opt-level = 1
 
-# TODO: uses can be reduced
-as_conversions = "allow"
-indexing_slicing = "allow"
-expect_used = "allow"
-panic = "allow"
-pattern_type_mismatch = "allow"
-print_stdout = "allow"
-print_stderr = "allow"
-std_instead_of_alloc = "allow"
-todo = "allow"
-unneeded_field_pattern = "allow"
-use_debug = "allow"
+[profile.dev.package."tree-sitter-java-orchard"]
+opt-level = 1
+
+[profile.release]
+opt-level = "s"
+lto = "fat"
+panic = "abort"
+codegen-units = 1
+
+# optimize the hotspots for speed
+[profile.release.package."regex-automata"]
+opt-level = 3
+
+[profile.release.package."tree-sitter"]
+opt-level = 3
+
+[profile.release.package."tree-sitter-java-orchard"]
+opt-level = 3
+
+# for use with linux perf
+# RUSTFLAGS="-C force-frame-pointers=yes" must also be set.
+[profile.profiling]
+inherits = "release"
+debug = "full"
+lto = "off"
