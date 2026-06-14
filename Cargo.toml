@@ -7,7 +7,6 @@ readme = "README.md"
 license = "Apache-2.0"
 homepage = "https://github.com/rmuir/pegon"
 repository = "https://github.com/rmuir/pegon"
-documentation = "https://github.com/rmuir/pegon/wiki"
 authors = ["Robert Muir <rmuir@apache.org>"]
 keywords = ["java", "linter", "language-server", "static-analysis"]
 categories = ["command-line-utilities", "development-tools", "text-editors"]

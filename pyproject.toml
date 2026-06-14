@@ -49,11 +49,11 @@ dev = [
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # markdown
-  "rumdl==0.2.9",
+  "rumdl==0.2.16",
   # yaml
   "google-yamlfmt==0.21.0",
   # yaml schema
-  "check-jsonschema==0.37.2",
+  "check-jsonschema==0.37.3",
   # spelling
   "typos==1.47.2",
   # this file
