@@ -27,10 +27,10 @@ fn diagnostics() {
             uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
-            text: indoc! {r#"
+            text: indoc! {"
                 public class foo {
                 }
-            "#}
+            "}
             .into(),
         },
     });
@@ -69,10 +69,10 @@ fn push_clear_on_close() {
             uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
-            text: indoc! {r#"
+            text: indoc! {"
                 public class foo {
                 }
-            "#}
+            "}
             .into(),
         },
     });
@@ -141,10 +141,10 @@ fn pull_diagnostics() {
             uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
-            text: indoc! {r#"
+            text: indoc! {"
                 public class foo {
                 }
-            "#}
+            "}
             .into(),
         },
     });
@@ -219,10 +219,10 @@ fn diagnostics_on_change() {
             uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
-            text: indoc! {r#"
+            text: indoc! {"
                 public class Foo {
                 }
-            "#}
+            "}
             .into(),
         },
     });

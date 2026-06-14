@@ -19,8 +19,6 @@ restriction = { level = "warn", priority = -1 }
 
 # discourages writing tests
 missing_panics_doc = "allow"
-# useless lint, standardize the tests
-needless_raw_string_hashes = "allow"
 
 # lots of the restriction ones are no good
 absolute_paths = "allow"
@@ -55,8 +53,6 @@ print_stderr = "allow"
 print_stdout = "allow"
 std_instead_of_alloc = "allow"
 todo = "allow"
-unneeded_field_pattern = "allow"
-use_debug = "allow"
 
 [lib]
 path = "src/lib.rs"

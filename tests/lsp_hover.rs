@@ -20,12 +20,12 @@ fn flat() {
             uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
-            text: indoc! {r#"
+            text: indoc! {"
                 public class foo {
                     public abstract void bar(int x) {
                     }
                 }
-            "#}
+            "}
             .into(),
         },
     });

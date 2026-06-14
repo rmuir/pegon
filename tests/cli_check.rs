@@ -15,15 +15,15 @@ fn check_simple() {
     let tempdir = TempDir::new();
     tempdir.add_file(
         "Good.java",
-        indoc! {r#"
+        indoc! {"
             public class Good {}
-        "#},
+        "},
     );
     tempdir.add_file(
         "bad.java",
-        indoc! {r#"
+        indoc! {"
             public class bad {}
-        "#},
+        "},
     );
 
     let output = Command::new(env!("CARGO_BIN_EXE_pegon"))

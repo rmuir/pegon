@@ -20,7 +20,7 @@ fn flat() {
             uri: "file:///Foo.java".into(),
             language_id: "java".into(),
             version: 0,
-            text: indoc! {r#"
+            text: indoc! {"
                 import foo.bar.One;
                 import foo.bar.Two;
 
@@ -31,7 +31,7 @@ fn flat() {
                     public void bar(int x) {
                     }
                 }
-            "#}
+            "}
             .into(),
         },
     });
