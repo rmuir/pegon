@@ -11,7 +11,7 @@ use clap::{
 ///
 /// More information
 #[derive(Parser)]
-#[command(author, version)]
+#[command(version)]
 #[command(arg_required_else_help = true)]
 #[command(disable_help_subcommand = true)]
 #[command(styles = CLI_STYLES)]
