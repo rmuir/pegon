@@ -209,7 +209,7 @@ repos:
         priority: 0
         language: system
         entry: uv
-        args: ["run", "--only-dev", "yamllint", "--strict", "."]
+        args: ["run", "--only-dev", "yamllint", "--strict"]
         env:
           UV_FROZEN: "1"
         require_serial: true
