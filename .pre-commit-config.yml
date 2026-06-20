@@ -365,7 +365,7 @@ repos:
         name: Check Commit message
         language: system
         entry: uv
-        args: ["run", "--only-dev", "committed", "--commit-file"]
+        args: ["run", "--only-dev", "committed", "--config", ".committed.toml", "--commit-file"]
         env:
           UV_FROZEN: "1"
         stages: [commit-msg]
