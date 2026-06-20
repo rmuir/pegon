@@ -1,4 +1,16 @@
-; highlight switch/case/default
+; if-else
+((if_statement
+  "if" @range @reference
+  "else"? @range @reference)
+  (#set! highlight.kind 2))
+
+; do-while
+((do_statement
+  "do" @range @reference
+  "while" @range @reference)
+  (#set! highlight.kind 2))
+
+; switch/case/default
 ((switch_expression
   "switch" @range @reference
   body: (switch_block
@@ -18,7 +30,7 @@
     ]*))
   (#set! highlight.kind 2))
 
-; highlight try/catch/finally
+; try/catch/finally
 ((try_statement
   "try" @range @reference
   [
@@ -29,7 +41,7 @@
   ]*)
   (#set! highlight.kind 2))
 
-; highlight try/catch/finally
+; try/catch/finally
 ((try_with_resources_statement
   "try" @range @reference
   [
