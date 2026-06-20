@@ -21,6 +21,9 @@
       "visible": "indicates the captured node is relevant and should be visible",
       "context": "indicates captured node should be highlighted"
     },
+    "hover": {
+      "range": "range of the hover area for the symbol"
+    },
     "injections": {
       "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
       "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
