@@ -10,11 +10,11 @@ use crossbeam_channel::Sender;
 use gen_lsp_types::{
     CancelParams, CodeAction, CodeActionParams, CodeActionRequest, CodeActionResolveRequest,
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentSymbolParams,
-    DocumentSymbolRequest, FoldingRangeParams, FoldingRangeRequest, HoverParams, HoverRequest, Id,
-    LogMessageNotification, LogMessageParams, MessageType, Notification as _,
-    PublishDiagnosticsNotification, RegistrationParams, RegistrationRequest, SelectionRangeParams,
-    SelectionRangeRequest, Uri,
+    DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentHighlightParams,
+    DocumentHighlightRequest, DocumentSymbolParams, DocumentSymbolRequest, FoldingRangeParams,
+    FoldingRangeRequest, HoverParams, HoverRequest, Id, LogMessageNotification, LogMessageParams,
+    MessageType, Notification as _, PublishDiagnosticsNotification, RegistrationParams,
+    RegistrationRequest, SelectionRangeParams, SelectionRangeRequest, Uri,
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -251,6 +251,32 @@ impl Server {
                         id.clone(),
                         match super::diagnostics::pull(client.as_ref(), doc.as_ref(), &params) {
                             Ok(result) => response::<DocumentDiagnosticRequest>(id, result),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "textDocument/documentHighlight" => {
+                let params: DocumentHighlightParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(
+                    docs,
+                    &params.text_document_position_params.text_document.uri,
+                )?;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::document_highlight::request(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                        ) {
+                            Ok(result) => response::<DocumentHighlightRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );

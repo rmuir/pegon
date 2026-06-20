@@ -10,6 +10,7 @@ use server::Server;
 mod client;
 mod code_action;
 mod diagnostics;
+mod document_highlight;
 mod document_symbols;
 mod folding_range;
 mod hover;

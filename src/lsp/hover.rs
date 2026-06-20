@@ -13,13 +13,13 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
     let mut cursor = QueryCursor::new();
     let linecol = client
         .decode_pos(position, &doc.line_index)
-        .expect("should decode");
+        .context("should decode")?;
     let source_position: usize = doc
         .line_index
         .offset(linecol)
-        .expect("should be valid offset")
+        .context("should be valid offset")?
         .into();
-    cursor.set_byte_range(source_position..source_position.checked_add(1).expect("no overflow"));
+    cursor.set_byte_range(source_position..source_position.checked_add(1).context("no overflow")?);
     let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
     let mut best_match = 0;
     while let Some(hit) = matches.next() {

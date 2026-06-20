@@ -2,10 +2,11 @@ use core::convert::From;
 
 use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
-    DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
-    InitializeParams, MarkupKind, Position, PositionEncodingKind,
-    PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
-    TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
+    DocumentHighlightClientCapabilities, DocumentSymbolClientCapabilities,
+    FoldingRangeClientCapabilities, HoverClientCapabilities, InitializeParams, MarkupKind,
+    Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities,
+    SelectionRangeClientCapabilities, TextDocumentClientCapabilities,
+    TextDocumentContentChangeEvent,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -318,6 +319,11 @@ impl Client {
         (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
     }
 
+    /// true if the client supports dynamic registration of document highlight
+    pub fn registers_document_highlight(&self) -> bool {
+        (|| -> _ { self.document_highlight()?.dynamic_registration })().unwrap_or_default()
+    }
+
     /// true if the client supports dynamic registration of document symbols
     pub fn registers_document_symbols(&self) -> bool {
         (|| -> _ { self.document_symbols()?.dynamic_registration })().unwrap_or_default()
@@ -357,6 +363,10 @@ impl Client {
 
     fn code_actions(&self) -> Option<&CodeActionClientCapabilities> {
         self.text_document()?.code_action.as_ref()
+    }
+
+    fn document_highlight(&self) -> Option<&DocumentHighlightClientCapabilities> {
+        self.text_document()?.document_highlight.as_ref()
     }
 
     fn document_symbols(&self) -> Option<&DocumentSymbolClientCapabilities> {

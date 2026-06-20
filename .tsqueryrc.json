@@ -21,6 +21,10 @@
       "visible": "indicates the captured node is relevant and should be visible",
       "context": "indicates captured node should be highlighted"
     },
+    "highlights": {
+      "range": "range of the area for the symbol",
+      "reference": "reference to another symbol that should be highlighted"
+    },
     "hover": {
       "range": "range of the hover area for the symbol"
     },
@@ -112,19 +116,20 @@
           "arity": "required",
           "constraint": {
             "enum": [
-              "fold.kind",
-              "fold.lineoffset",
-              "hover.kind",
-              "hover.spec",
-              "hover.description",
-              "symbol.kind",
               "diagnostic.context.label",
               "diagnostic.fix",
               "diagnostic.help",
               "diagnostic.label",
               "diagnostic.name",
               "diagnostic.severity",
-              "diagnostic.title"
+              "diagnostic.title",
+              "fold.kind",
+              "fold.lineoffset",
+              "hover.kind",
+              "hover.spec",
+              "hover.description",
+              "highlight.kind",
+              "symbol.kind"
             ]
           }
         },

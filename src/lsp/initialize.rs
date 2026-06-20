@@ -4,12 +4,13 @@ use gen_lsp_types::{
     CodeActionRegistrationOptions, CodeActionRequest, DiagnosticOptions, DiagnosticProvider,
     DiagnosticRegistrationOptions, DidChangeTextDocumentNotification,
     DidCloseTextDocumentNotification, DidOpenTextDocumentNotification, DocumentDiagnosticRequest,
-    DocumentFilter, DocumentSymbolOptions, DocumentSymbolProvider, DocumentSymbolRequest,
-    FoldingRangeOptions, FoldingRangeProvider, FoldingRangeRegistrationOptions,
-    FoldingRangeRequest, HoverOptions, HoverProvider, HoverRegistrationOptions, HoverRequest,
-    InitializeResult, Notification as _, Registration, Request as _, SelectionRangeOptions,
-    SelectionRangeProvider, SelectionRangeRegistrationOptions, SelectionRangeRequest,
-    ServerCapabilities, ServerInfo, StaticRegistrationOptions,
+    DocumentFilter, DocumentHighlightOptions, DocumentHighlightProvider,
+    DocumentHighlightRegistrationOptions, DocumentHighlightRequest, DocumentSymbolOptions,
+    DocumentSymbolProvider, DocumentSymbolRequest, FoldingRangeOptions, FoldingRangeProvider,
+    FoldingRangeRegistrationOptions, FoldingRangeRequest, HoverOptions, HoverProvider,
+    HoverRegistrationOptions, HoverRequest, InitializeResult, Notification as _, Registration,
+    Request as _, SelectionRangeOptions, SelectionRangeProvider, SelectionRangeRegistrationOptions,
+    SelectionRangeRequest, ServerCapabilities, ServerInfo, StaticRegistrationOptions,
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
     TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
@@ -45,6 +46,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         ]),
         resolve_provider: Some(true),
         ..CodeActionOptions::default()
+    };
+    let document_highlight_options = DocumentHighlightOptions {
+        work_done_progress_options,
     };
     let document_symbol_options = DocumentSymbolOptions {
         label: None,
@@ -91,6 +95,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             } else {
                 Some(DiagnosticProvider::DiagnosticRegistrationOptions(
                     diagnostic_options.clone(),
+                ))
+            },
+            document_highlight_provider: if client.registers_document_highlight() {
+                None
+            } else {
+                Some(DocumentHighlightProvider::DocumentHighlightOptions(
+                    document_highlight_options,
                 ))
             },
             document_symbol_provider: if client.registers_document_symbols() {
@@ -142,7 +153,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             ..ServerCapabilities::default()
         },
     };
-    let mut registrations: Vec<Registration> = Vec::with_capacity(9);
+    let mut registrations: Vec<Registration> = Vec::with_capacity(10);
     if client.registers_sync() {
         registrations.push(Registration {
             id: DidOpenTextDocumentNotification::METHOD.into(),
@@ -174,6 +185,18 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             id: DocumentDiagnosticRequest::METHOD.into(),
             method: DocumentDiagnosticRequest::METHOD.into(),
             register_options: Some(serde_json::to_value(diagnostic_options)?),
+        });
+    }
+    if client.registers_document_highlight() {
+        registrations.push(Registration {
+            id: DocumentHighlightRequest::METHOD.into(),
+            method: DocumentHighlightRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(
+                DocumentHighlightRegistrationOptions {
+                    text_document_registration_options: text_document_registration_options.clone(),
+                    document_highlight_options,
+                },
+            )?),
         });
     }
     if client.registers_document_symbols() {
