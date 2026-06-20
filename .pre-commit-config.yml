@@ -309,7 +309,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["deny", "check"]
+        args: ["deny", "check", "--config", ".deny.toml"]
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
