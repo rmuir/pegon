@@ -30,3 +30,56 @@
 ; variable.readonly                                                                                   variable.other.constant
 ; variable.readonly.defaultLibrary                                                                    support.constant
 ; *.deprecated                                                DiagnosticDeprecated  "red"
+; comments
+; Types
+(interface_declaration
+  name: (identifier) @type)
+
+(annotation_type_declaration
+  name: (identifier) @type)
+
+(class_declaration
+  name: (identifier) @type)
+
+(record_declaration
+  name: (identifier) @type)
+
+(enum_declaration
+  name: (identifier) @type)
+
+(constructor_declaration
+  name: (identifier) @type)
+
+(compact_constructor_declaration
+  name: (identifier) @type)
+
+(type_identifier) @type
+
+((method_invocation
+  object: (identifier) @type)
+  (#match? @type "^[A-Z]"))
+
+((method_reference
+  .
+  (identifier) @type)
+  (#match? @type "^[A-Z]"))
+
+((field_access
+  object: (identifier) @type)
+  (#match? @type "^[A-Z]"))
+
+(scoped_identifier
+  (identifier) @type
+  (#match? @type "^[A-Z]"))
+
+; Variables
+((identifier) @constant
+  (#match? @constant "^[A-Z_][A-Z0-9_]+$"))
+
+; Fields
+(field_declaration
+  declarator: (variable_declarator
+    name: (identifier) @property))
+
+(field_access
+  field: (identifier) @property)
