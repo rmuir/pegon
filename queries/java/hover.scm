@@ -33,7 +33,6 @@
   "throw"
   "throws"
   "transient"
-  "try"
   (void_type)
   "volatile"
   "while"
@@ -195,3 +194,25 @@
   (#set! hover.description "Breaks to target: it is a `goto`.")
   (#set! hover.kind "break statement")
   (#set! hover.spec "jls-14.html#jls-14.15"))
+
+; try
+((try_statement
+  "try" @range)
+  (#set! hover.description "Try statement with `catch` block for exception handling.")
+  (#set! hover.kind "try statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.1"))
+
+; try with a finally clause
+((try_statement
+  "try" @range
+  (finally_clause))
+  (#set! hover.description "Try statement with a `finally` block that is always executed.")
+  (#set! hover.kind "try-with-finally statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.2"))
+
+; try-with-resources
+((try_with_resources_statement
+  "try" @range)
+  (#set! hover.description "Try statement with automatic resource closure.")
+  (#set! hover.kind "try-with-resources statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.3"))
