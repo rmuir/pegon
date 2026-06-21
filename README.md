@@ -56,6 +56,7 @@ vim.lsp.enable({ 'pegon' })
 | `textDocument/documentSymbol`    | signature info, detailed type info, deprecations     |
 | `textDocument/foldingRange`      | regions, imports, comments, javadoc handling         |
 | `textDocument/hover`             | operators, JLS links                                 |
+| `textDocument/inlayHint`         | closing brace hints                                  |
 | `textDocument/selectionRange`    | incremental selection of tree nodes                  |
 
 ### LSP lifecycle methods
