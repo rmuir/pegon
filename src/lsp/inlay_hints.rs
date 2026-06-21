@@ -34,10 +34,20 @@ pub fn request(
             let mut text = String::new();
             text.push_str("//");
             for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
+                let bytes = part.utf8_text(bytes)?;
                 text.push(' ');
-                text.push_str(part.utf8_text(bytes)?);
+                if bytes.contains('\n') || bytes.contains("  ") {
+                    let words: Vec<_> = bytes.split_whitespace().collect();
+                    text.push_str(words.join(" ").as_str());
+                } else {
+                    text.push_str(bytes);
+                }
             }
             text.push_str(pattern.suffix);
+            if text.len() > 40 {
+                text.truncate(39);
+                text.push('\u{2026}');
+            }
             let label = Label::String(text);
             result.push(InlayHint {
                 position,
