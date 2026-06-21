@@ -56,8 +56,8 @@ pub fn request(
             }
         }
         text.push_str(pattern.suffix);
-        if text.len() > 40 {
-            text.truncate(39);
+        if text.len() > 60 {
+            text.truncate(59);
             text.push('\u{2026}');
         }
         let label = Label::String(text);
@@ -67,8 +67,8 @@ pub fn request(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(pattern.pad_left),
-            padding_right: Some(pattern.pad_right),
+            padding_left: pattern.pad_left.then_some(true),
+            padding_right: pattern.pad_right.then_some(true),
             data: None,
         });
     }
@@ -81,8 +81,11 @@ struct Pattern {
     prefix: &'static str,
     /// suffix appended to the end of hint
     suffix: &'static str,
+    /// client-side padding before the hint
     pad_left: bool,
+    /// server-side padding between captures composing the hint
     pad_medial: bool,
+    /// client-side padding before the hint
     pad_right: bool,
 }
 
