@@ -220,6 +220,7 @@
 
 ; array initializer start-end
 ((variable_declarator
+  name: (_) @reference
   "=" @reference
   value: (array_initializer
     "{" @range @reference

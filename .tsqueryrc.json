@@ -25,6 +25,10 @@
       "range": "range of the area for the symbol",
       "reference": "reference to another symbol that should be highlighted"
     },
+    "hints": {
+      "value": "components of inlay hint text",
+      "position": "location after which inlay hint should start"
+    },
     "hover": {
       "range": "range of the hover area for the symbol"
     },

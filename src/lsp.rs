@@ -15,6 +15,7 @@ mod document_symbols;
 mod folding_range;
 mod hover;
 mod initialize;
+mod inlay_hints;
 mod selection_range;
 mod server;
 mod sync;

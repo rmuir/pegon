@@ -3,10 +3,10 @@ use core::convert::From;
 use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
     DocumentHighlightClientCapabilities, DocumentSymbolClientCapabilities,
-    FoldingRangeClientCapabilities, HoverClientCapabilities, InitializeParams, MarkupKind,
-    Position, PositionEncodingKind, PublishDiagnosticsClientCapabilities,
-    SelectionRangeClientCapabilities, TextDocumentClientCapabilities,
-    TextDocumentContentChangeEvent,
+    FoldingRangeClientCapabilities, HoverClientCapabilities, InitializeParams,
+    InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
+    PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
+    TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -130,7 +130,7 @@ impl Client {
     ///
     /// treesitter range contains more information than an LSP range,
     /// so the byte offsets must be looked up from the index.
-    fn decode_range(
+    pub fn decode_range(
         &self,
         range: &gen_lsp_types::Range,
         index: &LineIndex,
@@ -344,6 +344,10 @@ impl Client {
         (|| -> _ { self.hover()?.dynamic_registration })().unwrap_or_default()
     }
 
+    pub fn registers_inlay_hints(&self) -> bool {
+        (|| -> _ { self.inlay_hints()?.dynamic_registration })().unwrap_or_default()
+    }
+
     /// true if the client supports dynamic registration of selection range
     pub fn registers_selection_range(&self) -> bool {
         (|| -> _ { self.selection_range()?.dynamic_registration })().unwrap_or_default()
@@ -379,6 +383,10 @@ impl Client {
 
     fn hover(&self) -> Option<&HoverClientCapabilities> {
         self.text_document()?.hover.as_ref()
+    }
+
+    fn inlay_hints(&self) -> Option<&InlayHintClientCapabilities> {
+        self.text_document()?.inlay_hint.as_ref()
     }
 
     fn selection_range(&self) -> Option<&SelectionRangeClientCapabilities> {

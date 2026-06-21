@@ -12,9 +12,10 @@ use gen_lsp_types::{
     DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentHighlightParams,
     DocumentHighlightRequest, DocumentSymbolParams, DocumentSymbolRequest, FoldingRangeParams,
-    FoldingRangeRequest, HoverParams, HoverRequest, Id, LogMessageNotification, LogMessageParams,
-    MessageType, Notification as _, PublishDiagnosticsNotification, RegistrationParams,
-    RegistrationRequest, SelectionRangeParams, SelectionRangeRequest, Uri,
+    FoldingRangeRequest, HoverParams, HoverRequest, Id, InlayHintParams, InlayHintRequest,
+    LogMessageNotification, LogMessageParams, MessageType, Notification as _,
+    PublishDiagnosticsNotification, RegistrationParams, RegistrationRequest, SelectionRangeParams,
+    SelectionRangeRequest, Uri,
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -342,6 +343,25 @@ impl Server {
                         id.clone(),
                         match super::hover::request(client.as_ref(), doc.as_ref(), position) {
                             Ok(result) => response::<HoverRequest>(id, result),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "textDocument/inlayHint" => {
+                let params: InlayHintParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::inlay_hints::request(client.as_ref(), doc.as_ref(), &params) {
+                            Ok(result) => response::<InlayHintRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );

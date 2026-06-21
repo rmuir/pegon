@@ -8,8 +8,9 @@ use gen_lsp_types::{
     DocumentHighlightRegistrationOptions, DocumentHighlightRequest, DocumentSymbolOptions,
     DocumentSymbolProvider, DocumentSymbolRequest, FoldingRangeOptions, FoldingRangeProvider,
     FoldingRangeRegistrationOptions, FoldingRangeRequest, HoverOptions, HoverProvider,
-    HoverRegistrationOptions, HoverRequest, InitializeResult, Notification as _, Registration,
-    Request as _, SelectionRangeOptions, SelectionRangeProvider, SelectionRangeRegistrationOptions,
+    HoverRegistrationOptions, HoverRequest, InitializeResult, InlayHintOptions, InlayHintProvider,
+    InlayHintRegistrationOptions, InlayHintRequest, Notification as _, Registration, Request as _,
+    SelectionRangeOptions, SelectionRangeProvider, SelectionRangeRegistrationOptions,
     SelectionRangeRequest, ServerCapabilities, ServerInfo, StaticRegistrationOptions,
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
     TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
@@ -65,6 +66,16 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     };
     let hover_options = HoverOptions {
         work_done_progress_options,
+    };
+    let inlay_hint_options = InlayHintRegistrationOptions {
+        inlay_hint_options: InlayHintOptions {
+            resolve_provider: Some(false), // TODO!
+            work_done_progress_options,
+        },
+        static_registration_options: StaticRegistrationOptions {
+            id: Some(InlayHintRequest::METHOD.into()),
+        },
+        text_document_registration_options: text_document_registration_options.clone(),
     };
     let selection_range_options = SelectionRangeRegistrationOptions {
         selection_range_options: SelectionRangeOptions::default(),
@@ -123,6 +134,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             } else {
                 Some(HoverProvider::HoverOptions(hover_options))
             },
+            inlay_hint_provider: if client.registers_inlay_hints() {
+                None
+            } else {
+                Some(InlayHintProvider::InlayHintRegistrationOptions(
+                    inlay_hint_options.clone(),
+                ))
+            },
             position_encoding: Some(client.negotiated_encoding()),
             selection_range_provider: if client.registers_selection_range() {
                 None
@@ -153,7 +171,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             ..ServerCapabilities::default()
         },
     };
-    let mut registrations: Vec<Registration> = Vec::with_capacity(10);
+    let mut registrations: Vec<Registration> = Vec::with_capacity(11);
     if client.registers_sync() {
         registrations.push(Registration {
             id: DidOpenTextDocumentNotification::METHOD.into(),
@@ -231,6 +249,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 text_document_registration_options,
                 hover_options,
             })?),
+        });
+    }
+    if client.registers_inlay_hints() {
+        registrations.push(Registration {
+            id: InlayHintRequest::METHOD.into(),
+            method: InlayHintRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(inlay_hint_options)?),
         });
     }
     if client.registers_selection_range() {
