@@ -11,7 +11,8 @@
   "try" @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix " {…}"))
 
 ; catch block start/end
 ((catch_clause
@@ -27,14 +28,22 @@
   "finally" @value
   (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix " {…}"))
 
 ; try-with-resources block start/end
 ((try_with_resources_statement
   "try" @value
+  resources: (resource_specification
+    "("
+    .
+    (resource
+      name: (_) @value
+      "=" @value))
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix " …"))
 
 ; if block start/end
 ((if_statement
@@ -55,6 +64,8 @@
 ; while block start/end
 ((while_statement
   "while" @value
+  condition: (parenthesized_expression
+    (expression) @value)
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n"))
@@ -74,6 +85,15 @@
   ":" @value
   value: (_) @value
   body: (block
+    "}" @position)) @_region
+  (#match? @_region "\n"))
+
+; switch block start/end
+((switch_expression
+  "switch" @value
+  condition: (parenthesized_expression
+    (expression) @value)
+  body: (switch_block
     "}" @position)) @_region
   (#match? @_region "\n"))
 
@@ -113,7 +133,8 @@
   "static" @value
   (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix " {…}"))
 
 ; constructor block start-end
 ((constructor_declaration
