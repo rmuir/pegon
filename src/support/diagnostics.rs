@@ -1,9 +1,9 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::{Context as _, Error};
 use std::sync::LazyLock;
-use tree_sitter::{
-    Node, Query, QueryCursor, QueryMatch, QueryPredicateArg, Range, StreamingIterator as _, Tree,
-};
+use tree_sitter::{Node, Query, QueryCursor, Range, StreamingIterator as _, Tree};
+
+use crate::support::queries::custom_predicate;
 
 /// Single diagnostic result
 pub struct Diagnostic {
@@ -88,39 +88,6 @@ pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Diagnostic>, Error> {
         }
     }
     Ok(lints)
-}
-
-/// Implement matching for custom predicates
-///
-/// TODO: this should be factored out of here and sort not/etc
-fn custom_predicate(
-    hit: &QueryMatch,
-    data: &[u8],
-    operator: &str,
-    args: &[QueryPredicateArg],
-) -> bool {
-    match operator {
-        "lt?" => {
-            assert!(args.len() > 1);
-            let (QueryPredicateArg::Capture(left), QueryPredicateArg::Capture(right)) =
-                (&args[0], &args[1])
-            else {
-                panic!("invalid predicate arguments")
-            };
-            let node1 = hit
-                .nodes_for_capture_index(*left)
-                .next()
-                .expect("valid capture");
-            let node2 = hit
-                .nodes_for_capture_index(*right)
-                .next()
-                .expect("valid capture");
-            node1.utf8_text(data).unwrap_or_default() < node2.utf8_text(data).unwrap_or_default()
-        }
-        _ => {
-            panic!("{operator}");
-        }
-    }
 }
 
 /// single rule (compiled pattern)

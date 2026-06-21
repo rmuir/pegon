@@ -4,14 +4,16 @@
   (parenthesized_expression) @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; try block start/end
 ((try_statement
   "try" @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; catch block start/end
 ((catch_clause
@@ -20,14 +22,16 @@
     (catch_type) @value)
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; finally block start/end
 ((finally_clause
   "finally" @value
   (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; try-with-resources block start/end
 ((try_with_resources_statement
@@ -41,6 +45,7 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
+  (#eol? @position)
   (#set! hint.suffix " …"))
 
 ; if block start/end
@@ -50,14 +55,16 @@
     (expression) @value)
   consequence: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; if block start/end
 ((if_statement
   "else" @value
   alternative: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; while block start/end
 ((while_statement
@@ -66,7 +73,8 @@
     (expression) @value)
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; for block start/end
 ((for_statement
@@ -74,7 +82,8 @@
   condition: (_) @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; for block start/end
 ((enhanced_for_statement
@@ -84,7 +93,8 @@
   value: (_) @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; switch block start/end
 ((switch_expression
@@ -93,7 +103,8 @@
     (expression) @value)
   body: (switch_block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; module block start-end
 ((module_declaration
@@ -101,7 +112,8 @@
   name: (_) @value
   body: (module_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; enum block start-end
 ((enum_declaration
@@ -109,14 +121,16 @@
   name: (_) @value
   body: (enum_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; enum constant block start-end
 ((enum_constant
   name: (_) @value
   body: (class_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; enum block start-end
 ((class_declaration
@@ -124,7 +138,8 @@
   name: (_) @value
   body: (class_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; static block start-end
 ((static_initializer
@@ -132,6 +147,7 @@
   (block
     "}" @position)) @_region
   (#match? @_region "\n")
+  (#eol? @position)
   (#set! hint.suffix " {}"))
 
 ; constructor block start-end
@@ -140,6 +156,7 @@
   body: (constructor_body
     "}" @position)) @_region
   (#match? @_region "\n")
+  (#eol? @position)
   (#set! hint.suffix "()"))
 
 ; record block start-end
@@ -148,7 +165,8 @@
   name: (_) @value
   body: (class_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; annotation type block start-end
 ((annotation_type_declaration
@@ -156,7 +174,8 @@
   name: (_) @value
   body: (annotation_type_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; interface block start-end
 ((interface_declaration
@@ -164,7 +183,8 @@
   name: (_) @value
   body: (interface_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; array initializer start-end
 ((variable_declarator
@@ -172,7 +192,8 @@
   "=" @value
   value: (array_initializer
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#eol? @position))
 
 ; method block start-end
 ((method_declaration
@@ -180,6 +201,7 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
+  (#eol? @position)
   (#set! hint.suffix "()"))
 
 ; compact constructor block start-end
@@ -188,4 +210,5 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
+  (#eol? @position)
   (#set! hint.suffix "()"))

@@ -62,6 +62,16 @@
       ],
       "description": "checks for equality between two nodes, or a node and a string"
     },
+    "eol": {
+      "not": false,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        }
+      ],
+      "description": "true if the node ends with a newline"
+    },
     "lt": {
       "not": false,
       "parameters": [

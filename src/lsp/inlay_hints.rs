@@ -4,6 +4,8 @@ use anyhow::{Context as _, Result};
 use gen_lsp_types::{InlayHint, InlayHintParams, Label};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
+use crate::support::queries::custom_predicate;
+
 use super::{Client, server::Document};
 
 pub fn request(
@@ -11,55 +13,62 @@ pub fn request(
     doc: &Document,
     params: &InlayHintParams,
 ) -> Result<Vec<InlayHint>> {
-    let bytes = doc.text.as_bytes();
+    let data = doc.text.as_bytes();
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
     let mut result = Vec::with_capacity(3);
     let mut cursor = QueryCursor::new();
     cursor.set_byte_range(range.start_byte..range.end_byte);
-    let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
+    let mut matches = cursor
+        .matches(&QUERY, doc.tree.root_node(), data)
+        .filter(|hit| {
+            for predicate in QUERY.general_predicates(hit.pattern_index) {
+                if !custom_predicate(hit, data, &predicate.operator, &predicate.args) {
+                    return false;
+                }
+            }
+            true
+        });
+
     while let Some(hit) = matches.next() {
         let node = hit
             .nodes_for_capture_index(*POSITION_CAPTURE)
             .next()
             .context("position capture should exist")?;
-        // TODO: make a general predicate for "iseol"
-        if *bytes.get(node.end_byte()).unwrap_or(&b'\n') == b'\n' {
-            let pattern = pattern(hit.pattern_index);
-            let position = client
-                .encode_range(&node.range(), &doc.line_index)
-                .context("valid offset")?
-                .end;
-            let mut text = String::new();
-            text.push_str("//");
-            for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
-                let bytes = part.utf8_text(bytes)?;
-                text.push(' ');
-                if bytes.contains('\n') || bytes.contains("  ") {
-                    let words: Vec<_> = bytes.split_whitespace().collect();
-                    text.push_str(words.join(" ").as_str());
-                } else {
-                    text.push_str(bytes);
-                }
+        let pattern = pattern(hit.pattern_index);
+        let position = client
+            .encode_range(&node.range(), &doc.line_index)
+            .context("valid offset")?
+            .end;
+        let mut text = String::new();
+        text.push_str("//");
+        for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
+            let bytes = part.utf8_text(data)?;
+            text.push(' ');
+            if bytes.contains('\n') || bytes.contains("  ") {
+                let words: Vec<_> = bytes.split_whitespace().collect();
+                text.push_str(words.join(" ").as_str());
+            } else {
+                text.push_str(bytes);
             }
-            text.push_str(pattern.suffix);
-            if text.len() > 40 {
-                text.truncate(39);
-                text.push('\u{2026}');
-            }
-            let label = Label::String(text);
-            result.push(InlayHint {
-                position,
-                label,
-                kind: None,
-                text_edits: None,
-                tooltip: None,
-                padding_left: Some(true),
-                padding_right: Some(false),
-                data: None,
-            });
         }
+        text.push_str(pattern.suffix);
+        if text.len() > 40 {
+            text.truncate(39);
+            text.push('\u{2026}');
+        }
+        let label = Label::String(text);
+        result.push(InlayHint {
+            position,
+            label,
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: Some(true),
+            padding_right: Some(false),
+            data: None,
+        });
     }
     Ok(result)
 }
