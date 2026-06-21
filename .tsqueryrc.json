@@ -129,6 +129,7 @@
               "diagnostic.title",
               "fold.kind",
               "fold.lineoffset",
+              "hint.suffix",
               "hover.kind",
               "hover.spec",
               "hover.description",

@@ -39,6 +39,8 @@
 ; if block start/end
 ((if_statement
   "if" @value
+  condition: (parenthesized_expression
+    (expression) @value)
   consequence: (block
     "}" @position)) @_region
   (#match? @_region "\n"))
@@ -60,6 +62,7 @@
 ; for block start/end
 ((for_statement
   "for" @value
+  condition: (_) @value
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n"))
@@ -67,6 +70,9 @@
 ; for block start/end
 ((enhanced_for_statement
   "for" @value
+  name: (_) @value
+  ":" @value
+  value: (_) @value
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n"))
