@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location};
+use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location, TextEdit};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use crate::support::queries::custom_predicate;
@@ -41,7 +41,7 @@ pub fn request(
             .encode_range(&node.range(), &doc.line_index)
             .context("valid offset")?
             .end;
-        let mut value = String::new();
+        let mut value = String::with_capacity(20);
 
         for part in hit.nodes_for_capture_index(*LABEL_CAPTURE) {
             let bytes = part.utf8_text(data)?;
@@ -72,34 +72,50 @@ pub fn request(
             None
         };
         let mut parts = Vec::with_capacity(3);
-        pattern.prefix.is_some().then(|| {
+        let mut new_text = String::with_capacity(value.len().saturating_add(5));
+        if pattern.pad_left {
+            new_text.push(' ');
+        }
+        if let Some(prefix) = pattern.prefix {
+            new_text.push_str(prefix);
             parts.push(InlayHintLabelPart {
-                value: pattern.prefix.expect("Some").into(),
+                value: prefix.into(),
                 location: None,
                 tooltip: None,
                 command: None,
             });
-        });
+        }
+        new_text.push_str(value.as_str());
         parts.push(InlayHintLabelPart {
             value,
             location,
             tooltip: None,
             command: None,
         });
-        pattern.suffix.is_some().then(|| {
+        if let Some(suffix) = pattern.suffix {
+            new_text.push_str(suffix);
             parts.push(InlayHintLabelPart {
-                value: pattern.suffix.expect("Some").into(),
+                value: suffix.into(),
                 location: None,
                 tooltip: None,
                 command: None,
             });
-        });
+        }
+        if pattern.pad_right {
+            new_text.push(' ');
+        }
         let label = Label::InlayHintLabelPartList(parts);
         result.push(InlayHint {
             position,
             label,
             kind: None,
-            text_edits: None,
+            text_edits: Some(vec![TextEdit {
+                range: gen_lsp_types::Range {
+                    start: position,
+                    end: position,
+                },
+                new_text,
+            }]),
             tooltip: None,
             padding_left: pattern.pad_left.then_some(true),
             padding_right: pattern.pad_right.then_some(true),
