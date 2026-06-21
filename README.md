@@ -47,28 +47,29 @@ vim.lsp.enable({ 'pegon' })
 
 ### LSP Language features
 
-| Method                        | Notes                                                |
-|------------------------------ | ---------------------------------------------------- |
-| `textDocument/diagnostic`     | syntax errors, style deviations, related information |
-| `textDocument/codeAction`     | quick fix, organize imports                          |
-| `codeAction/resolve`          | defers logic for fast "light bulb"                   |
-| `textDocument/documentSymbol` | signature info, detailed type info, deprecations   |
-| `textDocument/foldingRange`   | regions, imports, comments, javadoc handling         |
-| `textDocument/hover`          | operators, JLS links                                 |
-| `textDocument/selectionRange` | incremental selection of tree nodes                  |
+| Method                           | Notes                                                |
+|--------------------------------- | ---------------------------------------------------- |
+| `textDocument/diagnostic`        | syntax errors, style deviations, related information |
+| `textDocument/codeAction`        | quick fix, organize imports                          |
+| `codeAction/resolve`             | defers logic for fast "light bulb"                   |
+| `textDocument/documentHighlight` | related syntax elements                              |
+| `textDocument/documentSymbol`    | signature info, detailed type info, deprecations     |
+| `textDocument/foldingRange`      | regions, imports, comments, javadoc handling         |
+| `textDocument/hover`             | operators, JLS links                                 |
+| `textDocument/selectionRange`    | incremental selection of tree nodes                  |
 
 ### LSP lifecycle methods
 
-| Method                        | Notes                                                |
-|------------------------------ | ---------------------------------------------------- |
-| `initialize`                  | negotiates client encoding for best performance      |
-| `shutdown`                    | will always actually shut down, not leak processes   |
-| `client/registerCapability`   | dynamic registration scoped to `Java` files          |
-| `textDocument/didOpen`        | graceful errors on non-`Java` files                  |
-| `textDocument/didChange`      | incremental updates, incremental parsing             |
-| `textDocument/didClose`       | clears any pushed diagnostics per spec               |
-| `window/logMessage`           | notification errors reported to client               |
-| `$/cancelRequest`             | queue + threadpool for requests with cancellation    |
+| Method                           | Notes                                                |
+|--------------------------------- | ---------------------------------------------------- |
+| `initialize`                     | negotiates client encoding for best performance      |
+| `shutdown`                       | will always actually shut down, not leak processes   |
+| `client/registerCapability`      | dynamic registration scoped to `Java` files          |
+| `textDocument/didOpen`           | graceful errors on non-`Java` files                  |
+| `textDocument/didChange`         | incremental updates, incremental parsing             |
+| `textDocument/didClose`          | clears any pushed diagnostics per spec               |
+| `window/logMessage`              | notification errors reported to client               |
+| `$/cancelRequest`                | queue + threadpool for requests with cancellation    |
 
 ## Background
 
