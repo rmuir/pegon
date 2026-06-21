@@ -26,6 +26,7 @@ pub fn request(
             .context("position capture should exist")?;
         // TODO: make a general predicate for "iseol"
         if *bytes.get(node.end_byte()).unwrap_or(&b'\n') == b'\n' {
+            let pattern = pattern(hit.pattern_index);
             let position = client
                 .encode_range(&node.range(), &doc.line_index)
                 .context("valid offset")?
@@ -36,6 +37,7 @@ pub fn request(
                 text.push(' ');
                 text.push_str(part.utf8_text(bytes)?);
             }
+            text.push_str(pattern.suffix);
             let label = Label::String(text);
             result.push(InlayHint {
                 position,
@@ -51,6 +53,40 @@ pub fn request(
     }
     Ok(result)
 }
+
+/// single compiled pattern
+struct Pattern {
+    /// suffix appended to the end of hint
+    suffix: &'static str,
+}
+
+/// Look up rule by pattern index
+#[must_use]
+fn pattern(index: usize) -> &'static Pattern {
+    PATTERNS.get(index).expect("pattern should exist")
+}
+
+/// array of rules indexed by patterns of `QUERY`
+static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
+    let count = QUERY.pattern_count();
+    let mut patterns = Vec::with_capacity(count);
+    for index in 0..count {
+        let mut suffix: Option<&str> = None;
+        let props = QUERY.property_settings(index);
+        for prop in props {
+            let key = prop.key.as_ref();
+            let value = prop.value.as_deref();
+            match key {
+                "hint.suffix" => suffix = value,
+                _ => panic!("{key}: unknown metadata key"),
+            }
+        }
+        patterns.push(Pattern {
+            suffix: suffix.unwrap_or(""),
+        });
+    }
+    patterns
+});
 
 /// compiled query that matches all folding patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {

@@ -141,7 +141,8 @@
   name: (_) @value
   body: (constructor_body
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix "()"))
 
 ; record block start-end
 ((record_declaration
@@ -180,11 +181,13 @@
   name: (_) @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix "()"))
 
 ; compact constructor block start-end
 ((compact_constructor_declaration
   name: (_) @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n"))
+  (#match? @_region "\n")
+  (#set! hint.suffix "()"))
