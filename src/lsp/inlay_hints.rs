@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{InlayHint, InlayHintParams, Label};
+use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use crate::support::queries::custom_predicate;
@@ -41,26 +41,31 @@ pub fn request(
             .encode_range(&node.range(), &doc.line_index)
             .context("valid offset")?
             .end;
-        let mut text = String::new();
-        text.push_str(pattern.prefix);
-        for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
+        let mut value = String::new();
+        value.push_str(pattern.prefix);
+        for part in hit.nodes_for_capture_index(*LABEL_CAPTURE) {
             let bytes = part.utf8_text(data)?;
             if pattern.pad_medial {
-                text.push(' ');
+                value.push(' ');
             }
             if bytes.contains('\n') || bytes.contains("  ") {
                 let words: Vec<_> = bytes.split_whitespace().collect();
-                text.push_str(words.join(" ").as_str());
+                value.push_str(words.join(" ").as_str());
             } else {
-                text.push_str(bytes);
+                value.push_str(bytes);
             }
         }
-        text.push_str(pattern.suffix);
-        if text.len() > 60 {
-            text.truncate(59);
-            text.push('\u{2026}');
+        value.push_str(pattern.suffix);
+        if value.len() > 60 {
+            value.truncate(59);
+            value.push('\u{2026}');
         }
-        let label = Label::String(text);
+        let label = Label::InlayHintLabelPartList(vec![InlayHintLabelPart {
+            value,
+            tooltip: None,
+            location: None,
+            command: None,
+        }]);
         result.push(InlayHint {
             position,
             label,
@@ -147,10 +152,10 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     .expect("query should compile")
 });
 
-static VALUE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+static LABEL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
-        .capture_index_for_name("value")
-        .expect("value capture should exist")
+        .capture_index_for_name("label")
+        .expect("label capture should exist")
 });
 
 static POSITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {

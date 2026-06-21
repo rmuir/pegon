@@ -26,7 +26,8 @@
       "reference": "reference to another symbol that should be highlighted"
     },
     "hints": {
-      "value": "components of inlay hint text",
+      "label": "components of inlay hint text",
+      "location": "source location for interactive features (hover/go-to-definition)",
       "position": "location after which inlay hint should start"
     },
     "hover": {

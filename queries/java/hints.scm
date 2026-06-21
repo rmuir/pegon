@@ -1,7 +1,7 @@
 ; synchronized block start/end
 ((synchronized_statement
-  "synchronized" @value
-  (parenthesized_expression) @value
+  "synchronized" @label
+  (parenthesized_expression) @label
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -12,7 +12,7 @@
 
 ; try block start/end
 ((try_statement
-  "try" @value
+  "try" @label
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -23,9 +23,9 @@
 
 ; catch block start/end
 ((catch_clause
-  "catch" @value
+  "catch" @label
   (catch_formal_parameter
-    (catch_type) @value)
+    (catch_type) @label)
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -36,7 +36,7 @@
 
 ; finally block start/end
 ((finally_clause
-  "finally" @value
+  "finally" @label
   (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -47,13 +47,13 @@
 
 ; try-with-resources block start/end
 ((try_with_resources_statement
-  "try" @value
+  "try" @label
   resources: (resource_specification
     "("
     .
     (resource
-      name: (_) @value
-      "=" @value))
+      name: (_) @label
+      "=" @label))
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -65,9 +65,9 @@
 
 ; if block start/end
 ((if_statement
-  "if" @value
+  "if" @label
   condition: (parenthesized_expression
-    (expression) @value)
+    (expression) @label)
   consequence: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -78,7 +78,7 @@
 
 ; if block start/end
 ((if_statement
-  "else" @value
+  "else" @label
   alternative: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -89,9 +89,9 @@
 
 ; while block start/end
 ((while_statement
-  "while" @value
+  "while" @label
   condition: (parenthesized_expression
-    (expression) @value)
+    (expression) @label)
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -102,8 +102,8 @@
 
 ; for block start/end
 ((for_statement
-  "for" @value
-  condition: (_) @value
+  "for" @label
+  condition: (_) @label
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -114,10 +114,10 @@
 
 ; for block start/end
 ((enhanced_for_statement
-  "for" @value
-  name: (_) @value
-  ":" @value
-  value: (_) @value
+  "for" @label
+  name: (_) @label
+  ":" @label
+  value: (_) @label
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -128,9 +128,9 @@
 
 ; switch block start/end
 ((switch_expression
-  "switch" @value
+  "switch" @label
   condition: (parenthesized_expression
-    (expression) @value)
+    (expression) @label)
   body: (switch_block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -141,8 +141,8 @@
 
 ; module block start-end
 ((module_declaration
-  "module" @value
-  name: (_) @value
+  "module" @label
+  name: (_) @label
   body: (module_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -153,8 +153,8 @@
 
 ; enum block start-end
 ((enum_declaration
-  "enum" @value
-  name: (_) @value
+  "enum" @label
+  name: (_) @label
   body: (enum_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -165,7 +165,7 @@
 
 ; enum constant block start-end
 ((enum_constant
-  name: (_) @value
+  name: (_) @label
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -176,8 +176,8 @@
 
 ; enum block start-end
 ((class_declaration
-  "class" @value
-  name: (_) @value
+  "class" @label
+  name: (_) @label
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -188,7 +188,7 @@
 
 ; static block start-end
 ((static_initializer
-  "static" @value
+  "static" @label
   (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -200,7 +200,7 @@
 
 ; constructor block start-end
 ((constructor_declaration
-  name: (_) @value
+  name: (_) @label
   body: (constructor_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -212,8 +212,8 @@
 
 ; record block start-end
 ((record_declaration
-  "record" @value
-  name: (_) @value
+  "record" @label
+  name: (_) @label
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -224,8 +224,8 @@
 
 ; annotation type block start-end
 ((annotation_type_declaration
-  "@interface" @value
-  name: (_) @value
+  "@interface" @label
+  name: (_) @label
   body: (annotation_type_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -236,8 +236,8 @@
 
 ; interface block start-end
 ((interface_declaration
-  "interface" @value
-  name: (_) @value
+  "interface" @label
+  name: (_) @label
   body: (interface_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -248,8 +248,8 @@
 
 ; array initializer start-end
 ((variable_declarator
-  name: (_) @value
-  "=" @value
+  name: (_) @label
+  "=" @label
   value: (array_initializer
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -260,7 +260,7 @@
 
 ; method block start-end
 ((method_declaration
-  name: (_) @value
+  name: (_) @label
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -272,7 +272,7 @@
 
 ; compact constructor block start-end
 ((compact_constructor_declaration
-  name: (_) @value
+  name: (_) @label
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -291,7 +291,7 @@
         (scoped_type_identifier)
         (generic_type)
         ","
-      ]+ @value))
+      ]+ @label))
   declarator: (variable_declarator
     value: (object_creation_expression
       type: (generic_type
@@ -310,7 +310,7 @@
         (scoped_type_identifier)
         (generic_type)
         ","
-      ]+ @value))
+      ]+ @label))
   declarator: (variable_declarator
     value: (object_creation_expression
       type: (generic_type
