@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label};
+use gen_lsp_types::{InlayHint, InlayHintParams, Label};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use super::{Client, server::Document};
@@ -30,28 +30,13 @@ pub fn request(
                 .encode_range(&node.range(), &doc.line_index)
                 .context("valid offset")?
                 .end;
-            let mut parts = Vec::with_capacity(1);
-            parts.push(InlayHintLabelPart {
-                value: "//".into(),
-                tooltip: None,
-                location: None,
-                command: None,
-            });
+            let mut text = String::new();
+            text.push_str("//");
             for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
-                parts.push(InlayHintLabelPart {
-                    value: " ".into(),
-                    tooltip: None,
-                    location: None,
-                    command: None,
-                });
-                parts.push(InlayHintLabelPart {
-                    value: part.utf8_text(bytes)?.into(),
-                    tooltip: None,
-                    location: None,
-                    command: None,
-                });
+                text.push(' ');
+                text.push_str(part.utf8_text(bytes)?);
             }
-            let label = Label::InlayHintLabelPartList(parts);
+            let label = Label::String(text);
             result.push(InlayHint {
                 position,
                 label,
