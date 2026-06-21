@@ -42,7 +42,7 @@ pub fn request(
             .context("valid offset")?
             .end;
         let mut text = String::new();
-        text.push_str("//");
+        text.push_str(pattern.prefix);
         for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
             let bytes = part.utf8_text(data)?;
             text.push(' ');
@@ -75,6 +75,8 @@ pub fn request(
 
 /// single compiled pattern
 struct Pattern {
+    /// prefix prepended to the start of the hint
+    prefix: &'static str,
     /// suffix appended to the end of hint
     suffix: &'static str,
 }
@@ -90,17 +92,20 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
+        let mut prefix: Option<&str> = None;
         let mut suffix: Option<&str> = None;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
+                "hint.prefix" => prefix = value,
                 "hint.suffix" => suffix = value,
                 _ => panic!("{key}: unknown metadata key"),
             }
         }
         patterns.push(Pattern {
+            prefix: prefix.unwrap_or(""),
             suffix: suffix.unwrap_or(""),
         });
     }

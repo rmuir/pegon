@@ -5,7 +5,8 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; try block start/end
 ((try_statement
@@ -13,7 +14,8 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; catch block start/end
 ((catch_clause
@@ -23,7 +25,8 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; finally block start/end
 ((finally_clause
@@ -31,7 +34,8 @@
   (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; try-with-resources block start/end
 ((try_with_resources_statement
@@ -46,6 +50,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
+  (#set! hint.prefix "//")
   (#set! hint.suffix " …"))
 
 ; if block start/end
@@ -56,7 +61,8 @@
   consequence: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; if block start/end
 ((if_statement
@@ -64,7 +70,8 @@
   alternative: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; while block start/end
 ((while_statement
@@ -74,7 +81,8 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; for block start/end
 ((for_statement
@@ -83,7 +91,8 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; for block start/end
 ((enhanced_for_statement
@@ -94,7 +103,8 @@
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; switch block start/end
 ((switch_expression
@@ -104,7 +114,8 @@
   body: (switch_block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; module block start-end
 ((module_declaration
@@ -113,7 +124,8 @@
   body: (module_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; enum block start-end
 ((enum_declaration
@@ -122,7 +134,8 @@
   body: (enum_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; enum constant block start-end
 ((enum_constant
@@ -130,7 +143,8 @@
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; enum block start-end
 ((class_declaration
@@ -139,7 +153,8 @@
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; static block start-end
 ((static_initializer
@@ -148,6 +163,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
+  (#set! hint.prefix "//")
   (#set! hint.suffix " {}"))
 
 ; constructor block start-end
@@ -157,6 +173,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
+  (#set! hint.prefix "//")
   (#set! hint.suffix "()"))
 
 ; record block start-end
@@ -166,7 +183,8 @@
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; annotation type block start-end
 ((annotation_type_declaration
@@ -175,7 +193,8 @@
   body: (annotation_type_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; interface block start-end
 ((interface_declaration
@@ -184,7 +203,8 @@
   body: (interface_body
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; array initializer start-end
 ((variable_declarator
@@ -193,7 +213,8 @@
   value: (array_initializer
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#eol? @position))
+  (#eol? @position)
+  (#set! hint.prefix "//"))
 
 ; method block start-end
 ((method_declaration
@@ -202,6 +223,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
+  (#set! hint.prefix "//")
   (#set! hint.suffix "()"))
 
 ; compact constructor block start-end
@@ -211,4 +233,21 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
+  (#set! hint.prefix "//")
   (#set! hint.suffix "()"))
+
+(local_variable_declaration
+  type: (generic_type
+    (type_arguments
+      [
+        (type_identifier)
+        ","
+      ]+ @value))
+  declarator: (variable_declarator
+    value: (object_creation_expression
+      type: (generic_type
+        (type_arguments
+          .
+          "<" @position
+          .
+          ">" .)))))
