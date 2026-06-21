@@ -11,8 +11,7 @@
   "try" @value
   body: (block
     "}" @position)) @_region
-  (#match? @_region "\n")
-  (#set! hint.suffix " {…}"))
+  (#match? @_region "\n"))
 
 ; catch block start/end
 ((catch_clause
@@ -28,8 +27,7 @@
   "finally" @value
   (block
     "}" @position)) @_region
-  (#match? @_region "\n")
-  (#set! hint.suffix " {…}"))
+  (#match? @_region "\n"))
 
 ; try-with-resources block start/end
 ((try_with_resources_statement
@@ -134,7 +132,7 @@
   (block
     "}" @position)) @_region
   (#match? @_region "\n")
-  (#set! hint.suffix " {…}"))
+  (#set! hint.suffix " {}"))
 
 ; constructor block start-end
 ((constructor_declaration
