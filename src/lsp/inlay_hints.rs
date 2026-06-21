@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label};
+use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use crate::support::queries::custom_predicate;
@@ -42,10 +42,10 @@ pub fn request(
             .context("valid offset")?
             .end;
         let mut value = String::new();
-        value.push_str(pattern.prefix);
+
         for part in hit.nodes_for_capture_index(*LABEL_CAPTURE) {
             let bytes = part.utf8_text(data)?;
-            if pattern.pad_medial {
+            if !value.is_empty() && pattern.pad_medial {
                 value.push(' ');
             }
             if bytes.contains('\n') || bytes.contains("  ") {
@@ -55,17 +55,46 @@ pub fn request(
                 value.push_str(bytes);
             }
         }
-        value.push_str(pattern.suffix);
         if value.len() > 60 {
             value.truncate(59);
             value.push('\u{2026}');
         }
-        let label = Label::InlayHintLabelPartList(vec![InlayHintLabelPart {
+
+        let location = if let Some(location) = hit.nodes_for_capture_index(*LOCATION_CAPTURE).next()
+        {
+            Some(Location {
+                uri: params.text_document.uri.clone(),
+                range: client
+                    .encode_range(&location.range(), &doc.line_index)
+                    .context("valid offset")?,
+            })
+        } else {
+            None
+        };
+        let mut parts = Vec::with_capacity(3);
+        pattern.prefix.is_some().then(|| {
+            parts.push(InlayHintLabelPart {
+                value: pattern.prefix.expect("Some").into(),
+                location: None,
+                tooltip: None,
+                command: None,
+            });
+        });
+        parts.push(InlayHintLabelPart {
             value,
+            location,
             tooltip: None,
-            location: None,
             command: None,
-        }]);
+        });
+        pattern.suffix.is_some().then(|| {
+            parts.push(InlayHintLabelPart {
+                value: pattern.suffix.expect("Some").into(),
+                location: None,
+                tooltip: None,
+                command: None,
+            });
+        });
+        let label = Label::InlayHintLabelPartList(parts);
         result.push(InlayHint {
             position,
             label,
@@ -83,9 +112,9 @@ pub fn request(
 /// single compiled pattern
 struct Pattern {
     /// prefix prepended to the start of the hint
-    prefix: &'static str,
+    prefix: Option<&'static str>,
     /// suffix appended to the end of hint
-    suffix: &'static str,
+    suffix: Option<&'static str>,
     /// client-side padding before the hint
     pad_left: bool,
     /// server-side padding between captures composing the hint
@@ -105,8 +134,8 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
-        let mut prefix = "";
-        let mut suffix = "";
+        let mut prefix = None;
+        let mut suffix = None;
         let mut pad_left = false;
         let mut pad_medial = false;
         let mut pad_right = false;
@@ -115,8 +144,8 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
-                "hint.prefix" => prefix = value.expect("string value"),
-                "hint.suffix" => suffix = value.expect("string value"),
+                "hint.prefix" => prefix = value,
+                "hint.suffix" => suffix = value,
                 "hint.pad.left" => {
                     pad_left = value.expect("bool value").parse().expect("bool value");
                 }
@@ -156,6 +185,12 @@ static LABEL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
         .capture_index_for_name("label")
         .expect("label capture should exist")
+});
+
+static LOCATION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    QUERY
+        .capture_index_for_name("location")
+        .expect("location capture should exist")
 });
 
 static POSITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
