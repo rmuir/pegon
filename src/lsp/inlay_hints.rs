@@ -45,7 +45,9 @@ pub fn request(
         text.push_str(pattern.prefix);
         for part in hit.nodes_for_capture_index(*VALUE_CAPTURE) {
             let bytes = part.utf8_text(data)?;
-            text.push(' ');
+            if pattern.pad_medial {
+                text.push(' ');
+            }
             if bytes.contains('\n') || bytes.contains("  ") {
                 let words: Vec<_> = bytes.split_whitespace().collect();
                 text.push_str(words.join(" ").as_str());
@@ -65,8 +67,8 @@ pub fn request(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(true),
-            padding_right: Some(false),
+            padding_left: Some(pattern.pad_left),
+            padding_right: Some(pattern.pad_right),
             data: None,
         });
     }
@@ -79,6 +81,9 @@ struct Pattern {
     prefix: &'static str,
     /// suffix appended to the end of hint
     suffix: &'static str,
+    pad_left: bool,
+    pad_medial: bool,
+    pad_right: bool,
 }
 
 /// Look up rule by pattern index
@@ -92,21 +97,36 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
-        let mut prefix: Option<&str> = None;
-        let mut suffix: Option<&str> = None;
+        let mut prefix = "";
+        let mut suffix = "";
+        let mut pad_left = false;
+        let mut pad_medial = false;
+        let mut pad_right = false;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
-                "hint.prefix" => prefix = value,
-                "hint.suffix" => suffix = value,
+                "hint.prefix" => prefix = value.expect("string value"),
+                "hint.suffix" => suffix = value.expect("string value"),
+                "hint.pad.left" => {
+                    pad_left = value.expect("bool value").parse().expect("bool value");
+                }
+                "hint.pad.medial" => {
+                    pad_medial = value.expect("bool value").parse().expect("bool value");
+                }
+                "hint.pad.right" => {
+                    pad_right = value.expect("bool value").parse().expect("bool value");
+                }
                 _ => panic!("{key}: unknown metadata key"),
             }
         }
         patterns.push(Pattern {
-            prefix: prefix.unwrap_or(""),
-            suffix: suffix.unwrap_or(""),
+            prefix,
+            suffix,
+            pad_left,
+            pad_medial,
+            pad_right,
         });
     }
     patterns
