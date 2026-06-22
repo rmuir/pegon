@@ -41,20 +41,46 @@ pub fn request(
             .encode_range(&node.range(), &doc.line_index)
             .context("valid offset")?
             .end;
-        let mut value = String::with_capacity(20);
 
+        // raw captured text from pattern/nodes with only internal server-side padding
+        let mut value = String::with_capacity(20);
+        if let Some(prefix) = pattern.prefix {
+            value.push_str(prefix);
+        }
         for part in hit.nodes_for_capture_index(*LABEL_CAPTURE) {
-            let bytes = part.utf8_text(data)?;
             if !value.is_empty() && pattern.pad_medial {
                 value.push(' ');
             }
-            if bytes.contains('\n') || bytes.contains("  ") {
-                let words: Vec<_> = bytes.split_whitespace().collect();
-                value.push_str(words.join(" ").as_str());
-            } else {
-                value.push_str(bytes);
-            }
+            value.push_str(part.utf8_text(data)?);
         }
+        if let Some(suffix) = pattern.suffix {
+            value.push_str(suffix);
+        }
+
+        // compute the text edit, which should not be truncated.
+        let mut new_text = String::with_capacity(value.len().saturating_add(2));
+        if pattern.pad_left {
+            new_text.push(' ');
+        }
+        new_text.push_str(value.as_str());
+        if pattern.pad_right {
+            new_text.push(' ');
+        }
+
+        // compute the display form, which should be cleaned up.
+        // truncate at newlines
+        if let Some(newline) = value.find('\n') {
+            value.truncate(newline);
+            value.push('\u{2026}');
+        }
+
+        // truncate at runs of spaces
+        if let Some(spacerun) = value.find("  ") {
+            value.truncate(spacerun);
+            value.push('\u{2026}');
+        }
+
+        // if still too long, truncate with ellipsis
         if value.len() > 60 {
             value.truncate(59);
             value.push('\u{2026}');
@@ -71,40 +97,12 @@ pub fn request(
         } else {
             None
         };
-        let mut parts = Vec::with_capacity(3);
-        let mut new_text = String::with_capacity(value.len().saturating_add(5));
-        if pattern.pad_left {
-            new_text.push(' ');
-        }
-        if let Some(prefix) = pattern.prefix {
-            new_text.push_str(prefix);
-            parts.push(InlayHintLabelPart {
-                value: prefix.into(),
-                location: None,
-                tooltip: None,
-                command: None,
-            });
-        }
-        new_text.push_str(value.as_str());
-        parts.push(InlayHintLabelPart {
+        let label = Label::InlayHintLabelPartList(vec![InlayHintLabelPart {
             value,
-            location,
             tooltip: None,
+            location,
             command: None,
-        });
-        if let Some(suffix) = pattern.suffix {
-            new_text.push_str(suffix);
-            parts.push(InlayHintLabelPart {
-                value: suffix.into(),
-                location: None,
-                tooltip: None,
-                command: None,
-            });
-        }
-        if pattern.pad_right {
-            new_text.push(' ');
-        }
-        let label = Label::InlayHintLabelPartList(parts);
+        }]);
         result.push(InlayHint {
             position,
             label,

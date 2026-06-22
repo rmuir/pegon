@@ -6,7 +6,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -17,7 +17,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -30,7 +30,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -41,7 +41,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -58,7 +58,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.suffix " …")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
@@ -72,7 +72,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -83,7 +83,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -96,7 +96,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -108,7 +108,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -122,7 +122,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -135,7 +135,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -147,7 +147,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -159,7 +159,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -170,7 +170,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -182,7 +182,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -193,7 +193,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.suffix " {}")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
@@ -205,7 +205,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.suffix "()")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
@@ -218,7 +218,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -230,7 +230,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -242,7 +242,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -254,7 +254,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
@@ -265,7 +265,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.suffix "()")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
@@ -277,7 +277,7 @@
     "}" @position)) @_region
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "// ")
+  (#set! hint.prefix "//")
   (#set! hint.suffix "()")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
