@@ -144,58 +144,30 @@ struct Stats {
 }
 
 impl Stats {
-    fn add_file(&mut self, count: usize) -> Result<(), Error> {
-        self.files = self.files.checked_add(count).context("no overflow")?;
-        Ok(())
+    const fn add_file(&mut self, count: usize) {
+        self.files = self.files.saturating_add(count);
     }
-    fn add_problem(&mut self, severity: Severity) -> Result<(), Error> {
+    const fn add_problem(&mut self, severity: Severity) {
         match severity {
-            Severity::Error => {
-                self.error_count = self.error_count.checked_add(1).context("no overflow")?;
-            }
-            Severity::Warn => {
-                self.warning_count = self.warning_count.checked_add(1).context("no overflow")?;
-            }
-            Severity::Info => {
-                self.info_count = self.info_count.checked_add(1).context("no overflow")?;
-            }
-            Severity::Hint => {
-                self.hint_count = self.hint_count.checked_add(1).context("no overflow")?;
-            }
+            Severity::Error => self.error_count = self.error_count.saturating_add(1),
+            Severity::Warn => self.warning_count = self.warning_count.saturating_add(1),
+            Severity::Info => self.info_count = self.info_count.saturating_add(1),
+            Severity::Hint => self.hint_count = self.hint_count.saturating_add(1),
         }
-        Ok(())
     }
-    fn add(&mut self, other: Self) -> Result<(), Error> {
-        self.add_file(other.files)?;
-        self.error_count = self
-            .error_count
-            .checked_add(other.error_count)
-            .context("no overflow")?;
-        self.warning_count = self
-            .warning_count
-            .checked_add(other.warning_count)
-            .context("no overflow")?;
-        self.info_count = self
-            .info_count
-            .checked_add(other.info_count)
-            .context("no overflow")?;
-        self.hint_count = self
-            .hint_count
-            .checked_add(other.hint_count)
-            .context("no overflow")?;
-        Ok(())
+    const fn add(&mut self, other: Self) {
+        self.add_file(other.files);
+        self.error_count = self.error_count.saturating_add(other.error_count);
+        self.warning_count = self.warning_count.saturating_add(other.warning_count);
+        self.info_count = self.info_count.saturating_add(other.info_count);
+        self.hint_count = self.hint_count.saturating_add(other.hint_count);
     }
 
-    fn problem_count(&self) -> Result<usize, Error> {
-        let result = self
-            .error_count
-            .checked_add(self.warning_count)
-            .context("no overflow")?
-            .checked_add(self.info_count)
-            .context("no overflow")?
-            .checked_add(self.hint_count)
-            .context("no overflow")?;
-        Ok(result)
+    const fn problem_count(&self) -> usize {
+        self.error_count
+            .saturating_add(self.warning_count)
+            .saturating_add(self.info_count)
+            .saturating_add(self.hint_count)
     }
 }
 
@@ -244,13 +216,13 @@ impl Worker {
                 if shouldcheck && let Err(error) = self.check_file(path) {
                     let filename = entry.path().to_string_lossy();
                     eprintln!("internal error: {filename} {error}");
-                    drop(self.stats.add_problem(Severity::Error));
+                    self.stats.add_problem(Severity::Error);
                 }
                 WalkState::Continue
             }
             Err(err) => {
                 eprintln!("file error: {err}");
-                drop(self.stats.add_problem(Severity::Error));
+                self.stats.add_problem(Severity::Error);
                 WalkState::Skip
             }
         }
@@ -266,11 +238,11 @@ impl Worker {
         let result = diagnostics::lint(&tree, &data)?;
         if !result.is_empty() {
             for item in result.iter().as_ref() {
-                self.stats.add_problem(rule(item.rule_id).severity)?;
+                self.stats.add_problem(rule(item.rule_id).severity);
             }
             render(path, &data, result, self.concise)?;
         }
-        self.stats.add_file(1)?;
+        self.stats.add_file(1);
         Ok(())
     }
 }
@@ -320,11 +292,11 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
 
     let mut stats = Stats::default();
     for result in rx {
-        stats.add(result)?;
+        stats.add(result);
     }
 
     let files = stats.files;
-    let problem_count = stats.problem_count()?;
+    let problem_count = stats.problem_count();
 
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
