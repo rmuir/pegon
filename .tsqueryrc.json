@@ -16,6 +16,10 @@
     "java": "java-orchard"
   },
   "valid_captures": {
+    "definitions": {
+      "range": "full range of the symbol",
+      "selection": "identifier of the symbol, must be within @range"
+    },
     "diagnostics": {
       "error": "indicates the captured node is the source of the error",
       "visible": "indicates the captured node is relevant and should be visible",

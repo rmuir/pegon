@@ -23,6 +23,10 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
     let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
     let mut best_match = 0;
     while let Some(hit) = matches.next() {
+        // ensure last pattern-wins
+        if hit.pattern_index < best_match {
+            continue;
+        }
         // check if it is a true match, we must be inside the range capture
         let node = hit
             .nodes_for_capture_index(*RANGE_CAPTURE)
@@ -32,11 +36,6 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
             continue;
         }
 
-        // ensure last pattern-wins
-        if hit.pattern_index < best_match {
-            continue;
-        }
-        best_match = hit.pattern_index;
         let pattern = pattern(hit.pattern_index);
         let range = client
             .encode_range(&node.range(), &doc.line_index)
@@ -59,6 +58,7 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
             }),
             range: Some(range),
         });
+        best_match = hit.pattern_index;
     }
     Ok(result)
 }

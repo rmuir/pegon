@@ -27,33 +27,42 @@ pub fn request(
     let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
     let mut best_match = 0;
     while let Some(hit) = matches.next() {
-        // check if it is a true match, we must be inside the range capture
-        let node = hit
-            .nodes_for_capture_index(*RANGE_CAPTURE)
-            .next()
-            .expect("should have range capture");
-        if source_position < node.range().start_byte || source_position > node.range().end_byte {
-            continue;
-        }
-
         // ensure last pattern-wins
         if hit.pattern_index < best_match {
             continue;
         }
-        best_match = hit.pattern_index;
-        let range = client
-            .encode_range(&node.range(), &doc.line_index)
+        // check if it is a true match, we must be inside the selection capture
+        let selection = hit
+            .nodes_for_capture_index(*SELECTION_CAPTURE)
+            .next()
+            .expect("should have selection capture");
+        if source_position < selection.range().start_byte
+            || source_position > selection.range().end_byte
+        {
+            continue;
+        }
+
+        let target = hit
+            .nodes_for_capture_index(*RANGE_CAPTURE)
+            .next()
+            .expect("should have range capture");
+        let target_selection_range = client
+            .encode_range(&selection.range(), &doc.line_index)
+            .context("valid range")?;
+        let target_range = client
+            .encode_range(&target.range(), &doc.line_index)
             .context("valid range")?;
         result = Some(LocationLink {
-            target_range: range,
-            origin_selection_range: Some(range),
+            target_range,
+            origin_selection_range: Some(target_selection_range),
             target_uri: params
                 .text_document_position_params
                 .text_document
                 .uri
                 .clone(),
-            target_selection_range: range,
+            target_selection_range,
         });
+        best_match = hit.pattern_index;
     }
     result.map_or_else(
         || Ok(None),
@@ -88,4 +97,10 @@ static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
     QUERY
         .capture_index_for_name("range")
         .expect("range capture should exist")
+});
+
+static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
+    QUERY
+        .capture_index_for_name("selection")
+        .expect("selection capture should exist")
 });
