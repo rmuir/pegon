@@ -180,7 +180,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             ..ServerCapabilities::default()
         },
     };
-    let mut registrations: Vec<Registration> = Vec::with_capacity(11);
+    let mut registrations: Vec<Registration> = Vec::with_capacity(12);
     if client.registers_sync() {
         registrations.push(Registration {
             id: DidOpenTextDocumentNotification::METHOD.into(),

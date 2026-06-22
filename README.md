@@ -49,6 +49,7 @@ vim.lsp.enable({ 'pegon' })
 
 | Method                           | Notes                                                |
 |--------------------------------- | ---------------------------------------------------- |
+| `textDocument/definition`        | inlay hint interaction                               |
 | `textDocument/diagnostic`        | syntax errors, style deviations, related information |
 | `textDocument/codeAction`        | quick fix, organize imports                          |
 | `codeAction/resolve`             | defers logic for fast "light bulb"                   |
