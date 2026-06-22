@@ -1,3 +1,5 @@
+use core::ops::Not as _;
+
 use anyhow::Result;
 use gen_lsp_types::{
     ChangeNotifications, CodeActionKind, CodeActionOptions, CodeActionProvider,
@@ -98,75 +100,48 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             version: Some(env!("CARGO_PKG_VERSION").into()),
         }),
         capabilities: ServerCapabilities {
-            code_action_provider: if client.registers_code_actions() {
-                None
-            } else {
-                Some(CodeActionProvider::CodeActionOptions(
-                    code_action_options.clone(),
-                ))
-            },
-            definition_provider: if client.registers_definition() {
-                None
-            } else {
-                Some(DefinitionProvider::DefinitionOptions(definition_options))
-            },
-            diagnostic_provider: if client.registers_diagnostics() {
-                None
-            } else {
-                Some(DiagnosticProvider::DiagnosticRegistrationOptions(
-                    diagnostic_options.clone(),
-                ))
-            },
-            document_highlight_provider: if client.registers_document_highlight() {
-                None
-            } else {
-                Some(DocumentHighlightProvider::DocumentHighlightOptions(
-                    document_highlight_options,
-                ))
-            },
-            document_symbol_provider: if client.registers_document_symbols() {
-                None
-            } else {
-                Some(DocumentSymbolProvider::DocumentSymbolOptions(
-                    document_symbol_options.clone(),
-                ))
-            },
-            folding_range_provider: if client.registers_folding_range() {
-                None
-            } else {
-                Some(FoldingRangeProvider::FoldingRangeRegistrationOptions(
+            code_action_provider: client.registers_code_actions().not().then_some(
+                CodeActionProvider::CodeActionOptions(code_action_options.clone()),
+            ),
+            definition_provider: client
+                .registers_definition()
+                .not()
+                .then_some(DefinitionProvider::DefinitionOptions(definition_options)),
+            diagnostic_provider: client.registers_diagnostics().not().then_some(
+                DiagnosticProvider::DiagnosticRegistrationOptions(diagnostic_options.clone()),
+            ),
+            document_highlight_provider: client.registers_document_highlight().not().then_some(
+                DocumentHighlightProvider::DocumentHighlightOptions(document_highlight_options),
+            ),
+            document_symbol_provider: client.registers_document_symbols().not().then_some(
+                DocumentSymbolProvider::DocumentSymbolOptions(document_symbol_options.clone()),
+            ),
+            folding_range_provider: client.registers_folding_range().not().then_some(
+                FoldingRangeProvider::FoldingRangeRegistrationOptions(
                     folding_range_options.clone(),
-                ))
-            },
-            hover_provider: if client.registers_hover() {
-                None
-            } else {
-                Some(HoverProvider::HoverOptions(hover_options))
-            },
-            inlay_hint_provider: if client.registers_inlay_hints() {
-                None
-            } else {
-                Some(InlayHintProvider::InlayHintRegistrationOptions(
-                    inlay_hint_options.clone(),
-                ))
-            },
+                ),
+            ),
+            hover_provider: client
+                .registers_hover()
+                .not()
+                .then_some(HoverProvider::HoverOptions(hover_options)),
+            inlay_hint_provider: client.registers_inlay_hints().not().then_some(
+                InlayHintProvider::InlayHintRegistrationOptions(inlay_hint_options.clone()),
+            ),
             position_encoding: Some(client.negotiated_encoding()),
-            selection_range_provider: if client.registers_selection_range() {
-                None
-            } else {
-                Some(SelectionRangeProvider::SelectionRangeRegistrationOptions(
+            selection_range_provider: client.registers_selection_range().not().then_some(
+                SelectionRangeProvider::SelectionRangeRegistrationOptions(
                     selection_range_options.clone(),
-                ))
-            },
-            text_document_sync: if client.registers_sync() {
-                None
-            } else {
-                Some(TextDocumentSync::Options(TextDocumentSyncOptions {
+                ),
+            ),
+            text_document_sync: client
+                .registers_sync()
+                .not()
+                .then_some(TextDocumentSync::Options(TextDocumentSyncOptions {
                     open_close: Some(true),
                     change: Some(TextDocumentSyncKind::Incremental),
                     ..TextDocumentSyncOptions::default()
-                }))
-            },
+                })),
             // we don't care about classpaths or anything on disk, so advertise
             // the workspace support for better client-side reuse of the server.
             workspace: Some(WorkspaceOptions {
