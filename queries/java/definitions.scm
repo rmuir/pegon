@@ -1,28 +1,46 @@
-; always a keyword
+; keywords
 [
+  "abstract"
+  (boolean_type)
+  "byte"
   "case"
   "catch"
+  "char"
   "class"
   "continue"
   "default"
   "do"
+  "double"
   "else"
   "enum"
+  "exports"
   "extends"
   "final"
   "finally"
+  "float"
   "for"
   "if"
   "implements"
   "import"
+  "int"
   "interface"
+  "long"
+  "module"
+  "open"
+  "opens"
   "native"
+  "non-sealed"
   "new"
   "package"
+  "permits"
   "private"
   "protected"
+  "provides"
   "public"
+  "record"
+  "requires"
   "return"
+  "sealed"
   "short"
   "static"
   "strictfp"
@@ -32,84 +50,23 @@
   (this)
   "throw"
   "throws"
-  "transient"
-  (void_type)
-  "volatile"
-  "while"
-] @selection @range
-
-; sometimes a keyword
-[
-  "exports"
-  "module"
-  "non-sealed"
-  "open"
-  "opens"
-  "permits"
-  "provides"
-  "record"
-  "requires"
-  "sealed"
   "to"
+  "transient"
   "transitive"
   "uses"
   ((type_identifier) @_type
     (#eq? @_type "var"))
+  (void_type)
+  "volatile"
   "when"
+  "while"
   "with"
   "yield"
 ] @selection @range
 
-; abstract keyword on a class
-(class_declaration
-  (modifiers
-    (modifier
-      "abstract") @selection) @range)
-
-; abstract keyword on a method
-(method_declaration
-  (modifiers
-    (modifier
-      "abstract") @selection) @range)
-
-; abstract keyword on an interface
-; TODO: add a diagnostic?
-(interface_declaration
-  (modifiers
-    (modifier
-      "abstract") @selection) @range)
-
 ; assertion keyword
 (assert_statement
   "assert" @selection) @range
-
-; boolean keyword
-(boolean_type) @selection @range
-
-; boolean used as a field
-(field_declaration
-  type: (boolean_type) @selection) @range
-
-; byte
-"byte" @selection @range
-
-; char
-"char" @selection @range
-
-; short
-"short" @selection @range
-
-; int
-"int" @selection @range
-
-; long
-"long" @selection @range
-
-; float
-"float" @selection @range
-
-; float
-"double" @selection @range
 
 ; instanceof
 (instanceof_expression
@@ -125,3 +82,103 @@
 
 (try_with_resources_statement
   "try" @selection) @range
+
+; declarations
+(module_declaration
+  name: (_) @selection) @range
+
+(package_declaration
+  [
+    (identifier)
+    (scoped_identifier)
+  ] @selection) @range
+
+; specify the import patterns explicitly
+; structures don't use fields and its too easy to capture wrong data
+; module import
+(import_declaration
+  "module"
+  [
+    (identifier)
+    (scoped_identifier)
+  ] @selection) @range
+
+; static import
+(import_declaration
+  "static"
+  [
+    (identifier)
+    (scoped_identifier)
+  ] @selection) @range
+
+; regular import
+(import_declaration
+  "import"
+  .
+  [
+    (identifier)
+    (scoped_identifier)
+  ] @selection) @range
+
+; class-like
+(class_declaration
+  name: (identifier) @selection) @range
+
+(record_declaration
+  name: (identifier) @selection) @range
+
+(interface_declaration
+  name: (identifier) @selection) @range
+
+(annotation_type_declaration
+  name: (identifier) @selection) @range
+
+(enum_declaration
+  name: (identifier) @selection) @range
+
+(object_creation_expression
+  "new" @selection) @range
+
+; member-like
+(annotation_type_element_declaration
+  name: (identifier) @selection) @range
+
+(compact_constructor_declaration
+  name: (identifier) @selection) @range
+
+(constant_declaration
+  declarator: (variable_declarator
+    name: (identifier) @selection)) @range
+
+(constructor_declaration
+  name: (identifier) @selection) @range
+
+(enum_constant
+  name: (identifier) @selection) @range
+
+(field_declaration
+  declarator: (variable_declarator
+    name: (identifier) @selection)) @range
+
+(method_declaration
+  name: (identifier) @selection) @range
+
+; local-like
+(local_variable_declaration
+  declarator: (variable_declarator
+    name: (identifier) @selection)) @range
+
+(enhanced_for_statement
+  name: (identifier) @selection) @range
+
+(formal_parameter
+  name: (identifier) @selection) @range
+
+(catch_formal_parameter
+  name: (identifier) @selection) @range
+
+(inferred_parameters
+  (identifier) @selection @range)
+
+(lambda_expression
+  parameters: (identifier) @selection) @range
