@@ -1,7 +1,8 @@
 use anyhow::Result;
 use gen_lsp_types::{
     ChangeNotifications, CodeActionKind, CodeActionOptions, CodeActionProvider,
-    CodeActionRegistrationOptions, CodeActionRequest, DiagnosticOptions, DiagnosticProvider,
+    CodeActionRegistrationOptions, CodeActionRequest, DefinitionOptions, DefinitionProvider,
+    DefinitionRegistrationOptions, DefinitionRequest, DiagnosticOptions, DiagnosticProvider,
     DiagnosticRegistrationOptions, DidChangeTextDocumentNotification,
     DidCloseTextDocumentNotification, DidOpenTextDocumentNotification, DocumentDiagnosticRequest,
     DocumentFilter, DocumentHighlightOptions, DocumentHighlightProvider,
@@ -47,6 +48,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         ]),
         resolve_provider: Some(true),
         ..CodeActionOptions::default()
+    };
+    let definition_options = DefinitionOptions {
+        work_done_progress_options,
     };
     let document_highlight_options = DocumentHighlightOptions {
         work_done_progress_options,
@@ -100,6 +104,11 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 Some(CodeActionProvider::CodeActionOptions(
                     code_action_options.clone(),
                 ))
+            },
+            definition_provider: if client.registers_definition() {
+                None
+            } else {
+                Some(DefinitionProvider::DefinitionOptions(definition_options))
             },
             diagnostic_provider: if client.registers_diagnostics() {
                 None
@@ -198,6 +207,26 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             )?),
         });
     }
+    if client.registers_code_actions() {
+        registrations.push(Registration {
+            id: CodeActionRequest::METHOD.into(),
+            method: CodeActionRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
+                text_document_registration_options: text_document_registration_options.clone(),
+                code_action_options,
+            })?),
+        });
+    }
+    if client.registers_definition() {
+        registrations.push(Registration {
+            id: DefinitionRequest::METHOD.into(),
+            method: DefinitionRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(DefinitionRegistrationOptions {
+                text_document_registration_options: text_document_registration_options.clone(),
+                definition_options,
+            })?),
+        });
+    }
     if client.registers_diagnostics() {
         registrations.push(Registration {
             id: DocumentDiagnosticRequest::METHOD.into(),
@@ -222,16 +251,6 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             id: DocumentSymbolRequest::METHOD.into(),
             method: DocumentSymbolRequest::METHOD.into(),
             register_options: Some(serde_json::to_value(document_symbol_options)?),
-        });
-    }
-    if client.registers_code_actions() {
-        registrations.push(Registration {
-            id: CodeActionRequest::METHOD.into(),
-            method: CodeActionRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(CodeActionRegistrationOptions {
-                text_document_registration_options: text_document_registration_options.clone(),
-                code_action_options,
-            })?),
         });
     }
     if client.registers_folding_range() {

@@ -9,11 +9,11 @@ use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
 use gen_lsp_types::{
     CancelParams, CodeAction, CodeActionParams, CodeActionRequest, CodeActionResolveRequest,
-    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentDiagnosticParams, DocumentDiagnosticRequest, DocumentHighlightParams,
-    DocumentHighlightRequest, DocumentSymbolParams, DocumentSymbolRequest, FoldingRangeParams,
-    FoldingRangeRequest, HoverParams, HoverRequest, Id, InlayHintParams, InlayHintRequest,
-    LogMessageNotification, LogMessageParams, MessageType, Notification as _,
+    DefinitionParams, DefinitionRequest, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticRequest,
+    DocumentHighlightParams, DocumentHighlightRequest, DocumentSymbolParams, DocumentSymbolRequest,
+    FoldingRangeParams, FoldingRangeRequest, HoverParams, HoverRequest, Id, InlayHintParams,
+    InlayHintRequest, LogMessageNotification, LogMessageParams, MessageType, Notification as _,
     PublishDiagnosticsNotification, RegistrationParams, RegistrationRequest, SelectionRangeParams,
     SelectionRangeRequest, Uri,
 };
@@ -223,6 +223,26 @@ impl Server {
                     drop(sender.send(response));
                 })
             }
+            "textDocument/definition" => {
+                let params: DefinitionParams = serde_json::from_value(req.params.clone())?;
+                let uri = &params.text_document_position_params.text_document.uri;
+                let doc = java_document(docs, uri)?;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::definition::request(client.as_ref(), doc.as_ref(), &params) {
+                            Ok(result) => response::<DefinitionRequest>(id, result),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
             "codeAction/resolve" => {
                 // TODO: deserialize 'data' and process
                 let params: CodeAction = serde_json::from_value(req.params.clone())?;
@@ -260,10 +280,8 @@ impl Server {
             }
             "textDocument/documentHighlight" => {
                 let params: DocumentHighlightParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(
-                    docs,
-                    &params.text_document_position_params.text_document.uri,
-                )?;
+                let uri = &params.text_document_position_params.text_document.uri;
+                let doc = java_document(docs, uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&in_flight, &id) {
                         drop(sender.send(response));
@@ -328,10 +346,8 @@ impl Server {
             }
             "textDocument/hover" => {
                 let params: HoverParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(
-                    docs,
-                    &params.text_document_position_params.text_document.uri,
-                )?;
+                let uri = &params.text_document_position_params.text_document.uri;
+                let doc = java_document(docs, uri)?;
                 let position = params.text_document_position_params.position;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&in_flight, &id) {

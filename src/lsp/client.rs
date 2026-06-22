@@ -1,10 +1,10 @@
 use core::convert::From;
 
 use gen_lsp_types::{
-    ClientCapabilities, CodeActionClientCapabilities, DiagnosticClientCapabilities,
-    DocumentHighlightClientCapabilities, DocumentSymbolClientCapabilities,
-    FoldingRangeClientCapabilities, HoverClientCapabilities, InitializeParams,
-    InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
+    ClientCapabilities, CodeActionClientCapabilities, DefinitionClientCapabilities,
+    DiagnosticClientCapabilities, DocumentHighlightClientCapabilities,
+    DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
+    InitializeParams, InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
 };
@@ -245,6 +245,11 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// true if the client supports locationlink for definition
+    pub fn supports_links(&self) -> bool {
+        (|| -> _ { self.definition()?.link_support })().unwrap_or_default()
+    }
+
     /// true if the client supports hierarchical document symbols
     pub fn supports_hierarchical_symbols(&self) -> bool {
         (|| -> _ {
@@ -314,6 +319,16 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// true if the client supports dynamic registration of code actions
+    pub fn registers_code_actions(&self) -> bool {
+        (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of definitions
+    pub fn registers_definition(&self) -> bool {
+        (|| -> _ { self.definition()?.dynamic_registration })().unwrap_or_default()
+    }
+
     /// true if the client supports dynamic registration of diagnostics
     pub fn registers_diagnostics(&self) -> bool {
         (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
@@ -327,11 +342,6 @@ impl Client {
     /// true if the client supports dynamic registration of document symbols
     pub fn registers_document_symbols(&self) -> bool {
         (|| -> _ { self.document_symbols()?.dynamic_registration })().unwrap_or_default()
-    }
-
-    /// true if the client supports dynamic registration of code actions
-    pub fn registers_code_actions(&self) -> bool {
-        (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of folding range
@@ -367,6 +377,10 @@ impl Client {
 
     fn code_actions(&self) -> Option<&CodeActionClientCapabilities> {
         self.text_document()?.code_action.as_ref()
+    }
+
+    fn definition(&self) -> Option<&DefinitionClientCapabilities> {
+        self.text_document()?.definition.as_ref()
     }
 
     fn document_highlight(&self) -> Option<&DocumentHighlightClientCapabilities> {
