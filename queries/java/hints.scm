@@ -141,8 +141,8 @@
 
 ; module block start-end
 ((module_declaration
-  "module" @label @location
-  name: (_) @label
+  "module" @label
+  name: (_) @label @location
   body: (module_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -153,8 +153,8 @@
 
 ; enum block start-end
 ((enum_declaration
-  "enum" @label @location
-  name: (_) @label
+  "enum" @label
+  name: (_) @label @location
   body: (enum_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -165,7 +165,7 @@
 
 ; enum constant block start-end
 ((enum_constant
-  name: (_) @label
+  name: (_) @label @location
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -176,8 +176,8 @@
 
 ; enum block start-end
 ((class_declaration
-  "class" @label @location
-  name: (_) @label
+  "class" @label
+  name: (_) @label @location
   body: (class_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -200,7 +200,7 @@
 
 ; constructor block start-end
 ((constructor_declaration
-  name: (_) @label
+  name: (_) @label @location
   body: (constructor_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -224,8 +224,8 @@
 
 ; annotation type block start-end
 ((annotation_type_declaration
-  "@interface" @label @location
-  name: (_) @label
+  "@interface" @label
+  name: (_) @label @location
   body: (annotation_type_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -236,8 +236,8 @@
 
 ; interface block start-end
 ((interface_declaration
-  "interface" @label @location
-  name: (_) @label
+  "interface" @label
+  name: (_) @label @location
   body: (interface_body
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -248,7 +248,7 @@
 
 ; array initializer start-end
 ((variable_declarator
-  name: (_) @label
+  name: (_) @label @location
   "=" @label
   value: (array_initializer
     "}" @position)) @_region
@@ -260,7 +260,7 @@
 
 ; method block start-end
 ((method_declaration
-  name: (_) @label
+  name: (_) @label @location
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
@@ -272,7 +272,7 @@
 
 ; compact constructor block start-end
 ((compact_constructor_declaration
-  name: (_) @label
+  name: (_) @label @location
   body: (block
     "}" @position)) @_region
   (#match? @_region "\n")
