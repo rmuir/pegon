@@ -72,7 +72,7 @@ ignore = "0.4.26"
 # convert offsets <-> lsp positions
 line-index = "0.1.2"
 # LSP support
-lsp-server = "0.7.9"
+lsp-server = "0.8.0"
 # serialization
 serde = "1.0.228"
 # json serialization
