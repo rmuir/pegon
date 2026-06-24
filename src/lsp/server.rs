@@ -134,8 +134,7 @@ impl Server {
             ))?;
         }
         let default = NonZero::new(1).context("not zero")?;
-        let limit = NonZero::new(8).context("not zero")?;
-        let size = thread::available_parallelism().map_or(default, |val| val.min(limit));
+        let size = thread::available_parallelism().unwrap_or(default);
         let workers = ThreadPool::new(size)?;
         Ok(Self {
             connection,
