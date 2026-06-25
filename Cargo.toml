@@ -80,7 +80,7 @@ serde_json = "1.0.150"
 # Parser framework
 tree-sitter = "0.26.9"
 # Parser for java language
-tree-sitter-java-orchard = "0.5.6"
+tree-sitter-java-orchard = "0.5.7"
 # Parser framework
 tree-sitter-language = "0.1.7"
 
