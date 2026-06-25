@@ -55,7 +55,7 @@ fn flat() {
 
                     This method isn't concrete: a subclass must implement it.
 
-                    spec: https://docs.oracle.com/javase/specs/jls/se26/html/jls-8.html#jls-8.4.3.1
+                    JLS \u{a7}8.4.3.1: https://docs.oracle.com/javase/specs/jls/se26/html/jls-8.html#jls-8.4.3.1
                 "}
                 .into(),
             }),

@@ -42,9 +42,13 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
         let range = client
             .encode_range(&node.range(), &doc.line_index)
             .context("valid range")?;
+        let description = &pattern.description;
         let kind = &pattern.kind;
         let spec = &pattern.spec;
-        let description = &pattern.description;
+        let (spec_chapter, _) = spec
+            .split_once('.')
+            .context("should be valid JLS spec ref")?;
+        let spec_url = format!("{SPEC_PREFIX}/jls-{spec_chapter}.html#jls-{spec}");
         result = Some(Hover {
             contents: Contents::MarkupContent(MarkupContent {
                 kind: if markdown {
@@ -62,7 +66,7 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
 
                         {description}
 
-                        [spec]({SPEC_PREFIX}{spec})
+                        [JLS §{spec}]({spec_url})
                     "}
                 } else {
                     formatdoc! {"
@@ -72,7 +76,7 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
 
                         {description}
 
-                        spec: {SPEC_PREFIX}{spec}
+                        JLS §{spec}: {spec_url}
                     "}
                 },
             }),
@@ -84,7 +88,7 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
 }
 
 /// when linking to the specification, use this URL as the base
-const SPEC_PREFIX: &str = "https://docs.oracle.com/javase/specs/jls/se26/html/";
+const SPEC_PREFIX: &str = "https://docs.oracle.com/javase/specs/jls/se26/html";
 
 /// single compiled pattern
 struct Pattern {
