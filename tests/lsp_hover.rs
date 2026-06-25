@@ -57,7 +57,6 @@ fn flat() {
 
                     spec: https://docs.oracle.com/javase/specs/jls/se26/html/jls-8.html#jls-8.4.3.1
                 "}
-                .trim_end()
                 .into(),
             }),
             range: Some(Range {

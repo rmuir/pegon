@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{Contents, Hover, MarkupContent, MarkupKind, Position};
+use indoc::formatdoc;
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use super::{Client, server::Document};
@@ -52,11 +53,27 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
                     MarkupKind::PlainText
                 },
                 value: if markdown {
-                    format!(
-                        "```java\n{text}\n```\n---\n`{kind}`\n\n{description}\n\n[spec]({SPEC_PREFIX}{spec})"
-                    )
+                    formatdoc! {"
+                        ```java
+                        {text}
+                        ```
+                        ---
+                        `{kind}`
+
+                        {description}
+
+                        [spec]({SPEC_PREFIX}{spec})
+                    "}
                 } else {
-                    format!("{text}\n---\n{kind}\n\n{description}\n\nspec: {SPEC_PREFIX}{spec}")
+                    formatdoc! {"
+                        {text}
+                        ---
+                        {kind}
+
+                        {description}
+
+                        spec: {SPEC_PREFIX}{spec}
+                    "}
                 },
             }),
             range: Some(range),

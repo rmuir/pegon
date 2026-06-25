@@ -69,6 +69,8 @@ crossbeam-channel = "0.5.15"
 gen-lsp-types = "0.9.0"
 # Traversing directories, respecting ignore files
 ignore = "0.4.26"
+# indented string literals
+indoc = "2.0.7"
 # convert offsets <-> lsp positions
 line-index = "0.1.2"
 # LSP support
@@ -83,10 +85,6 @@ tree-sitter = "0.26.9"
 tree-sitter-java-orchard = "0.5.8"
 # Parser framework
 tree-sitter-language = "0.1.7"
-
-[dev-dependencies]
-# indented string literals in tests
-indoc = "2.0.7"
 
 [lints]
 workspace = true
