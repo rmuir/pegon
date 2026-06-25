@@ -48,7 +48,17 @@ fn flat() {
         Hover {
             contents: Contents::MarkupContent(MarkupContent {
                 kind: MarkupKind::PlainText,
-                value: "abstract\n---\nabstract method modifier: https://docs.oracle.com/javase/specs/jls/se26/html/jls-8.html#jls-8.4.3.1\n\nThis method isn't concrete: a subclass must implement it.\n".into()
+                value: indoc! {"
+                    abstract
+                    ---
+                    abstract method modifier
+
+                    This method isn't concrete: a subclass must implement it.
+
+                    spec: https://docs.oracle.com/javase/specs/jls/se26/html/jls-8.html#jls-8.4.3.1
+                "}
+                .trim_end()
+                .into(),
             }),
             range: Some(Range {
                 start: Position {
@@ -57,8 +67,8 @@ fn flat() {
                 },
                 end: Position {
                     line: 1,
-                    character: 19,
-                },
+                    character: 19
+                }
             })
         }
     );

@@ -53,10 +53,10 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
                 },
                 value: if markdown {
                     format!(
-                        "```java\n{text}\n```\n---\n[{kind}]({SPEC_PREFIX}{spec})\n\n{description}"
+                        "```java\n{text}\n```\n---\n`{kind}`\n\n{description}\n\n[spec]({SPEC_PREFIX}{spec})"
                     )
                 } else {
-                    format!("{text}\n---\n{kind}: {SPEC_PREFIX}{spec}\n\n{description}\n")
+                    format!("{text}\n---\n{kind}\n\n{description}\n\nspec: {SPEC_PREFIX}{spec}")
                 },
             }),
             range: Some(range),

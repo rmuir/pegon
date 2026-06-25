@@ -96,7 +96,7 @@
 
 ; assertion keyword
 ("assert" @range
-  (#set! hover.description "Raises `AssertionError` on failure if assertions are enabled.")
+  (#set! hover.description "Throws `AssertionError` on failure if assertions are enabled.")
   (#set! hover.kind "assert statement")
   (#set! hover.spec "jls-14.html#jls-14.10"))
 
