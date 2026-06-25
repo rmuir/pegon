@@ -195,11 +195,11 @@
   (#set! hover.kind "break statement")
   (#set! hover.spec "jls-14.html#jls-14.15"))
 
-; try
+; try-catch
 ((try_statement
   "try" @range)
   (#set! hover.description "Try statement with `catch` block for exception handling.")
-  (#set! hover.kind "try statement")
+  (#set! hover.kind "try-catch statement")
   (#set! hover.spec "jls-14.html#jls-14.20.1"))
 
 ; try with a finally clause
@@ -207,12 +207,50 @@
   "try" @range
   (finally_clause))
   (#set! hover.description "Try statement with a `finally` block that is always executed.")
-  (#set! hover.kind "try-with-finally statement")
+  (#set! hover.kind "try-finally statement")
   (#set! hover.spec "jls-14.html#jls-14.20.2"))
 
-; try-with-resources
+; try with catches and a finally clause
+((try_statement
+  "try" @range
+  (catch_clause)+
+  (finally_clause))
+  (#set! hover.description
+    "Try statement with `catch` blocks for exception handling and a `finally` block that is always executed.")
+  (#set! hover.kind "try-catch-finally statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.2"))
+
+; basic try-with-resources
 ((try_with_resources_statement
   "try" @range)
   (#set! hover.description "Try statement with automatic resource closure.")
   (#set! hover.kind "try-with-resources statement")
-  (#set! hover.spec "jls-14.html#jls-14.20.3"))
+  (#set! hover.spec "jls-14.html#jls-14.20.3.1"))
+
+; extended try-with-resources with finally
+((try_with_resources_statement
+  "try" @range
+  (finally_clause))
+  (#set! hover.description
+    "Try statement with automatic resource closure and a `finally` block that is always executed.")
+  (#set! hover.kind "extended try-with-resources statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.3.2"))
+
+; extended try-with-resources with catch
+((try_with_resources_statement
+  "try" @range
+  (catch_clause)+)
+  (#set! hover.description
+    "Try statement with automatic resource closure and `catch` blocks for resource exception handling.")
+  (#set! hover.kind "extended try-with-resources statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.3.2"))
+
+; extended try-with-resources with catch and finally
+((try_with_resources_statement
+  "try" @range
+  (catch_clause)+
+  (finally_clause))
+  (#set! hover.description
+    "Try statement with automatic resource closure, `catch` blocks for resource exception handling, and a `finally` block that is always executed.")
+  (#set! hover.kind "extended try-with-resources statement")
+  (#set! hover.spec "jls-14.html#jls-14.20.3.2"))
