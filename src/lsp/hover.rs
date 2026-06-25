@@ -36,6 +36,7 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
             continue;
         }
 
+        let text = node.utf8_text(bytes)?;
         let pattern = pattern(hit.pattern_index);
         let range = client
             .encode_range(&node.range(), &doc.line_index)
@@ -51,9 +52,11 @@ pub fn request(client: &Client, doc: &Document, position: Position) -> Result<Op
                     MarkupKind::PlainText
                 },
                 value: if markdown {
-                    format!("[{kind}]({SPEC_PREFIX}{spec})\n---\n{description}\n")
+                    format!(
+                        "```java\n{text}\n```\n---\n[{kind}]({SPEC_PREFIX}{spec})\n\n{description}"
+                    )
                 } else {
-                    format!("kind: {SPEC_PREFIX}{spec}\n{description}\n")
+                    format!("{text}\n---\n{kind}: {SPEC_PREFIX}{spec}\n\n{description}\n")
                 },
             }),
             range: Some(range),
