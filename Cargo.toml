@@ -60,7 +60,7 @@ annotate-snippets = { version = "0.12.16", features = ["simd"] }
 # ANSI styling of console output
 anstream = "1.0.0"
 # Error handling
-anyhow = "1.0.102"
+anyhow = "1.0.103"
 # CLI argument processing
 clap = { version = "4.6.1", features = ["derive"] }
 # threading support
