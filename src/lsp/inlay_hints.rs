@@ -108,10 +108,7 @@ pub fn request(
             label,
             kind: None,
             text_edits: Some(vec![TextEdit {
-                range: gen_lsp_types::Range {
-                    start: position,
-                    end: position,
-                },
+                range: gen_lsp_types::Range::new(position, position),
                 new_text,
             }]),
             tooltip: None,

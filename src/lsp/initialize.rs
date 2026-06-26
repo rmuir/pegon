@@ -62,9 +62,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         work_done_progress_options,
     };
     let folding_range_options = FoldingRangeRegistrationOptions {
-        folding_range_options: FoldingRangeOptions {
-            work_done_progress_options: WorkDoneProgressOptions::default(),
-        },
+        folding_range_options: FoldingRangeOptions::new(WorkDoneProgressOptions::default()),
         static_registration_options: StaticRegistrationOptions {
             id: Some(FoldingRangeRequest::METHOD.into()),
         },

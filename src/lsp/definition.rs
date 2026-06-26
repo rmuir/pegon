@@ -71,10 +71,7 @@ pub fn request(
                 Ok(Some(DefinitionResponse::DefinitionLinkList(vec![result])))
             } else {
                 Ok(Some(DefinitionResponse::Definition(Definition::Location(
-                    Location {
-                        uri: result.target_uri,
-                        range: result.target_range,
-                    },
+                    Location::new(result.target_uri, result.target_range),
                 ))))
             }
         },

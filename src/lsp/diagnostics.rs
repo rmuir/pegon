@@ -92,30 +92,22 @@ fn encode(
             // optional label maps to related information at node's position
             if let Some(label) = &diagnostic.label {
                 related_information.push(DiagnosticRelatedInformation {
-                    location: Location {
-                        uri: uri.clone(),
-                        range,
-                    },
+                    location: Location::new(uri.clone(), range),
                     message: label.clone(),
                 });
             }
             // help text maps to related information at node's position
             related_information.push(DiagnosticRelatedInformation {
-                location: Location {
-                    uri: uri.clone(),
-                    range,
-                },
+                location: Location::new(uri.clone(), range),
                 message: diagnostic.help.clone(),
             });
             Ok(gen_lsp_types::Diagnostic {
                 range,
                 severity: Some(lsp_severity),
                 code: Some(Code::String(rule.name.clone())),
-                code_description: client.supports_code_description(push).then_some(
-                    CodeDescription {
-                        href: Uri(rule.url.clone()),
-                    },
-                ),
+                code_description: client
+                    .supports_code_description(push)
+                    .then_some(CodeDescription::new(rule.url.clone().into())),
                 source: Some("pegon".into()),
                 message: Message::String(diagnostic.title.clone()),
                 related_information: client

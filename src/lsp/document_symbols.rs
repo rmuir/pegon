@@ -46,10 +46,7 @@ fn flatten(
         },
         #[expect(deprecated, reason = "unavoidable")]
         deprecated: symbol.deprecated,
-        location: Location {
-            uri: uri.clone(),
-            range: symbol.range,
-        },
+        location: Location::new(uri.clone(), symbol.range),
     });
     if let Some(children) = symbol.children.as_ref() {
         for child in children {
