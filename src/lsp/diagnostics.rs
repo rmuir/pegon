@@ -116,7 +116,7 @@ fn encode(
                         href: Uri(rule.url.clone()),
                     },
                 ),
-                source: Some("pegon".to_owned()),
+                source: Some("pegon".into()),
                 message: Message::String(diagnostic.title.clone()),
                 related_information: client
                     .supports_related_information(push)

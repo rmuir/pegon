@@ -287,7 +287,7 @@ impl Client {
                     .resolve_support
                     .as_ref()?
                     .properties
-                    .contains(&"edit".to_owned()),
+                    .contains(&"edit".into()),
             )
         })()
         .unwrap_or_default()

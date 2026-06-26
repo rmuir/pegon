@@ -151,7 +151,7 @@ fn nested(client: &Client, doc: &Document) -> Result<Vec<DocumentSymbol>> {
             name,
             kind: pattern.kind,
             detail: if let Some(detail) = detail {
-                Some(detail.utf8_text(bytes)?.trim().to_owned())
+                Some(detail.utf8_text(bytes)?.trim().into())
             } else {
                 None
             },

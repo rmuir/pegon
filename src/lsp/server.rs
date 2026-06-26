@@ -101,7 +101,7 @@ impl ThreadPool {
         for id in 0..size.get() {
             let receiver = receiver.clone();
             thread::Builder::new()
-                .name(format!("lsp worker {id}").to_owned())
+                .name(format!("lsp worker {id}"))
                 .spawn(move || {
                     while let Ok(job) = receiver.recv() {
                         job();
@@ -410,11 +410,7 @@ impl Server {
                 sender.send(finish_request(
                     &self.in_flight,
                     id.clone(),
-                    error(
-                        id,
-                        ErrorCode::MethodNotFound,
-                        "unhandled request".to_owned(),
-                    ),
+                    error(id, ErrorCode::MethodNotFound, "unhandled request".into()),
                 ))?;
                 Ok(())
             }
@@ -479,11 +475,7 @@ fn start_request(in_flight: &InFlight, id: &RequestId) -> Option<Message> {
         finish_request(
             in_flight,
             id.clone(),
-            error(
-                id.clone(),
-                ErrorCode::RequestCanceled,
-                "cancelled".to_owned(),
-            ),
+            error(id.clone(), ErrorCode::RequestCanceled, "cancelled".into()),
         )
     })
 }
@@ -492,7 +484,7 @@ fn start_request(in_flight: &InFlight, id: &RequestId) -> Option<Message> {
 fn finish_request(in_flight: &InFlight, id: RequestId, response: Message) -> Message {
     let cancelled = { in_flight.lock().expect("poisoned").remove(&id) };
     if cancelled.unwrap_or_default() {
-        error(id, ErrorCode::RequestCanceled, "cancelled".to_owned())
+        error(id, ErrorCode::RequestCanceled, "cancelled".into())
     } else {
         response
     }
