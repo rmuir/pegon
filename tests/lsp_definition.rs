@@ -33,13 +33,8 @@ fn flat() {
     let result = client
         .request::<DefinitionRequest>(DefinitionParams {
             text_document_position_params: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: "file:///Foo.java".into(),
-                },
-                position: Position {
-                    line: 1,
-                    character: 12,
-                },
+                text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
+                position: Position::new(1, 12),
             },
             work_done_progress_params: WorkDoneProgressParams::default(),
             partial_result_params: PartialResultParams::default(),
@@ -49,16 +44,7 @@ fn flat() {
         result,
         DefinitionResponse::Definition(Definition::Location(Location {
             uri: "file:///Foo.java".into(),
-            range: Range {
-                start: Position {
-                    line: 1,
-                    character: 11
-                },
-                end: Position {
-                    line: 1,
-                    character: 19
-                }
-            }
+            range: Range::new(Position::new(1, 11), Position::new(1, 19)),
         })),
     );
 }

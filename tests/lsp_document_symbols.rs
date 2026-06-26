@@ -32,9 +32,7 @@ fn flat() {
     });
     let result = client
         .request::<DocumentSymbolRequest>(DocumentSymbolParams {
-            text_document: TextDocumentIdentifier {
-                uri: "file:///Foo.java".into(),
-            },
+            text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
             partial_result_params: PartialResultParams::default(),
             work_done_progress_params: WorkDoneProgressParams::default(),
         })
@@ -53,16 +51,7 @@ fn flat() {
                 deprecated: None,
                 location: Location {
                     uri: "file:///Foo.java".into(),
-                    range: Range {
-                        start: Position {
-                            line: 0,
-                            character: 0
-                        },
-                        end: Position {
-                            line: 3,
-                            character: 1
-                        }
-                    }
+                    range: Range::new(Position::new(0, 0), Position::new(3, 1)),
                 },
             },
             SymbolInformation {
@@ -76,16 +65,7 @@ fn flat() {
                 deprecated: None,
                 location: Location {
                     uri: "file:///Foo.java".into(),
-                    range: Range {
-                        start: Position {
-                            line: 1,
-                            character: 4
-                        },
-                        end: Position {
-                            line: 2,
-                            character: 5
-                        }
-                    }
+                    range: Range::new(Position::new(1, 4), Position::new(2, 5)),
                 },
             }
         ])

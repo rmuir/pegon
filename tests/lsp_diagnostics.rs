@@ -40,16 +40,7 @@ fn diagnostics() {
     // one problem
     assert_eq!(
         vec![gen_lsp_types::Diagnostic {
-            range: Range {
-                start: Position {
-                    line: 0,
-                    character: 13
-                },
-                end: Position {
-                    line: 0,
-                    character: 16
-                }
-            },
+            range: Range::new(Position::new(0, 13), Position::new(0, 16)),
             severity: Some(DiagnosticSeverity::Warning),
             code: Some(Code::String("lowercase-class".into())),
             source: Some(env!("CARGO_PKG_NAME").into()),
@@ -81,9 +72,7 @@ fn push_clear_on_close() {
     assert_eq!(1, diagnostics.diagnostics.len());
     // close the file
     client.notify::<DidCloseTextDocumentNotification>(DidCloseTextDocumentParams {
-        text_document: TextDocumentIdentifier {
-            uri: "file:///Foo.java".into(),
-        },
+        text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
     });
     let cleared = client.read_notify::<PublishDiagnosticsNotification>();
     assert_eq!(0, cleared.diagnostics.len());
@@ -149,17 +138,11 @@ fn pull_diagnostics() {
         },
     });
     let result = client.request::<DocumentDiagnosticRequest>(DocumentDiagnosticParams {
-        text_document: TextDocumentIdentifier {
-            uri: "file:///Foo.java".into(),
-        },
+        text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
         previous_result_id: None,
         identifier: None,
-        work_done_progress_params: WorkDoneProgressParams {
-            work_done_token: None,
-        },
-        partial_result_params: PartialResultParams {
-            partial_result_token: None,
-        },
+        work_done_progress_params: WorkDoneProgressParams::default(),
+        partial_result_params: PartialResultParams::default(),
     });
 
     let DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(full) = result else {
@@ -171,16 +154,7 @@ fn pull_diagnostics() {
     // one problem
     assert_eq!(
         vec![gen_lsp_types::Diagnostic {
-            range: Range {
-                start: Position {
-                    line: 0,
-                    character: 13
-                },
-                end: Position {
-                    line: 0,
-                    character: 16
-                }
-            },
+            range: Range::new(Position::new(0, 13), Position::new(0, 16)),
             severity: Some(DiagnosticSeverity::Warning),
             code: Some(Code::String("lowercase-class".into())),
             source: Some(env!("CARGO_PKG_NAME").into()),
@@ -191,16 +165,7 @@ fn pull_diagnostics() {
             related_information: Some(vec![DiagnosticRelatedInformation {
                 location: Location {
                     uri: "file:///Foo.java".into(),
-                    range: Range {
-                        start: Position {
-                            line: 0,
-                            character: 13
-                        },
-                        end: Position {
-                            line: 0,
-                            character: 16
-                        }
-                    },
+                    range: Range::new(Position::new(0, 13), Position::new(0, 16)),
                 },
                 message: "Rename `foo` using UpperCamelCase".into(),
             },]),
@@ -231,24 +196,13 @@ fn diagnostics_on_change() {
     assert!(diagnostics.diagnostics.is_empty());
     client.notify::<DidChangeTextDocumentNotification>(DidChangeTextDocumentParams {
         text_document: VersionedTextDocumentIdentifier {
-            text_document_identifier: TextDocumentIdentifier {
-                uri: "file:///Foo.java".into(),
-            },
+            text_document_identifier: TextDocumentIdentifier::new("file:///Foo.java".into()),
             version: 1,
         },
         content_changes: vec![
             TextDocumentContentChangeEvent::TextDocumentContentChangePartial(
                 TextDocumentContentChangePartial {
-                    range: Range {
-                        start: Position {
-                            line: 0,
-                            character: 13,
-                        },
-                        end: Position {
-                            line: 0,
-                            character: 14,
-                        },
-                    },
+                    range: Range::new(Position::new(0, 13), Position::new(0, 14)),
                     #[expect(deprecated, reason = "unavoidable")]
                     range_length: None,
                     text: "f".into(),

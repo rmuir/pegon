@@ -32,13 +32,8 @@ fn simple() {
     });
     let result = client
         .request::<SelectionRangeRequest>(SelectionRangeParams {
-            text_document: TextDocumentIdentifier {
-                uri: "file:///Foo.java".into(),
-            },
-            positions: vec![Position {
-                line: 2,
-                character: 12,
-            }],
+            text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
+            positions: vec![Position::new(2, 12)],
             partial_result_params: PartialResultParams::default(),
             work_done_progress_params: WorkDoneProgressParams::default(),
         })
@@ -47,88 +42,25 @@ fn simple() {
         result,
         [SelectionRange {
             // y
-            range: Range {
-                start: Position {
-                    line: 2,
-                    character: 12
-                },
-                end: Position {
-                    line: 2,
-                    character: 13
-                }
-            },
+            range: Range::new(Position::new(2, 12), Position::new(2, 13)),
             // int y;
             parent: Some(Box::new(SelectionRange {
-                range: Range {
-                    start: Position {
-                        line: 2,
-                        character: 8
-                    },
-                    end: Position {
-                        line: 2,
-                        character: 14
-                    }
-                },
+                range: Range::new(Position::new(2, 8), Position::new(2, 14)),
                 // {}
                 parent: Some(Box::new(SelectionRange {
-                    range: Range {
-                        start: Position {
-                            line: 1,
-                            character: 27
-                        },
-                        end: Position {
-                            line: 3,
-                            character: 5
-                        }
-                    },
+                    range: Range::new(Position::new(1, 27), Position::new(3, 5)),
                     // public void bar(int x) {}
                     parent: Some(Box::new(SelectionRange {
-                        range: Range {
-                            start: Position {
-                                line: 1,
-                                character: 4
-                            },
-                            end: Position {
-                                line: 3,
-                                character: 5
-                            }
-                        },
+                        range: Range::new(Position::new(1, 4), Position::new(3, 5)),
                         // { public void bar(int x) {} }
                         parent: Some(Box::new(SelectionRange {
-                            range: Range {
-                                start: Position {
-                                    line: 0,
-                                    character: 17
-                                },
-                                end: Position {
-                                    line: 4,
-                                    character: 1
-                                }
-                            },
+                            range: Range::new(Position::new(0, 17), Position::new(4, 1)),
                             // public class Foo {}
                             parent: Some(Box::new(SelectionRange {
-                                range: Range {
-                                    start: Position {
-                                        line: 0,
-                                        character: 0
-                                    },
-                                    end: Position {
-                                        line: 4,
-                                        character: 1
-                                    }
-                                },
+                                range: Range::new(Position::new(0, 0), Position::new(4, 1)),
                                 // entire document
                                 parent: Some(Box::new(SelectionRange {
-                                    range: Range {
-                                        start: Position {
-                                            line: 0,
-                                            character: 0
-                                        },
-                                        end: Position {
-                                            line: 5,
-                                            character: 0
-                                        }
-                                    },
+                                    range: Range::new(Position::new(0, 0), Position::new(5, 0)),
                                     parent: None
                                 }))
                             }))

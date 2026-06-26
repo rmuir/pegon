@@ -37,9 +37,7 @@ fn flat() {
     });
     let result = client
         .request::<FoldingRangeRequest>(FoldingRangeParams {
-            text_document: TextDocumentIdentifier {
-                uri: "file:///Foo.java".into(),
-            },
+            text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
             partial_result_params: PartialResultParams::default(),
             work_done_progress_params: WorkDoneProgressParams::default(),
         })
