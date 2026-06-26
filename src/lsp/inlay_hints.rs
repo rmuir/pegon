@@ -4,7 +4,7 @@ use anyhow::{Context as _, Result};
 use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location, TextEdit};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
-use crate::support::queries::custom_predicate;
+use crate::support::queries::{capture_id, custom_predicate};
 
 use super::{Client, server::Document};
 
@@ -192,20 +192,8 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     .expect("query should compile")
 });
 
-static LABEL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("label")
-        .expect("label capture should exist")
-});
+static LABEL_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "label"));
 
-static LOCATION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("location")
-        .expect("location capture should exist")
-});
+static LOCATION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "location"));
 
-static POSITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("position")
-        .expect("position capture should exist")
-});
+static POSITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "position"));

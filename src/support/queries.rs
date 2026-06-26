@@ -1,4 +1,4 @@
-use tree_sitter::{QueryMatch, QueryPredicateArg};
+use tree_sitter::{Query, QueryMatch, QueryPredicateArg};
 
 /// Implement matching for custom predicates
 pub fn custom_predicate(
@@ -40,4 +40,11 @@ pub fn custom_predicate(
             panic!("{operator}");
         }
     }
+}
+
+/// Returns id of the capture, or panics if it doesn't exist in the query
+pub fn capture_id(query: &Query, name: &str) -> u32 {
+    query
+        .capture_index_for_name(name)
+        .unwrap_or_else(|| panic!("{name} capture should exist"))
 }

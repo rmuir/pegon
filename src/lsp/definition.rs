@@ -4,6 +4,8 @@ use anyhow::{Context as _, Result};
 use gen_lsp_types::{Definition, DefinitionParams, DefinitionResponse, Location, LocationLink};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
+use crate::support::queries::capture_id;
+
 use super::{Client, server::Document};
 
 pub fn request(
@@ -90,14 +92,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     .expect("query should compile")
 });
 
-static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("range")
-        .expect("range capture should exist")
-});
+static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
 
-static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("selection")
-        .expect("selection capture should exist")
-});
+static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "selection"));

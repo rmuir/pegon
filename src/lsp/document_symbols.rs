@@ -7,6 +7,8 @@ use gen_lsp_types::{
 };
 use tree_sitter::{Language, Query, QueryCursor, Range, StreamingIterator as _};
 
+use crate::support::queries::capture_id;
+
 use super::{Client, server::Document};
 
 pub fn request(
@@ -235,35 +237,15 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     patterns
 });
 
-static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("range")
-        .expect("range capture should exist")
-});
+static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
 
-static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("selection")
-        .expect("selection capture should exist")
-});
+static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "selection"));
 
-static MARKER_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("marker")
-        .expect("marker capture should exist")
-});
+static MARKER_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "marker"));
 
-static SIGNATURE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("signature")
-        .expect("signature capture should exist")
-});
+static SIGNATURE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "signature"));
 
-static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("detail")
-        .expect("detail capture should exist")
-});
+static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "detail"));
 
 static DIMENSIONS_KIND: LazyLock<u16> = LazyLock::new(|| {
     let lang: Language = crate::support::LANGUAGE.into();

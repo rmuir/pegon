@@ -3,7 +3,7 @@ use anyhow::{Context as _, Error};
 use std::sync::LazyLock;
 use tree_sitter::{Node, Query, QueryCursor, Range, StreamingIterator as _, Tree};
 
-use crate::support::queries::custom_predicate;
+use crate::support::queries::{capture_id, custom_predicate};
 
 /// Single diagnostic result
 pub struct Diagnostic {
@@ -251,25 +251,13 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
 });
 
 /// index of the `@error` capture
-static ERROR_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("error")
-        .expect("error capture should exist")
-});
+static ERROR_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "error"));
 
 /// index of the `@context` capture
-static CONTEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("context")
-        .expect("context capture should exist")
-});
+static CONTEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "context"));
 
 /// index of the `@visible` capture
-static VISIBLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| {
-    QUERY
-        .capture_index_for_name("visible")
-        .expect("visible capture should exist")
-});
+static VISIBLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "visible"));
 
 /// simple error templating engine
 static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
