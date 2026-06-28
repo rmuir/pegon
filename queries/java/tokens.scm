@@ -50,10 +50,8 @@
   "if"
   "implements"
   "import"
-  "instanceof"
   "interface"
   "module"
-  "new"
   "open"
   "opens"
   "package"
@@ -78,6 +76,13 @@
   "yield"
 ] @range
   (#set! tokens.type "keyword"))
+
+; Operators
+([
+  "new"
+  "instanceof"
+] @range
+  (#set! tokens.type "operator"))
 
 ; modifiers
 ((modifiers
