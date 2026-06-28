@@ -160,6 +160,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 "tokens.type" => {
                     let value = value.expect("tokens.type should have a value");
                     token_type = LEGEND.token_types.binary_search(&value.to_owned()).ok();
+                    assert!(token_type.is_some(), "unknown token type: {value}");
                 }
                 "tokens.modifiers" => {
                     let value = value.expect("tokens.modifiers should have a value");
