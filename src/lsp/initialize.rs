@@ -279,7 +279,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     if client.registers_semantic_tokens() {
         registrations.push(Registration {
             id: SemanticTokensRequest::METHOD.into(),
-            method: SemanticTokensRequest::METHOD.into(),
+            method: "textDocument/semanticTokens".into(), // must be this ID
             register_options: Some(serde_json::to_value(semantic_tokens_options)?),
         });
     }
