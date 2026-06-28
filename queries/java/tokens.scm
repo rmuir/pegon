@@ -95,6 +95,19 @@
 ((requires_modifier) @range
   (#set! tokens.type "modifier"))
 
+; labels
+((labeled_statement
+  (identifier) @range)
+  (#set! tokens.type "label"))
+
+((break_statement
+  (identifier) @range)
+  (#set! tokens.type "label"))
+
+((continue_statement
+  (identifier) @range)
+  (#set! tokens.type "label"))
+
 ; constants
 ((identifier) @range
   (#match? @range "^[A-Z_][A-Z0-9_]+$")
