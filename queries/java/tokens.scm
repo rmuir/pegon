@@ -84,6 +84,18 @@
   (#match? @range "^[A-Z]"))
   (#set! tokens.type "type"))
 
+; imports java.lang.xxx
+(scoped_identifier
+  (identifier) @range
+  (#match? @range "^[a-z]+$")
+  (#set! tokens.type "namespace"))
+
+; new java.lang.xxx()
+(scoped_type_identifier
+  (type_identifier) @range
+  (#match? @range "^[a-z]+$")
+  (#set! tokens.type "namespace"))
+
 ; Variables
 ; ((identifier) @constant
 ;  (#match? @constant "^[A-Z_][A-Z0-9_]+$"))

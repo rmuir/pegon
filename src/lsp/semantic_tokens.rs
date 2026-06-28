@@ -70,7 +70,7 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
 });
 
 pub static LEGEND: LazyLock<SemanticTokensLegend> = LazyLock::new(|| SemanticTokensLegend {
-    token_types: vec!["property".into(), "type".into()],
+    token_types: vec!["namespace".into(), "property".into(), "type".into()],
     token_modifiers: vec![],
 });
 
