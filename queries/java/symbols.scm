@@ -49,14 +49,14 @@
   (#set! symbol.kind 23)) @range
 
 ; "members"
-; kind=6 (Method)
+; kind=7 (Property)
 (annotation_type_element_declaration
   (modifiers
     (marker_annotation
       name: (identifier) @marker)*)?
   type: (_) @detail
   name: (identifier) @selection
-  (#set! symbol.kind 6)) @range
+  (#set! symbol.kind 7)) @range
 
 ; kind=9 (Constructor)
 (compact_constructor_declaration
