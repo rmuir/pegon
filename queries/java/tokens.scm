@@ -31,6 +31,13 @@
 ; variable.readonly.defaultLibrary                                                                    support.constant
 ; *.deprecated                                                DiagnosticDeprecated  "red"
 ; comments
+;------------------
+; constants
+((identifier) @range
+  (#match? @range "^[A-Z_][A-Z0-9_]+$")
+  (#set! tokens.type "property")
+  (#set! tokens.modifiers "readonly,static"))
+
 ; Types
 ((interface_declaration
   name: (identifier) @range)
@@ -109,7 +116,7 @@
     name: (identifier) @range))
   (#match? @range "^[A-Z_][A-Z0-9_]+$")
   (#set! tokens.type "property")
-  (#set! tokens.modifiers "definition,readonly,static"))
+  (#set! tokens.modifiers "definition"))
 
 ; Fields
 ((field_declaration
@@ -119,17 +126,9 @@
   (#set! tokens.type "property")
   (#set! tokens.modifiers "definition"))
 
-; Constant access
-((field_access
-  field: (identifier) @range)
-  (#match? @range "^[A-Z_][A-Z0-9_]+$")
-  (#set! tokens.type "property")
-  (#set! tokens.modifiers "readonly,static"))
-
 ; field access
 ((field_access
   field: (identifier) @range)
-  (#match? @range "^[a-z]")
   (#set! tokens.type "property"))
 
 ; nested class access

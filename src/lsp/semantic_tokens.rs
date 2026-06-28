@@ -1,3 +1,4 @@
+use core::cmp::min;
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
@@ -17,51 +18,60 @@ pub fn request(
     let mut captures = cursor.captures(&QUERY, doc.tree.root_node(), data);
 
     let mut previous_range = 0..0;
-    let mut previous_pattern = 0;
+    let mut previous_index = 0;
     let mut previous_line = 0;
     let mut previous_start = 0;
     while let Some((hit, capture_id)) = captures.next() {
         let capture = hit.captures[*capture_id];
-        if previous_range == capture.node.byte_range() {
-            debug_assert!(
-                false,
-                "uhoh {} / {} : {:?}",
-                previous_pattern, hit.pattern_index, previous_range
-            );
-            continue;
-        }
         let range = client
             .encode_range(&capture.node.range(), &doc.line_index)
             .context("should encode")?;
         debug_assert!(range.start.line == range.end.line, "multiline unsupported");
         let pattern = pattern(hit.pattern_index);
-        result.push(SemanticToken {
-            delta_line: range
-                .start
-                .line
-                .checked_sub(previous_line)
-                .context("valid delta")?,
-            delta_start: if range.start.line == previous_line {
-                range
+        if capture.node.byte_range() == previous_range {
+            let previous: SemanticToken = result.pop().context("should exist")?;
+            result.push(SemanticToken {
+                delta_line: previous.delta_line,
+                delta_start: previous.delta_start,
+                length: previous.length,
+                token_type: if hit.pattern_index > previous_index {
+                    pattern.token_type
+                } else {
+                    previous.token_type
+                },
+                token_modifiers_bitset: previous.token_modifiers_bitset
+                    | pattern.token_modifiers_bitset,
+            });
+            previous_index = min(previous_index, hit.pattern_index);
+        } else {
+            result.push(SemanticToken {
+                delta_line: range
                     .start
+                    .line
+                    .checked_sub(previous_line)
+                    .context("valid delta")?,
+                delta_start: if range.start.line == previous_line {
+                    range
+                        .start
+                        .character
+                        .checked_sub(previous_start)
+                        .context("valid delta")?
+                } else {
+                    range.start.character
+                },
+                length: range
+                    .end
                     .character
-                    .checked_sub(previous_start)
-                    .context("valid delta")?
-            } else {
-                range.start.character
-            },
-            length: range
-                .end
-                .character
-                .checked_sub(range.start.character)
-                .context("valid delta")?,
-            token_type: pattern.token_type,
-            token_modifiers_bitset: pattern.token_modifiers_bitset,
-        });
-        previous_line = range.start.line;
-        previous_start = range.start.character;
-        previous_range = capture.node.byte_range();
-        previous_pattern = hit.pattern_index;
+                    .checked_sub(range.start.character)
+                    .context("valid delta")?,
+                token_type: pattern.token_type,
+                token_modifiers_bitset: pattern.token_modifiers_bitset,
+            });
+            previous_line = range.start.line;
+            previous_start = range.start.character;
+            previous_range = capture.node.byte_range();
+            previous_index = hit.pattern_index;
+        }
     }
     Ok(SemanticTokens {
         result_id: None,
