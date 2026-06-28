@@ -101,13 +101,13 @@
 ; imports java.lang.xxx
 (scoped_identifier
   (identifier) @range
-  (#match? @range "^[a-z]+$")
+  (#match? @range "^[a-z_][a-z0-9_]+$")
   (#set! tokens.type "namespace"))
 
 ; new java.lang.xxx()
 (scoped_type_identifier
   (type_identifier) @range
-  (#match? @range "^[a-z]+$")
+  (#match? @range "^[a-z_][a-z0-9_]+$")
   (#set! tokens.type "namespace"))
 
 ; fields
