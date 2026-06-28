@@ -16,15 +16,25 @@ pub fn request(
     let mut cursor = QueryCursor::new();
     let mut captures = cursor.captures(&QUERY, doc.tree.root_node(), data);
 
+    let mut previous_range = 0..0;
+    let mut previous_pattern = 0;
     let mut previous_line = 0;
     let mut previous_start = 0;
     while let Some((hit, capture_id)) = captures.next() {
-        let pattern = pattern(hit.pattern_index);
         let capture = hit.captures[*capture_id];
+        if previous_range == capture.node.byte_range() {
+            debug_assert!(
+                false,
+                "uhoh {} / {} : {:?}",
+                previous_pattern, hit.pattern_index, previous_range
+            );
+            continue;
+        }
         let range = client
             .encode_range(&capture.node.range(), &doc.line_index)
             .context("should encode")?;
         debug_assert!(range.start.line == range.end.line, "multiline unsupported");
+        let pattern = pattern(hit.pattern_index);
         result.push(SemanticToken {
             delta_line: range
                 .start
@@ -50,6 +60,8 @@ pub fn request(
         });
         previous_line = range.start.line;
         previous_start = range.start.character;
+        previous_range = capture.node.byte_range();
+        previous_pattern = hit.pattern_index;
     }
     Ok(SemanticTokens {
         result_id: None,
@@ -70,7 +82,12 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
 });
 
 pub static LEGEND: LazyLock<SemanticTokensLegend> = LazyLock::new(|| SemanticTokensLegend {
-    token_types: vec!["namespace".into(), "property".into(), "type".into()],
+    token_types: vec![
+        "method".into(),
+        "namespace".into(),
+        "property".into(),
+        "type".into(),
+    ],
     token_modifiers: vec![],
 });
 

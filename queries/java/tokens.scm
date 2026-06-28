@@ -108,3 +108,18 @@
 ((field_access
   field: (identifier) @range)
   (#set! tokens.type "property"))
+
+((method_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "method"))
+
+((method_invocation
+  name: (identifier) @range)
+  (#set! tokens.type "method"))
+
+((method_reference
+  [
+    "new"
+    (identifier)
+  ] @range .)
+  (#set! tokens.type "method"))
