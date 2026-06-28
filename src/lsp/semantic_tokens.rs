@@ -49,13 +49,10 @@ pub fn tokens(
     while let Some((hit, capture_id)) = captures.next() {
         let capture = hit.captures[*capture_id];
         let node_range = capture.node.byte_range();
-        match &byte_range {
-            Some(byte_range)
-                if node_range.end < byte_range.start || node_range.start > byte_range.end =>
-            {
-                continue;
-            }
-            _ => (),
+        if let Some(byte_range) = &byte_range
+            && (node_range.end < byte_range.start || node_range.start > byte_range.end)
+        {
+            continue;
         }
 
         let pattern = pattern(hit.pattern_index);
