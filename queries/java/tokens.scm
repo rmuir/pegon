@@ -32,54 +32,67 @@
 ; *.deprecated                                                DiagnosticDeprecated  "red"
 ; comments
 ; Types
-(interface_declaration
-  name: (identifier) @type)
+((interface_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(annotation_type_declaration
-  name: (identifier) @type)
+((annotation_type_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(class_declaration
-  name: (identifier) @type)
+((class_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(record_declaration
-  name: (identifier) @type)
+((record_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(enum_declaration
-  name: (identifier) @type)
+((enum_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(constructor_declaration
-  name: (identifier) @type)
+((constructor_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(compact_constructor_declaration
-  name: (identifier) @type)
+((compact_constructor_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "type"))
 
-(type_identifier) @type
+((type_identifier) @range
+  (#set! tokens.type "type"))
 
-((method_invocation
-  object: (identifier) @type)
-  (#match? @type "^[A-Z]"))
+(((method_invocation
+  object: (identifier) @range)
+  (#match? @range "^[A-Z]"))
+  (#set! tokens.type "type"))
 
-((method_reference
+(((method_reference
   .
-  (identifier) @type)
-  (#match? @type "^[A-Z]"))
+  (identifier) @range)
+  (#match? @range "^[A-Z]"))
+  (#set! tokens.type "type"))
 
-((field_access
-  object: (identifier) @type)
-  (#match? @type "^[A-Z]"))
+(((field_access
+  object: (identifier) @range)
+  (#match? @range "^[A-Z]"))
+  (#set! tokens.type "type"))
 
-(scoped_identifier
-  (identifier) @type
-  (#match? @type "^[A-Z]"))
+((scoped_identifier
+  (identifier) @range
+  (#match? @range "^[A-Z]"))
+  (#set! tokens.type "type"))
 
 ; Variables
-((identifier) @constant
-  (#match? @constant "^[A-Z_][A-Z0-9_]+$"))
-
+; ((identifier) @constant
+;  (#match? @constant "^[A-Z_][A-Z0-9_]+$"))
 ; Fields
-(field_declaration
+((field_declaration
   declarator: (variable_declarator
-    name: (identifier) @property))
+    name: (identifier) @range))
+  (#set! tokens.type "property"))
 
-(field_access
-  field: (identifier) @property)
+((field_access
+  field: (identifier) @range)
+  (#set! tokens.type "property"))

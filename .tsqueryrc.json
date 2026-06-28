@@ -29,6 +29,9 @@
       "range": "range of the area for the symbol",
       "reference": "reference to another symbol that should be highlighted"
     },
+    "folds": {
+      "range": "range of the folding region"
+    },
     "hints": {
       "label": "components of inlay hint text",
       "location": "source location for interactive features (hover/go-to-definition)",
@@ -41,15 +44,15 @@
       "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
       "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
     },
-    "folds": {
-      "range": "range of the folding region"
-    },
     "symbols": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range",
       "marker": "marker annotations such as @Deprecated, @Override",
       "signature": "additional components of symbols name such as method signature",
       "detail": "additional symbol detail such as type, type-parameters"
+    },
+    "tokens": {
+      "range": "full range of the symbol"
     }
   },
   "valid_predicates": {
@@ -153,7 +156,9 @@
               "hover.spec",
               "hover.description",
               "highlight.kind",
-              "symbol.kind"
+              "symbol.kind",
+              "tokens.type",
+              "tokens.modifiers"
             ]
           }
         },

@@ -10,11 +10,13 @@ use gen_lsp_types::{
     DocumentFilter, DocumentHighlightOptions, DocumentHighlightProvider,
     DocumentHighlightRegistrationOptions, DocumentHighlightRequest, DocumentSymbolOptions,
     DocumentSymbolProvider, DocumentSymbolRequest, FoldingRangeOptions, FoldingRangeProvider,
-    FoldingRangeRegistrationOptions, FoldingRangeRequest, HoverOptions, HoverProvider,
+    FoldingRangeRegistrationOptions, FoldingRangeRequest, Full, HoverOptions, HoverProvider,
     HoverRegistrationOptions, HoverRequest, InitializeResult, InlayHintOptions, InlayHintProvider,
     InlayHintRegistrationOptions, InlayHintRequest, Notification as _, Registration, Request as _,
     SelectionRangeOptions, SelectionRangeProvider, SelectionRangeRegistrationOptions,
-    SelectionRangeRequest, ServerCapabilities, ServerInfo, StaticRegistrationOptions,
+    SelectionRangeRequest, SemanticTokensOptions, SemanticTokensOptionsRange,
+    SemanticTokensProvider, SemanticTokensRegistrationOptions, SemanticTokensRequest,
+    ServerCapabilities, ServerInfo, StaticRegistrationOptions,
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
     TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
@@ -88,6 +90,18 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         },
         text_document_registration_options: text_document_registration_options.clone(),
     };
+    let semantic_tokens_options = SemanticTokensRegistrationOptions {
+        semantic_tokens_options: SemanticTokensOptions {
+            legend: super::semantic_tokens::LEGEND.clone(),
+            range: Some(SemanticTokensOptionsRange::Bool(false)), // TODO
+            full: Some(Full::Bool(true)),                         // TODO: delta?
+            work_done_progress_options,
+        },
+        static_registration_options: StaticRegistrationOptions {
+            id: Some(SemanticTokensRequest::METHOD.into()),
+        },
+        text_document_registration_options: text_document_registration_options.clone(),
+    };
     // if the client supports dynamic registration of the capability, then we use that.
     // it makes the code very confusing, but this is just the pain of dynamic registration.
     // it allows pushing a filter for "java" language documents to the client, to avoid waste.
@@ -130,6 +144,11 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             selection_range_provider: client.registers_selection_range().not().then_some(
                 SelectionRangeProvider::SelectionRangeRegistrationOptions(
                     selection_range_options.clone(),
+                ),
+            ),
+            semantic_tokens_provider: client.registers_semantic_tokens().not().then_some(
+                SemanticTokensProvider::SemanticTokensRegistrationOptions(
+                    semantic_tokens_options.clone(),
                 ),
             ),
             text_document_sync: client
@@ -255,6 +274,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             id: SelectionRangeRequest::METHOD.into(),
             method: SelectionRangeRequest::METHOD.into(),
             register_options: Some(serde_json::to_value(selection_range_options)?),
+        });
+    }
+    if client.registers_semantic_tokens() {
+        registrations.push(Registration {
+            id: SemanticTokensRequest::METHOD.into(),
+            method: SemanticTokensRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(semantic_tokens_options)?),
         });
     }
     Ok((result, registrations))

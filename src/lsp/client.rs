@@ -6,7 +6,8 @@ use gen_lsp_types::{
     DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
     InitializeParams, InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
-    TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
+    SemanticTokensClientCapabilities, TextDocumentClientCapabilities,
+    TextDocumentContentChangeEvent,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -321,46 +322,52 @@ impl Client {
 
     /// true if the client supports dynamic registration of code actions
     pub fn registers_code_actions(&self) -> bool {
-        (|| -> _ { self.code_actions()?.dynamic_registration })().unwrap_or_default()
+        (|| self.code_actions()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of definitions
     pub fn registers_definition(&self) -> bool {
-        (|| -> _ { self.definition()?.dynamic_registration })().unwrap_or_default()
+        (|| self.definition()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of diagnostics
     pub fn registers_diagnostics(&self) -> bool {
-        (|| -> _ { self.pull_diagnostics()?.dynamic_registration })().unwrap_or_default()
+        (|| self.pull_diagnostics()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of document highlight
     pub fn registers_document_highlight(&self) -> bool {
-        (|| -> _ { self.document_highlight()?.dynamic_registration })().unwrap_or_default()
+        (|| self.document_highlight()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of document symbols
     pub fn registers_document_symbols(&self) -> bool {
-        (|| -> _ { self.document_symbols()?.dynamic_registration })().unwrap_or_default()
+        (|| self.document_symbols()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of folding range
     pub fn registers_folding_range(&self) -> bool {
-        (|| -> _ { self.folding_range()?.dynamic_registration })().unwrap_or_default()
+        (|| self.folding_range()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of hover
     pub fn registers_hover(&self) -> bool {
-        (|| -> _ { self.hover()?.dynamic_registration })().unwrap_or_default()
+        (|| self.hover()?.dynamic_registration)().unwrap_or_default()
     }
 
+    /// true if the client supports dynamic registration of inlay hints
     pub fn registers_inlay_hints(&self) -> bool {
-        (|| -> _ { self.inlay_hints()?.dynamic_registration })().unwrap_or_default()
+        (|| self.inlay_hints()?.dynamic_registration)().unwrap_or_default()
     }
 
     /// true if the client supports dynamic registration of selection range
     pub fn registers_selection_range(&self) -> bool {
-        (|| -> _ { self.selection_range()?.dynamic_registration })().unwrap_or_default()
+        (|| self.selection_range()?.dynamic_registration)().unwrap_or_default()
+    }
+
+    /// true if the client supports dynamic registration of semantic tokens
+    pub fn registers_semantic_tokens(&self) -> bool {
+        (|| self.semantic_tokens()?.dynamic_registration)().unwrap_or_default()
     }
 
     const fn text_document(&self) -> Option<&TextDocumentClientCapabilities> {
@@ -405,6 +412,10 @@ impl Client {
 
     fn selection_range(&self) -> Option<&SelectionRangeClientCapabilities> {
         self.text_document()?.selection_range.as_ref()
+    }
+
+    fn semantic_tokens(&self) -> Option<&SemanticTokensClientCapabilities> {
+        self.text_document()?.semantic_tokens.as_ref()
     }
 }
 
