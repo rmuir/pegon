@@ -77,6 +77,22 @@
 ((type_identifier) @range
   (#set! tokens.type "type"))
 
+; builtin-types
+([
+  (boolean_type)
+  (integral_type)
+  (floating_point_type)
+  (void_type)
+] @range
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "defaultLibrary"))
+
+; builtin-type
+((type_identifier) @range
+  (#eq? @range "var")
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "defaultLibrary"))
+
 (((method_invocation
   object: (identifier) @range)
   (#match? @range "^[A-Z]"))

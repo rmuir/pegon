@@ -131,7 +131,12 @@ pub static LEGEND: LazyLock<SemanticTokensLegend> = LazyLock::new(|| SemanticTok
         "property".into(),
         "type".into(),
     ],
-    token_modifiers: vec!["definition".into(), "readonly".into(), "static".into()],
+    token_modifiers: vec![
+        "defaultLibrary".into(),
+        "definition".into(),
+        "readonly".into(),
+        "static".into(),
+    ],
 });
 
 // single compiled pattern
