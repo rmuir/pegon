@@ -129,8 +129,14 @@
 ; field access
 ((field_access
   field: (identifier) @range)
-  (#not-match? @range "^[A-Z_][A-Z0-9_]+$")
+  (#match? @range "^[a-z]")
   (#set! tokens.type "property"))
+
+; nested class access
+((field_access
+  field: (identifier) @range)
+  (#match? @range "^[A-Z].*[a-z]")
+  (#set! tokens.type "type"))
 
 ((method_declaration
   name: (identifier) @range)
