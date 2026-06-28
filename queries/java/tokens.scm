@@ -34,31 +34,38 @@
 ; Types
 ((interface_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((annotation_type_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((class_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((record_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((enum_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((constructor_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((compact_constructor_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type"))
+  (#set! tokens.type "type")
+  (#set! tokens.modifiers "definition"))
 
 ((type_identifier) @range
   (#set! tokens.type "type"))
@@ -96,22 +103,39 @@
   (#match? @range "^[a-z]+$")
   (#set! tokens.type "namespace"))
 
-; Variables
-; ((identifier) @constant
-;  (#match? @constant "^[A-Z_][A-Z0-9_]+$"))
+; Constant fields
+((field_declaration
+  declarator: (variable_declarator
+    name: (identifier) @range))
+  (#match? @range "^[A-Z_][A-Z0-9_]+$")
+  (#set! tokens.type "property")
+  (#set! tokens.modifiers "definition,readonly,static"))
+
 ; Fields
 ((field_declaration
   declarator: (variable_declarator
     name: (identifier) @range))
-  (#set! tokens.type "property"))
+  (#not-match? @range "^[A-Z_][A-Z0-9_]+$")
+  (#set! tokens.type "property")
+  (#set! tokens.modifiers "definition"))
 
+; Constant access
 ((field_access
   field: (identifier) @range)
+  (#match? @range "^[A-Z_][A-Z0-9_]+$")
+  (#set! tokens.type "property")
+  (#set! tokens.modifiers "readonly,static"))
+
+; field access
+((field_access
+  field: (identifier) @range)
+  (#not-match? @range "^[A-Z_][A-Z0-9_]+$")
   (#set! tokens.type "property"))
 
 ((method_declaration
   name: (identifier) @range)
-  (#set! tokens.type "method"))
+  (#set! tokens.type "method")
+  (#set! tokens.modifiers "definition"))
 
 ((method_invocation
   name: (identifier) @range)

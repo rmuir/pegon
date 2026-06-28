@@ -88,7 +88,7 @@ pub static LEGEND: LazyLock<SemanticTokensLegend> = LazyLock::new(|| SemanticTok
         "property".into(),
         "type".into(),
     ],
-    token_modifiers: vec![],
+    token_modifiers: vec!["definition".into(), "readonly".into(), "static".into()],
 });
 
 // single compiled pattern
@@ -109,6 +109,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
         let mut token_type = None;
+        let mut token_modifiers_bitset = 0;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
@@ -118,6 +119,16 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                     let value = value.expect("tokens.type should have a value");
                     token_type = LEGEND.token_types.binary_search(&value.to_owned()).ok();
                 }
+                "tokens.modifiers" => {
+                    let value = value.expect("tokens.modifiers should have a value");
+                    for modifier in value.split(',') {
+                        let bit = LEGEND
+                            .token_modifiers
+                            .binary_search(&modifier.to_owned())
+                            .expect("valid modifier");
+                        token_modifiers_bitset |= 1 << bit;
+                    }
+                }
                 _ => panic!("{key}: unknown metadata key"),
             }
         }
@@ -126,7 +137,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 .expect("token.type should be set")
                 .try_into()
                 .expect("should be u32"),
-            token_modifiers_bitset: 0, // TODO
+            token_modifiers_bitset,
         });
     }
     patterns
