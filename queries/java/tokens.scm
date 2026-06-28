@@ -110,19 +110,10 @@
   (#match? @range "^[a-z]+$")
   (#set! tokens.type "namespace"))
 
-; Constant fields
+; fields
 ((field_declaration
   declarator: (variable_declarator
     name: (identifier) @range))
-  (#match? @range "^[A-Z_][A-Z0-9_]+$")
-  (#set! tokens.type "property")
-  (#set! tokens.modifiers "definition"))
-
-; Fields
-((field_declaration
-  declarator: (variable_declarator
-    name: (identifier) @range))
-  (#not-match? @range "^[A-Z_][A-Z0-9_]+$")
   (#set! tokens.type "property")
   (#set! tokens.modifiers "definition"))
 
