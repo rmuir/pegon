@@ -143,3 +143,23 @@
     (identifier)
   ] @range .)
   (#set! tokens.type "method"))
+
+; decorators
+; TODO: do a has-ancestor or similar here, not quite right
+((annotation
+  name: (identifier) @range)
+  (#set! tokens.type "decorator"))
+
+((annotation
+  name: (scoped_identifier
+    name: (identifier) @range))
+  (#set! tokens.type "decorator"))
+
+((marker_annotation
+  name: (identifier) @range)
+  (#set! tokens.type "decorator"))
+
+((marker_annotation
+  name: (scoped_identifier
+    name: (identifier) @range))
+  (#set! tokens.type "decorator"))
