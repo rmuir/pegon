@@ -3,7 +3,7 @@
   "synchronized" @label @location
   (parenthesized_expression) @label
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -14,7 +14,7 @@
 ((try_statement
   "try" @label @location
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -27,7 +27,7 @@
   (catch_formal_parameter
     (catch_type) @label)
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -38,7 +38,7 @@
 ((finally_clause
   "finally" @label @location
   (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -55,7 +55,7 @@
       name: (_) @label
       "=" @label))
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -69,7 +69,7 @@
   condition: (parenthesized_expression
     (expression) @label)
   consequence: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -80,7 +80,7 @@
 ((if_statement
   "else" @label @location
   alternative: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -93,7 +93,7 @@
   condition: (parenthesized_expression
     (expression) @label)
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -105,7 +105,7 @@
   "for" @label @location
   condition: (_) @label
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -119,7 +119,7 @@
   ":" @label
   value: (_) @label
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -132,7 +132,7 @@
   condition: (parenthesized_expression
     (expression) @label)
   body: (switch_block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -144,7 +144,7 @@
   "module" @label
   name: (_) @label @location
   body: (module_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -156,7 +156,7 @@
   "enum" @label
   name: (_) @label @location
   body: (enum_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -167,7 +167,7 @@
 ((enum_constant
   name: (_) @label @location
   body: (class_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -179,7 +179,7 @@
   "class" @label
   name: (_) @label @location
   body: (class_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -190,7 +190,7 @@
 ((static_initializer
   "static" @label @location
   (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -202,7 +202,7 @@
 ((constructor_declaration
   name: (_) @label @location
   body: (constructor_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -215,7 +215,7 @@
   "record" @label @location
   name: (_) @label
   body: (class_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -227,7 +227,7 @@
   "@interface" @label
   name: (_) @label @location
   body: (annotation_type_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -239,7 +239,7 @@
   "interface" @label
   name: (_) @label @location
   body: (interface_body
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -251,7 +251,7 @@
   name: (_) @label @location
   "=" @label
   value: (array_initializer
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -262,7 +262,7 @@
 ((method_declaration
   name: (_) @label @location
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
@@ -274,7 +274,7 @@
 ((compact_constructor_declaration
   name: (_) @label @location
   body: (block
-    "}" @position)) @_region
+    "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
   (#set! hint.prefix "//")
