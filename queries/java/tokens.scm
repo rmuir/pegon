@@ -46,7 +46,7 @@
 
 ((annotation_type_declaration
   name: (identifier) @range)
-  (#set! tokens.type "type")
+  (#set! tokens.type "decorator")
   (#set! tokens.modifiers "definition"))
 
 ((class_declaration
