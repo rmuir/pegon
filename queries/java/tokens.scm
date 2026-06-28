@@ -163,3 +163,12 @@
   name: (scoped_identifier
     name: (identifier) @range))
   (#set! tokens.type "decorator"))
+
+((annotation_type_element_declaration
+  name: (identifier) @range)
+  (#set! tokens.type "property")
+  (#set! tokens.modifiers "definition"))
+
+((element_value_pair
+  key: (identifier) @range)
+  (#set! tokens.type "property"))
