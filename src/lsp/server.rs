@@ -15,7 +15,8 @@ use gen_lsp_types::{
     FoldingRangeParams, FoldingRangeRequest, HoverParams, HoverRequest, Id, InlayHintParams,
     InlayHintRequest, LogMessageNotification, LogMessageParams, MessageType, Notification as _,
     PublishDiagnosticsNotification, RegistrationParams, RegistrationRequest, SelectionRangeParams,
-    SelectionRangeRequest, SemanticTokensParams, SemanticTokensRequest, Uri,
+    SelectionRangeRequest, SemanticTokensParams, SemanticTokensRangeParams,
+    SemanticTokensRangeRequest, SemanticTokensRequest, Uri,
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
@@ -417,12 +418,28 @@ impl Server {
                     let response = finish_request(
                         &in_flight,
                         id.clone(),
-                        match super::semantic_tokens::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                        ) {
+                        match super::semantic_tokens::full(client.as_ref(), doc.as_ref(), &params) {
                             Ok(result) => response::<SemanticTokensRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "textDocument/semanticTokens/range" => {
+                let params: SemanticTokensRangeParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::semantic_tokens::range(client.as_ref(), doc.as_ref(), &params)
+                        {
+                            Ok(result) => response::<SemanticTokensRangeRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );

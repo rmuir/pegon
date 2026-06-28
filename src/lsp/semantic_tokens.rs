@@ -1,34 +1,65 @@
 use core::cmp::min;
+use core::ops::Range;
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{SemanticToken, SemanticTokens, SemanticTokensLegend, SemanticTokensParams};
+use gen_lsp_types::{
+    SemanticToken, SemanticTokens, SemanticTokensLegend, SemanticTokensParams,
+    SemanticTokensRangeParams,
+};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use super::{Client, server::Document};
 
-pub fn request(
+pub fn full(
     client: &Client,
     doc: &Document,
     _params: &SemanticTokensParams,
 ) -> Result<SemanticTokens> {
+    tokens(client, doc, None)
+}
+
+pub fn range(
+    client: &Client,
+    doc: &Document,
+    params: &SemanticTokensRangeParams,
+) -> Result<SemanticTokens> {
+    let range = client
+        .decode_range(&params.range, &doc.line_index)
+        .context("valid range")?;
+    tokens(client, doc, Some(&(range.start_byte..range.end_byte)))
+}
+
+pub fn tokens(
+    client: &Client,
+    doc: &Document,
+    byte_range: Option<&Range<usize>>,
+) -> Result<SemanticTokens> {
     let data = doc.text.as_bytes();
     let mut result = Vec::with_capacity(3);
     let mut cursor = QueryCursor::new();
+    if let Some(byte_range) = byte_range {
+        cursor.set_byte_range(byte_range.clone());
+    }
     let mut captures = cursor.captures(&QUERY, doc.tree.root_node(), data);
-
     let mut previous_range = 0..0;
     let mut previous_index = 0;
     let mut previous_line = 0;
     let mut previous_start = 0;
     while let Some((hit, capture_id)) = captures.next() {
         let capture = hit.captures[*capture_id];
-        let range = client
-            .encode_range(&capture.node.range(), &doc.line_index)
-            .context("should encode")?;
-        debug_assert!(range.start.line == range.end.line, "multiline unsupported");
+        let node_range = capture.node.byte_range();
+        match &byte_range {
+            Some(byte_range)
+                if node_range.end < byte_range.start || node_range.start > byte_range.end =>
+            {
+                continue;
+            }
+            _ => (),
+        }
+
         let pattern = pattern(hit.pattern_index);
-        if capture.node.byte_range() == previous_range {
+        if node_range == previous_range {
             let previous: SemanticToken = result.pop().context("should exist")?;
             result.push(SemanticToken {
                 delta_line: previous.delta_line,
@@ -44,6 +75,10 @@ pub fn request(
             });
             previous_index = min(previous_index, hit.pattern_index);
         } else {
+            let range = client
+                .encode_range(&capture.node.range(), &doc.line_index)
+                .context("should encode")?;
+            debug_assert!(range.start.line == range.end.line, "multiline unsupported");
             result.push(SemanticToken {
                 delta_line: range
                     .start

@@ -93,8 +93,8 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     let semantic_tokens_options = SemanticTokensRegistrationOptions {
         semantic_tokens_options: SemanticTokensOptions {
             legend: super::semantic_tokens::LEGEND.clone(),
-            range: Some(SemanticTokensOptionsRange::Bool(false)), // TODO
-            full: Some(Full::Bool(true)),                         // TODO: delta?
+            range: Some(SemanticTokensOptionsRange::Bool(true)),
+            full: Some(Full::Bool(true)), // TODO: delta?
             work_done_progress_options,
         },
         static_registration_options: StaticRegistrationOptions {
