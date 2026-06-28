@@ -32,6 +32,64 @@
 ; *.deprecated                                                DiagnosticDeprecated  "red"
 ; comments
 ;------------------
+; keywords
+([
+  "assert"
+  "break"
+  "case"
+  "catch"
+  "class"
+  "continue"
+  "do"
+  "else"
+  "enum"
+  "exports"
+  "extends"
+  "finally"
+  "for"
+  "if"
+  "implements"
+  "import"
+  "instanceof"
+  "interface"
+  "module"
+  "new"
+  "open"
+  "opens"
+  "package"
+  "permits"
+  "provides"
+  "public"
+  "requires"
+  "record"
+  "return"
+  "static"
+  "switch"
+  "synchronized"
+  "throw"
+  "throws"
+  "to"
+  "transitive"
+  "try"
+  "uses"
+  "when"
+  "while"
+  "with"
+  "yield"
+] @range
+  (#set! tokens.type "keyword"))
+
+; modifiers
+((modifiers
+  [
+    (modifier)
+    (visibility)
+  ] @range)
+  (#set! tokens.type "modifier"))
+
+((requires_modifier) @range
+  (#set! tokens.type "modifier"))
+
 ; constants
 ((identifier) @range
   (#match? @range "^[A-Z_][A-Z0-9_]+$")
