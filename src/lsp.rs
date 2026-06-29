@@ -24,6 +24,10 @@ mod sync;
 
 /// Run LSP server
 ///
+/// # Arguments
+///
+/// * `connection` - JSON-RPC connection (e.g. stdio, memory, socket)
+///
 /// # Errors
 ///
 /// This function will return an error if the server does not
