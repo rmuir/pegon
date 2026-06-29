@@ -1,3 +1,15 @@
+//! Client capabilities and encoding
+//!
+//! Not all LSP clients are equal, they can have different capabilities
+//! and use different text encodings. This code is the "bending-over-backwards"
+//! part needed in order to give the **editor** the best performance.
+//!
+//! Treesitter stores line + column information, but also raw byte offsets.
+//! The byte offsets are lost in transmission since they aren't in the LSP
+//! protocol. Additionally, the client may be using a different unicode
+//! encoding. The SIMD-optimized [`LineIndex`] from `rust-analyzer` handles
+//! these problems with no sweat.
+
 use core::convert::From;
 
 use gen_lsp_types::{
@@ -13,18 +25,8 @@ use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
 
 /// A Language Server Protocol client
-///
-/// Not all LSP clients are equal, they can have different capabilities
-/// and use different text encodings. This code is the "bending-over-backwards"
-/// part needed in order to give the **editor** the best performance.
-///
-/// Treesitter stores line + column information, but also raw byte offsets.
-/// The byte offsets are lost in transmission since they aren't in the LSP
-/// protocol. Additionally, the client may be using a different unicode
-/// encoding. The SIMD-optimized [`LineIndex`] from `rust-analyzer` handles
-/// these problems with no sweat.
 pub struct Client {
-    /// parameters sent by the client in the `initialize` request.
+    /// Parameters sent by the client in the `initialize` request.
     ///
     /// the parameters describe various optional client capabilities
     /// which can be used for better performance and more features.
@@ -44,7 +46,7 @@ pub struct Client {
 }
 
 impl Client {
-    /// create a new client with the parameters it sent in the
+    /// Create a new client with the parameters it sent in the
     /// initialize request.
     pub fn new(init_params: InitializeParams) -> Self {
         let encoding = Encoding::preferred(&init_params.capabilities);
@@ -54,9 +56,9 @@ impl Client {
         }
     }
 
-    /// encodes a tree-sitter UTF-8 range into an LSP range (client's encoding)
+    /// Encodes a tree-sitter UTF-8 range into an LSP range (client's encoding)
     ///
-    /// for the UTF-8 encoding, this is a no-op. for other encodings the index
+    /// For the UTF-8 encoding, this is a no-op. for other encodings the index
     /// must be used.
     pub fn encode_range(
         &self,
@@ -69,9 +71,9 @@ impl Client {
         })
     }
 
-    /// encodes a tree-sitter UTF-8 point into an LSP position (client's encoding)
+    /// Encodes a tree-sitter UTF-8 point into an LSP position (client's encoding)
     ///
-    /// for the UTF-8 encoding, this is a no-op. for other encodings the index
+    /// For the UTF-8 encoding, this is a no-op. for other encodings the index
     /// must be used.
     fn encode_point(&self, point: &Point, index: &LineIndex) -> Option<Position> {
         // check bounds are within u32
@@ -98,10 +100,10 @@ impl Client {
         Some(Position { line, character })
     }
 
-    /// decodes an LSP document change into a treesitter Range.
+    /// Decodes an LSP document change into a treesitter Range.
     ///
-    /// we specify incremental sync, but it is unclear from the spec
-    /// if clients are allowed to send us a full sync. if it happens,
+    /// We specify incremental sync, but it is unclear from the spec
+    /// if clients are allowed to send us a full sync. If it happens,
     /// convert it into a full document range.
     pub fn decode_change(
         &self,
@@ -127,9 +129,9 @@ impl Client {
         }
     }
 
-    /// decodes an LSP range into a treesitter Range.
+    /// Decodes an LSP range into a treesitter Range.
     ///
-    /// treesitter range contains more information than an LSP range,
+    /// Treesitter range contains more information than an LSP range,
     /// so the byte offsets must be looked up from the index.
     pub fn decode_range(
         &self,
@@ -152,7 +154,7 @@ impl Client {
         })
     }
 
-    /// decodes an LSP Position (line+col) into a UTF-8 line+col.
+    /// Decodes an LSP Position (line+col) into a UTF-8 line+col.
     pub fn decode_pos(&self, position: Position, index: &LineIndex) -> Option<LineCol> {
         match self.encoding {
             Encoding::Utf8 => Some(LineCol {
@@ -176,7 +178,7 @@ impl Client {
         }
     }
 
-    /// converts from an byte offset to a row/column
+    /// Converts from an byte offset to a row/column
     pub fn to_point(offset: usize, line_index: &LineIndex) -> Option<Point> {
         let offset = TextSize::try_from(offset).ok()?;
         let position = line_index.try_line_col(offset)?;
@@ -186,7 +188,7 @@ impl Client {
         })
     }
 
-    /// returns client's preferred position encoding.
+    /// Client's preferred position encoding.
     ///
     /// This only speeds up the client: java and javascript clients
     /// will prefer UTF-16, most everyone else will use UTF-8. Maybe
@@ -200,7 +202,7 @@ impl Client {
         self.encoding.into()
     }
 
-    /// true if the client supports the pull diagnostics model.
+    /// Does the client support the pull diagnostics model?
     ///
     /// This is less error-prone than the push model since it
     /// can be treated by the client like any other request.
@@ -212,8 +214,8 @@ impl Client {
         self.pull_diagnostics().is_some()
     }
 
-    /// true if the client supports receiving additional ranges
-    /// with related information ("context").
+    /// Does the client support receiving additional ranges
+    /// with related information ("context")?
     pub fn supports_related_information(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
@@ -229,8 +231,8 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// true if the client supports receiving URLs for more information
-    /// on the diagnostic code.
+    /// Does the client support receiving URLs for more information
+    /// on the diagnostic code?
     pub fn supports_code_description(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
@@ -246,12 +248,12 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// true if the client supports locationlink for definition
+    /// Does the client support locationlink for definition?
     pub fn supports_links(&self) -> bool {
         (|| -> _ { self.definition()?.link_support })().unwrap_or_default()
     }
 
-    /// true if the client supports hierarchical document symbols
+    /// Does the client support hierarchical document symbols?
     pub fn supports_hierarchical_symbols(&self) -> bool {
         (|| -> _ {
             self.document_symbols()?
@@ -260,26 +262,26 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// true if the client supports tags on flat document symbols
+    /// Does the client support tags on flat document symbols?
     pub fn supports_tags(&self) -> bool {
         (|| -> _ { self.document_symbols()?.tag_support.as_ref() })().is_some()
     }
 
-    /// true if the client supports receiving the document version
-    /// in push diagnostics.
+    /// Does client supports receiving the document version
+    /// in push diagnostics?
     ///
-    /// not relevant to pull diagnostics where the version is implicit.
+    /// Not relevant to pull diagnostics where the version is implicit.
     pub fn supports_version(&self) -> bool {
         (|| -> _ { self.push_diagnostics()?.version_support })().unwrap_or_default()
     }
 
-    /// true if the client preserves code action data between request and resolve.
+    /// Does the client preserve code action data between request and resolve?
     #[expect(dead_code, reason = "TODO")]
     pub fn supports_code_action_resolve_data(&self) -> bool {
         (|| -> _ { self.code_actions()?.data_support })().unwrap_or_default()
     }
 
-    /// true if the client supports resolving workspace edits on code actions.
+    /// Does client support resolving workspace edits on code actions?
     #[expect(dead_code, reason = "TODO")]
     pub fn supports_code_action_resolve_edit(&self) -> bool {
         (|| -> _ {
@@ -294,7 +296,7 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// true if the client prefers markdown on hover
+    /// Does the client prefer markdown format for hover documentation?
     pub fn prefers_hover_markdown(&self) -> bool {
         (|| -> _ {
             Some(
@@ -309,7 +311,7 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of doc sync
+    /// Does the client support dynamic registration of document synchronization?
     pub fn registers_sync(&self) -> bool {
         (|| -> _ {
             self.text_document()?
@@ -320,52 +322,52 @@ impl Client {
         .unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of code actions
+    /// Does the client support dynamic registration of code actions?
     pub fn registers_code_actions(&self) -> bool {
         (|| self.code_actions()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of definitions
+    /// Does the client support dynamic registration of definitions?
     pub fn registers_definition(&self) -> bool {
         (|| self.definition()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of diagnostics
+    /// Does the client support dynamic registration of diagnostics?
     pub fn registers_diagnostics(&self) -> bool {
         (|| self.pull_diagnostics()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of document highlight
+    /// Does the client support dynamic registration of document highlight?
     pub fn registers_document_highlight(&self) -> bool {
         (|| self.document_highlight()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of document symbols
+    /// Does the client support dynamic registration of document symbols?
     pub fn registers_document_symbols(&self) -> bool {
         (|| self.document_symbols()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of folding range
+    /// Does the client support dynamic registration of folding range?
     pub fn registers_folding_range(&self) -> bool {
         (|| self.folding_range()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of hover
+    /// Does the client support dynamic registration of hover?
     pub fn registers_hover(&self) -> bool {
         (|| self.hover()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of inlay hints
+    /// Does the client support dynamic registration of inlay hints?
     pub fn registers_inlay_hints(&self) -> bool {
         (|| self.inlay_hints()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of selection range
+    /// Does the client support dynamic registration of selection range?
     pub fn registers_selection_range(&self) -> bool {
         (|| self.selection_range()?.dynamic_registration)().unwrap_or_default()
     }
 
-    /// true if the client supports dynamic registration of semantic tokens
+    /// Does the client support dynamic registration of semantic tokens?
     pub fn registers_semantic_tokens(&self) -> bool {
         (|| self.semantic_tokens()?.dynamic_registration)().unwrap_or_default()
     }
@@ -419,7 +421,8 @@ impl Client {
     }
 }
 
-/// internal representation to simplify logic:
+/// Internal representation to simplify logic
+///
 /// use an enum rather than [`PositionEncodingKind`]'s string
 /// <https://github.com/gluon-lang/lsp-types/pull/267>
 #[derive(Copy, Clone)]

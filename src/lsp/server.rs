@@ -1,3 +1,14 @@
+//! Language Server Protocol Server
+//!
+//! The main thread handles notifications directly, and dispatches requests to a thread
+//! pool of workers. Worker threads are backed by a queue, but dispatch guarantees the
+//! worker thread always works the version of the document at the time the initial request
+//! was received.
+//!
+//! Request cancellation works at a coarse level by checking state of in-flight requests
+//! both before and after doing the work, to save both client and server resources when
+//! possible.
+
 use core::num::NonZero;
 use std::{
     collections::HashMap,
@@ -26,14 +37,6 @@ use tree_sitter::{Parser, Tree};
 use super::client::Client;
 
 /// A Language Server Protocol Server
-///
-/// The main thread handles notifications directly, and dispatches requests to a thread
-/// pool of workers. Worker threads are backed by a queue, but dispatch guarantees the
-/// worker thread always works the version of the document at the time the initial request
-/// was received.
-///
-/// Request cancellation works at a coarse level by checking `in_flight` both before and
-/// after doing the work, to save both client and server resources when possible.
 pub struct Server {
     /// LSP connection to the client (editor)
     connection: Connection,
@@ -195,7 +198,9 @@ impl Server {
         Ok(())
     }
 
-    /// Handles an incoming request
+    /// Handle an incoming request
+    ///
+    /// This function returns quickly, it queues the processing to happen on the threadpool.
     fn handle_request(
         &self,
         client: &Arc<Client>,
@@ -458,10 +463,14 @@ impl Server {
     }
 }
 
-/// handles an incoming notification.
-/// in our case notification has an "optional response".
+/// Handle an incoming notification.
+///
+/// These notifications are worked on the main thread directly. This
+/// ensures requests see the correct versions of documents.
+///
+/// In our case notification has an "optional response".
 /// if the client doesn't support pull diagnostics then we've got
-/// a push diagnostics "response" that we'll `notify()` back
+/// a push diagnostics "response" that we'll `notify()` back.
 fn handle_notification(
     client: &Client,
     note: lsp_server::Notification,
