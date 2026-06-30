@@ -36,6 +36,10 @@ pub fn request(
             .nodes_for_capture_index(*POSITION_CAPTURE)
             .next()
             .context("position capture should exist")?;
+        let node_range = node.byte_range();
+        if node_range.end < range.start_byte || node_range.start > range.end_byte {
+            continue;
+        }
         let pattern = pattern(hit.pattern_index);
         let position = client
             .encode_range(&node.range(), &doc.line_index)
