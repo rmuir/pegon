@@ -230,11 +230,14 @@
   (#set! tokens.type "method"))
 
 ((method_reference
-  [
-    "new"
-    (identifier)
-  ] @range .)
+  (identifier) @range .)
   (#set! tokens.type "method"))
+
+; new as a method reference
+((method_reference
+  "new" @range .)
+  (#set! tokens.type "method")
+  (#set! tokens.modifiers "defaultLibrary"))
 
 ; decorators
 ; TODO: do a has-ancestor or similar here, not quite right
@@ -264,3 +267,11 @@
 ((element_value_pair
   key: (identifier) @range)
   (#set! tokens.type "property"))
+
+; builtin variables
+([
+  (this)
+  (super)
+] @range
+  (#set! tokens.type "variable")
+  (#set! tokens.modifiers "defaultLibrary,readonly"))

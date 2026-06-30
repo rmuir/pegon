@@ -134,6 +134,7 @@ pub static LEGEND: LazyLock<SemanticTokensLegend> = LazyLock::new(|| SemanticTok
         "operator".into(),
         "property".into(),
         "type".into(),
+        "variable".into(),
     ],
     token_modifiers: vec![
         "defaultLibrary".into(),
