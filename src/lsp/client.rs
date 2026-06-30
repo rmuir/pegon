@@ -311,6 +311,50 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// Does the client support resolving inlay hint textedits?
+    pub fn supports_inlay_hint_resolve_edit(&self) -> bool {
+        (|| -> _ {
+            Some(
+                self.inlay_hints()?
+                    .resolve_support
+                    .as_ref()?
+                    .properties
+                    .contains(&"textEdits".into()),
+            )
+        })()
+        .unwrap_or_default()
+    }
+
+    /// Does the client support resolving inlay hint locations?
+    pub fn supports_inlay_hint_resolve_label_location(&self) -> bool {
+        (|| -> _ {
+            Some(
+                self.inlay_hints()?
+                    .resolve_support
+                    .as_ref()?
+                    .properties
+                    .contains(&"label.location".into()),
+            )
+        })()
+        .unwrap_or_default()
+    }
+
+    /// Does the client support resolving inlay hint locations?
+    ///
+    /// TODO: neovim not following standard, fix it there
+    pub fn supports_inlay_hint_resolve_neovim_location(&self) -> bool {
+        (|| -> _ {
+            Some(
+                self.inlay_hints()?
+                    .resolve_support
+                    .as_ref()?
+                    .properties
+                    .contains(&"location".into()),
+            )
+        })()
+        .unwrap_or_default()
+    }
+
     /// Does the client support dynamic registration of document synchronization?
     pub fn registers_sync(&self) -> bool {
         (|| -> _ {

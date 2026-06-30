@@ -23,16 +23,19 @@ use gen_lsp_types::{
     DefinitionParams, DefinitionRequest, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DocumentDiagnosticParams, DocumentDiagnosticRequest,
     DocumentHighlightParams, DocumentHighlightRequest, DocumentSymbolParams, DocumentSymbolRequest,
-    FoldingRangeParams, FoldingRangeRequest, HoverParams, HoverRequest, Id, InlayHintParams,
-    InlayHintRequest, LogMessageNotification, LogMessageParams, MessageType, Notification as _,
-    PublishDiagnosticsNotification, RegistrationParams, RegistrationRequest, SelectionRangeParams,
-    SelectionRangeRequest, SemanticTokensParams, SemanticTokensRangeParams,
-    SemanticTokensRangeRequest, SemanticTokensRequest, Uri,
+    FoldingRangeParams, FoldingRangeRequest, HoverParams, HoverRequest, Id, InlayHint,
+    InlayHintParams, InlayHintRequest, InlayHintResolveRequest, LogMessageNotification,
+    LogMessageParams, MessageType, Notification as _, PublishDiagnosticsNotification,
+    RegistrationParams, RegistrationRequest, SelectionRangeParams, SelectionRangeRequest,
+    SemanticTokensParams, SemanticTokensRangeParams, SemanticTokensRangeRequest,
+    SemanticTokensRequest, Uri,
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
+
+use crate::lsp::inlay_hints::CustomData;
 
 use super::client::Client;
 
@@ -383,6 +386,37 @@ impl Server {
                         id.clone(),
                         match super::inlay_hints::request(client.as_ref(), doc.as_ref(), &params) {
                             Ok(result) => response::<InlayHintRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "inlayHint/resolve" => {
+                let params: InlayHint = serde_json::from_value(req.params.clone())?;
+                let data: CustomData = serde_json::from_value(
+                    params
+                        .data
+                        .as_ref()
+                        .context("data should be preserved")?
+                        .clone(),
+                )?;
+                let doc = java_document(docs, &data.uri)?;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &in_flight,
+                        id.clone(),
+                        match super::inlay_hints::resolve(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                            &data,
+                        ) {
+                            Ok(result) => response::<InlayHintResolveRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );

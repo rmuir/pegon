@@ -75,7 +75,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     };
     let inlay_hint_options = InlayHintRegistrationOptions {
         inlay_hint_options: InlayHintOptions {
-            resolve_provider: Some(false), // TODO!
+            resolve_provider: Some(true),
             work_done_progress_options,
         },
         static_registration_options: StaticRegistrationOptions {

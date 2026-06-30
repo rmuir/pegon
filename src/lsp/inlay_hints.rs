@@ -1,7 +1,11 @@
+use core::ops::Range;
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location, TextEdit};
+use gen_lsp_types::{
+    InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location, TextEdit, Uri,
+};
+use serde::{Deserialize, Serialize};
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
 
 use crate::support::queries::{capture_id, custom_predicate};
@@ -13,13 +17,64 @@ pub fn request(
     doc: &Document,
     params: &InlayHintParams,
 ) -> Result<Vec<InlayHint>> {
-    let data = doc.text.as_bytes();
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
+
+    let can_resolve = client.supports_inlay_hint_resolve_edit()
+        && (client.supports_inlay_hint_resolve_label_location()
+            || client.supports_inlay_hint_resolve_neovim_location());
+
+    hints(
+        client,
+        doc,
+        &params.text_document.uri,
+        range.start_byte..range.end_byte,
+        !can_resolve,
+    )
+}
+
+pub fn resolve(
+    client: &Client,
+    doc: &Document,
+    params: &InlayHint,
+    data: &CustomData,
+) -> Result<InlayHint> {
+    let position = client
+        .decode_pos(params.position, &doc.line_index)
+        .context("valid position")?;
+    let offset: usize = doc
+        .line_index
+        .offset(position)
+        .context("valid offset")?
+        .into();
+    let mut hints = hints(
+        client,
+        doc,
+        &data.uri,
+        offset.saturating_sub(1)..offset,
+        true,
+    )?;
+    hints.pop().context("matching inlay hint")
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CustomData {
+    pub uri: Uri,
+    pub version: i32,
+}
+
+pub fn hints(
+    client: &Client,
+    doc: &Document,
+    uri: &Uri,
+    range: Range<usize>,
+    populate: bool,
+) -> Result<Vec<InlayHint>> {
+    let data = doc.text.as_bytes();
     let mut result = Vec::with_capacity(3);
     let mut cursor = QueryCursor::new();
-    cursor.set_byte_range(range.start_byte..range.end_byte);
+    cursor.set_byte_range(range.start..range.end);
     let mut matches = cursor
         .matches(&QUERY, doc.tree.root_node(), data)
         .filter(|hit| {
@@ -31,13 +86,18 @@ pub fn request(
             true
         });
 
+    let custom_data = serde_json::to_value(CustomData {
+        uri: uri.clone(),
+        version: doc.version,
+    })?;
+
     while let Some(hit) = matches.next() {
         let node = hit
             .nodes_for_capture_index(*POSITION_CAPTURE)
             .next()
             .context("position capture should exist")?;
         let node_range = node.byte_range();
-        if node_range.end < range.start_byte || node_range.start > range.end_byte {
+        if node_range.end < range.start || node_range.start > range.end {
             continue;
         }
         let pattern = pattern(hit.pattern_index);
@@ -90,10 +150,11 @@ pub fn request(
             value.push('\u{2026}');
         }
 
-        let location = if let Some(location) = hit.nodes_for_capture_index(*LOCATION_CAPTURE).next()
+        let location = if populate
+            && let Some(location) = hit.nodes_for_capture_index(*LOCATION_CAPTURE).next()
         {
             Some(Location {
-                uri: params.text_document.uri.clone(),
+                uri: uri.clone(),
                 range: client
                     .encode_range(&location.range(), &doc.line_index)
                     .context("valid offset")?,
@@ -111,14 +172,14 @@ pub fn request(
             position,
             label,
             kind: None,
-            text_edits: Some(vec![TextEdit {
+            text_edits: populate.then_some(vec![TextEdit {
                 range: gen_lsp_types::Range::new(position, position),
                 new_text,
             }]),
             tooltip: None,
             padding_left: pattern.pad_left.then_some(true),
             padding_right: pattern.pad_right.then_some(true),
-            data: None,
+            data: Some(custom_data.clone()),
         });
     }
     Ok(result)

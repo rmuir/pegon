@@ -8,6 +8,7 @@ use gen_lsp_types::{
 };
 use indoc::indoc;
 use lsp_client::LspClient;
+use serde_json::json;
 
 pub mod lsp_client;
 
@@ -63,7 +64,7 @@ fn flat() {
                 tooltip: None,
                 padding_left: Some(true),
                 padding_right: None,
-                data: None
+                data: Some(json!({ "uri": "file:///Foo.java", "version": 0}))
             },
             InlayHint {
                 position: Position::new(7, 5),
@@ -84,7 +85,7 @@ fn flat() {
                 tooltip: None,
                 padding_left: Some(true),
                 padding_right: None,
-                data: None
+                data: Some(json!({ "uri": "file:///Foo.java", "version": 0}))
             },
             InlayHint {
                 position: Position::new(8, 1),
@@ -105,7 +106,7 @@ fn flat() {
                 tooltip: None,
                 padding_left: Some(true),
                 padding_right: None,
-                data: None
+                data: Some(json!({ "uri": "file:///Foo.java", "version": 0}))
             }
         ]
     );

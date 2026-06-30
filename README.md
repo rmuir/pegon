@@ -58,6 +58,7 @@ vim.lsp.enable({ 'pegon' })
 | `textDocument/foldingRange`         | regions, imports, comments, javadoc handling         |
 | `textDocument/hover`                | operators, JLS links                                 |
 | `textDocument/inlayHint`            | closing braces, generic types                        |
+| `inlayHint/resolve`                 | defers data for faster hints                         |
 | `textDocument/selectionRange`       | incremental selection of tree nodes                  |
 | `textDocument/semanticTokens/full`  | highlighting                                         |
 | `textDocument/semanticTokens/range` | highlighting                                         |
