@@ -1,13 +1,16 @@
 use core::cmp::min;
-use core::ops::Range;
-use std::sync::LazyLock;
+use core::ops::{ControlFlow, Range};
+use core::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, LazyLock};
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
     SemanticToken, SemanticTokens, SemanticTokensLegend, SemanticTokensParams,
     SemanticTokensRangeParams,
 };
-use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
+use tree_sitter::{
+    Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
+};
 
 use super::{Client, server::Document};
 
@@ -15,25 +18,33 @@ pub fn full(
     client: &Client,
     doc: &Document,
     _params: &SemanticTokensParams,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
-    tokens(client, doc, None)
+    tokens(client, doc, None, cancel_token)
 }
 
 pub fn range(
     client: &Client,
     doc: &Document,
     params: &SemanticTokensRangeParams,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
-    tokens(client, doc, Some(&(range.start_byte..range.end_byte)))
+    tokens(
+        client,
+        doc,
+        Some(&(range.start_byte..range.end_byte)),
+        cancel_token,
+    )
 }
 
 pub fn tokens(
     client: &Client,
     doc: &Document,
     byte_range: Option<&Range<usize>>,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
     let data = doc.text.as_bytes();
     let mut result = Vec::with_capacity(3);
@@ -41,7 +52,23 @@ pub fn tokens(
     if let Some(byte_range) = byte_range {
         cursor.set_byte_range(byte_range.clone());
     }
-    let mut captures = cursor.captures(&QUERY, doc.tree.root_node(), data);
+
+    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+    let mut cancellation = |_: &QueryCursorState| {
+        if cancel_token.load(Ordering::Relaxed) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+
+    let mut captures = cursor.captures_with_options(
+        &QUERY,
+        doc.tree.root_node(),
+        data,
+        QueryCursorOptions::new().progress_callback(&mut cancellation),
+    );
+
     let mut previous_range = 0..0;
     let mut previous_index = 0;
     let mut previous_line = 0;

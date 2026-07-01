@@ -1,12 +1,15 @@
-use core::ops::Range;
-use std::sync::LazyLock;
+use core::ops::{ControlFlow, Range};
+use core::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, LazyLock};
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
     InlayHint, InlayHintLabelPart, InlayHintParams, Label, Location, TextEdit, Uri,
 };
 use serde::{Deserialize, Serialize};
-use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
+use tree_sitter::{
+    Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
+};
 
 use crate::support::queries::{capture_id, custom_predicate};
 
@@ -16,6 +19,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &InlayHintParams,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<Vec<InlayHint>> {
     let range = client
         .decode_range(&params.range, &doc.line_index)
@@ -31,6 +35,7 @@ pub fn request(
         &params.text_document.uri,
         range.start_byte..range.end_byte,
         !can_resolve,
+        cancel_token,
     )
 }
 
@@ -39,6 +44,7 @@ pub fn resolve(
     doc: &Document,
     params: &InlayHint,
     data: &CustomData,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<InlayHint> {
     let position = client
         .decode_pos(params.position, &doc.line_index)
@@ -54,6 +60,7 @@ pub fn resolve(
         &data.uri,
         offset.saturating_sub(1)..offset,
         true,
+        cancel_token,
     )?;
     hints.pop().context("matching inlay hint")
 }
@@ -70,13 +77,29 @@ pub fn hints(
     uri: &Uri,
     range: Range<usize>,
     populate: bool,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<Vec<InlayHint>> {
     let data = doc.text.as_bytes();
     let mut result = Vec::with_capacity(3);
     let mut cursor = QueryCursor::new();
     cursor.set_byte_range(range.start..range.end);
+
+    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+    let mut cancellation = |_: &QueryCursorState| {
+        if cancel_token.load(Ordering::Relaxed) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+
     let mut matches = cursor
-        .matches(&QUERY, doc.tree.root_node(), data)
+        .matches_with_options(
+            &QUERY,
+            doc.tree.root_node(),
+            data,
+            QueryCursorOptions::new().progress_callback(&mut cancellation),
+        )
         .filter(|hit| {
             for predicate in QUERY.general_predicates(hit.pattern_index) {
                 if !custom_predicate(hit, data, &predicate.operator, &predicate.args) {

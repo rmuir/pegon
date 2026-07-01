@@ -1,8 +1,13 @@
-use std::sync::LazyLock;
+use core::ops::ControlFlow;
+use core::sync::atomic::{AtomicBool, Ordering};
+
+use std::sync::{Arc, LazyLock};
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{Definition, DefinitionParams, DefinitionResponse, Location, LocationLink};
-use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
+use tree_sitter::{
+    Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
+};
 
 use crate::support::queries::capture_id;
 
@@ -12,6 +17,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &DefinitionParams,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<Option<DefinitionResponse>> {
     let position = params.text_document_position_params.position;
     let bytes = doc.text.as_bytes();
@@ -26,7 +32,22 @@ pub fn request(
         .context("should be valid offset")?
         .into();
     cursor.set_byte_range(source_position..source_position.checked_add(1).context("no overflow")?);
-    let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
+
+    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+    let mut cancellation = |_: &QueryCursorState| {
+        if cancel_token.load(Ordering::Relaxed) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+
+    let mut matches = cursor.matches_with_options(
+        &QUERY,
+        doc.tree.root_node(),
+        bytes,
+        QueryCursorOptions::new().progress_callback(&mut cancellation),
+    );
     let mut best_match = 0;
     while let Some(hit) = matches.next() {
         // ensure last pattern-wins

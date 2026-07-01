@@ -5,12 +5,13 @@ use annotate_snippets::{
 };
 use anyhow::{Context as _, Error, bail};
 use core::fmt::{Display, Formatter};
+use core::sync::atomic::AtomicBool;
 
 use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::mpsc::Sender,
+    sync::{Arc, mpsc::Sender},
     time::Instant,
 };
 use tree_sitter::Parser;
@@ -235,7 +236,7 @@ impl Worker {
             .parser
             .parse(&data, None)
             .context("parser should be setup")?;
-        let result = diagnostics::lint(&tree, &data)?;
+        let result = diagnostics::lint(&tree, &data, &Arc::new(AtomicBool::new(false)))?;
         if !result.is_empty() {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);

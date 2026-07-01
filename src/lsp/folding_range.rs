@@ -1,18 +1,42 @@
-use std::sync::LazyLock;
+use core::ops::ControlFlow;
+use core::sync::atomic::{AtomicBool, Ordering};
+
+use std::sync::{Arc, LazyLock};
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{FoldingRange, FoldingRangeKind};
-use tree_sitter::{Query, QueryCursor, StreamingIterator as _};
+use tree_sitter::{
+    Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
+};
 
 use crate::support::queries::capture_id;
 
 use super::{Client, server::Document};
 
-pub fn request(client: &Client, doc: &Document) -> Result<Vec<FoldingRange>> {
+pub fn request(
+    client: &Client,
+    doc: &Document,
+    cancel_token: &Arc<AtomicBool>,
+) -> Result<Vec<FoldingRange>> {
     let bytes = doc.text.as_bytes();
     let mut result = Vec::new();
     let mut cursor = QueryCursor::new();
-    let mut matches = cursor.matches(&QUERY, doc.tree.root_node(), bytes);
+
+    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+    let mut cancellation = |_: &QueryCursorState| {
+        if cancel_token.load(Ordering::Relaxed) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+
+    let mut matches = cursor.matches_with_options(
+        &QUERY,
+        doc.tree.root_node(),
+        bytes,
+        QueryCursorOptions::new().progress_callback(&mut cancellation),
+    );
     while let Some(hit) = matches.next() {
         let pattern = pattern(hit.pattern_index);
         let mut nodes = hit.nodes_for_capture_index(*RANGE_CAPTURE);

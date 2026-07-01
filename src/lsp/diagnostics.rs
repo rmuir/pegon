@@ -1,3 +1,6 @@
+use core::sync::atomic::AtomicBool;
+use std::sync::Arc;
+
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
     Code, CodeDescription, DiagnosticRelatedInformation, DiagnosticSeverity,
@@ -26,9 +29,10 @@ pub fn pull(
     client: &Client,
     doc: &Document,
     params: &DocumentDiagnosticParams,
+    cancel_token: &Arc<AtomicBool>,
 ) -> Result<DocumentDiagnosticReport> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes)?;
+    let results = lint(&doc.tree, bytes, cancel_token)?;
 
     Ok(
         DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
@@ -52,7 +56,7 @@ pub fn pull(
 /// publish diagnostics (push)
 pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnosticsParams> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes)?;
+    let results = lint(&doc.tree, bytes, &Arc::new(AtomicBool::new(false)))?;
     Ok(PublishDiagnosticsParams {
         diagnostics: encode(client, uri, &doc.line_index, true, &results)?,
         uri: uri.clone(),

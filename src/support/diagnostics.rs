@@ -1,7 +1,12 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::{Context as _, Error};
-use std::sync::LazyLock;
-use tree_sitter::{Node, Query, QueryCursor, Range, StreamingIterator as _, Tree};
+use core::ops::ControlFlow;
+use core::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, LazyLock};
+use tree_sitter::{
+    Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
+    Tree,
+};
 
 use crate::support::queries::{capture_id, custom_predicate};
 
@@ -32,11 +37,30 @@ pub struct Diagnostic {
 /// # Errors
 ///
 /// This function will return an error if rules are misconfigured.
-pub fn lint(tree: &Tree, data: &[u8]) -> Result<Vec<Diagnostic>, Error> {
+pub fn lint(
+    tree: &Tree,
+    data: &[u8],
+    cancel_token: &Arc<AtomicBool>,
+) -> Result<Vec<Diagnostic>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
+
+    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+    let mut cancellation = |_: &QueryCursorState| {
+        if cancel_token.load(Ordering::Relaxed) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+
     let mut matches = cursor
-        .matches(&QUERY, tree.root_node(), data)
+        .matches_with_options(
+            &QUERY,
+            tree.root_node(),
+            data,
+            QueryCursorOptions::new().progress_callback(&mut cancellation),
+        )
         .filter(|hit| {
             for predicate in QUERY.general_predicates(hit.pattern_index) {
                 if !custom_predicate(hit, data, &predicate.operator, &predicate.args) {
