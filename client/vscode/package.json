@@ -50,5 +50,17 @@
     "@vscode/vsce-sign@2.0.9": true,
     "esbuild@0.23.1": true,
     "keytar@7.9.0": true
+  },
+  "contributes": {
+    "semanticTokenScopes": [
+      {
+        "language": "java",
+        "scopes": {
+          "property": [
+            "storage"
+          ]
+        }
+      }
+    ]
   }
 }
