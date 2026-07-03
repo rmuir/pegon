@@ -80,7 +80,7 @@ pub fn hints(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<Vec<InlayHint>> {
     let data = doc.text.as_bytes();
-    let mut result = Vec::with_capacity(3);
+    let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     cursor.set_byte_range(range.start..range.end);
 

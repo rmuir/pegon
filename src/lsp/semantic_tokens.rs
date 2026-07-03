@@ -47,7 +47,7 @@ pub fn tokens(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
     let data = doc.text.as_bytes();
-    let mut result = Vec::with_capacity(3);
+    let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     if let Some(byte_range) = byte_range {
         cursor.set_byte_range(byte_range.clone());
