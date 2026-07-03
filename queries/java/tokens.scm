@@ -95,6 +95,11 @@
 ((requires_modifier) @range
   (#set! token.type "modifier"))
 
+; gonna be slow
+((identifier) @range
+  (#set! token.type "variable")
+  (#set! token.scoped true))
+
 ; labels
 ((labeled_statement
   (identifier) @range)

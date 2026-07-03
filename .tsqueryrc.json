@@ -165,7 +165,8 @@
               "scope.start.inclusive",
               "symbol.kind",
               "token.type",
-              "token.modifiers"
+              "token.modifiers",
+              "token.scoped"
             ]
           }
         },

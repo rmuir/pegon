@@ -41,3 +41,22 @@ pub fn run_server(connection: Connection) -> Result<(), Error> {
     let server = Server::new(connection, &client, id)?;
     server.main_loop(&Arc::new(client))
 }
+
+/// Semantic token types legend
+pub static SEMANTIC_TOKEN_TYPES: [&str; 11] = [
+    "decorator",
+    "keyword",
+    "label",
+    "method",
+    "modifier",
+    "namespace",
+    "operator",
+    "parameter",
+    "property",
+    "type",
+    "variable",
+];
+
+/// Semantic token modifiers legend
+pub static SEMANTIC_TOKEN_MODIFIERS: [&str; 4] =
+    ["defaultLibrary", "definition", "readonly", "static"];

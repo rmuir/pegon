@@ -3,10 +3,9 @@ use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock};
 
-use anyhow::{Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
-    SemanticToken, SemanticTokens, SemanticTokensLegend, SemanticTokensParams,
-    SemanticTokensRangeParams,
+    SemanticToken, SemanticTokens, SemanticTokensParams, SemanticTokensRangeParams,
 };
 use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
@@ -47,6 +46,10 @@ pub fn tokens(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
     let data = doc.text.as_bytes();
+    let scopes = crate::support::scopes::scopes(&doc.tree, data, cancel_token)?;
+    if scopes.is_empty() {
+        bail!("scopes did not work");
+    }
     let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     if let Some(byte_range) = byte_range {
@@ -83,6 +86,19 @@ pub fn tokens(
         }
 
         let pattern = pattern(hit.pattern_index);
+        // TODO: optimize
+        let mut token_type = pattern.token_type;
+        if pattern.scoped {
+            let text = capture.node.utf8_text(data)?;
+            if let Some(stack) = scopes.get(text) {
+                for scope in stack.iter().rev() {
+                    if scope.range.contains(&node_range.start) {
+                        token_type = scope.token_type;
+                        break;
+                    }
+                }
+            }
+        }
         if node_range == previous_range {
             let previous: SemanticToken = result.pop().context("should exist")?;
             result.push(SemanticToken {
@@ -90,12 +106,11 @@ pub fn tokens(
                 delta_start: previous.delta_start,
                 length: previous.length,
                 token_type: if hit.pattern_index > previous_index {
-                    pattern.token_type
+                    token_type
                 } else {
                     previous.token_type
                 },
-                token_modifiers_bitset: previous.token_modifiers_bitset
-                    | pattern.token_modifiers_bitset,
+                token_modifiers_bitset: previous.token_modifiers_bitset | pattern.modifiers_bitset,
             });
             previous_index = min(previous_index, hit.pattern_index);
         } else {
@@ -123,8 +138,8 @@ pub fn tokens(
                     .character
                     .checked_sub(range.start.character)
                     .context("valid delta")?,
-                token_type: pattern.token_type,
-                token_modifiers_bitset: pattern.token_modifiers_bitset,
+                token_type,
+                token_modifiers_bitset: pattern.modifiers_bitset,
             });
             previous_line = range.start.line;
             previous_start = range.start.character;
@@ -150,32 +165,11 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     .expect("query should compile")
 });
 
-pub static LEGEND: LazyLock<SemanticTokensLegend> = LazyLock::new(|| SemanticTokensLegend {
-    token_types: vec![
-        "decorator".into(),
-        "keyword".into(),
-        "label".into(),
-        "method".into(),
-        "modifier".into(),
-        "namespace".into(),
-        "operator".into(),
-        "parameter".into(),
-        "property".into(),
-        "type".into(),
-        "variable".into(),
-    ],
-    token_modifiers: vec![
-        "defaultLibrary".into(),
-        "definition".into(),
-        "readonly".into(),
-        "static".into(),
-    ],
-});
-
 // single compiled pattern
 struct Pattern {
     token_type: u32,
-    token_modifiers_bitset: u32,
+    modifiers_bitset: u32,
+    scoped: bool,
 }
 
 /// Look up rule by pattern index
@@ -190,7 +184,8 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
         let mut token_type = None;
-        let mut token_modifiers_bitset = 0;
+        let mut modifiers_bitset = 0;
+        let mut scoped = false;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
@@ -198,18 +193,21 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             match key {
                 "token.type" => {
                     let value = value.expect("token.type should have a value");
-                    token_type = LEGEND.token_types.binary_search(&value.to_owned()).ok();
+                    token_type = super::SEMANTIC_TOKEN_TYPES.binary_search(&value).ok();
                     assert!(token_type.is_some(), "unknown token type: {value}");
                 }
                 "token.modifiers" => {
                     let value = value.expect("token.modifiers should have a value");
                     for modifier in value.split(',') {
-                        let bit = LEGEND
-                            .token_modifiers
-                            .binary_search(&modifier.to_owned())
+                        let bit = super::SEMANTIC_TOKEN_MODIFIERS
+                            .binary_search(&modifier)
                             .expect("valid modifier");
-                        token_modifiers_bitset |= 1 << bit;
+                        modifiers_bitset |= 1 << bit;
                     }
+                }
+                "token.scoped" => {
+                    let value = value.expect("token.scoped should have a value");
+                    scoped = value.parse::<bool>().expect("valid boolean");
                 }
                 _ => panic!("{key}: unknown metadata key"),
             }
@@ -219,7 +217,8 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 .expect("token.type should be set")
                 .try_into()
                 .expect("should be u32"),
-            token_modifiers_bitset,
+            modifiers_bitset,
+            scoped,
         });
     }
     patterns

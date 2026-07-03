@@ -14,7 +14,7 @@ use gen_lsp_types::{
     HoverRegistrationOptions, HoverRequest, InitializeResult, InlayHintOptions, InlayHintProvider,
     InlayHintRegistrationOptions, InlayHintRequest, Notification as _, Registration, Request as _,
     SelectionRangeOptions, SelectionRangeProvider, SelectionRangeRegistrationOptions,
-    SelectionRangeRequest, SemanticTokensOptions, SemanticTokensOptionsRange,
+    SelectionRangeRequest, SemanticTokensLegend, SemanticTokensOptions, SemanticTokensOptionsRange,
     SemanticTokensProvider, SemanticTokensRegistrationOptions, SemanticTokensRequest,
     ServerCapabilities, ServerInfo, StaticRegistrationOptions,
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
@@ -92,7 +92,16 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     };
     let semantic_tokens_options = SemanticTokensRegistrationOptions {
         semantic_tokens_options: SemanticTokensOptions {
-            legend: super::semantic_tokens::LEGEND.clone(),
+            legend: SemanticTokensLegend {
+                token_types: super::SEMANTIC_TOKEN_TYPES
+                    .into_iter()
+                    .map(String::from)
+                    .collect(),
+                token_modifiers: super::SEMANTIC_TOKEN_MODIFIERS
+                    .into_iter()
+                    .map(String::from)
+                    .collect(),
+            },
             range: Some(SemanticTokensOptionsRange::Bool(true)),
             full: Some(Full::Bool(true)), // TODO: delta?
             work_done_progress_options,
