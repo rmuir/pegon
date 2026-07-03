@@ -56,8 +56,16 @@
       {
         "language": "java",
         "scopes": {
+          "property.readonly": [
+            "constant.numeric"
+          ],
           "property": [
-            "storage"
+            "support.variable",
+            "support.type.object.dom"
+          ],
+          "parameter": [
+            "token.variable.parameter.java",
+            "variable.parameter"
           ]
         }
       }
