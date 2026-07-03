@@ -13,7 +13,6 @@ use core::num::NonZero;
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering;
 use std::{
-    collections::HashMap,
     sync::{Arc, Mutex},
     thread,
 };
@@ -34,6 +33,7 @@ use gen_lsp_types::{
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
+use rustc_hash::FxHashMap;
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
@@ -79,14 +79,14 @@ pub struct Document {
 /// LSP state, only accessed by the main thread
 pub struct State {
     /// Map of documents currently opened by the editor, keyed by URI
-    pub docs: HashMap<String, Resource>,
+    pub docs: FxHashMap<String, Resource>,
     /// Treesitter parser used for parsing opened/modified documents
     pub parser: Parser,
 }
 
 impl State {
     fn new() -> Result<Self> {
-        let docs: HashMap<String, Resource> = HashMap::default();
+        let docs: FxHashMap<String, Resource> = FxHashMap::default();
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&crate::support::language())?;
         Ok(Self { docs, parser })
@@ -94,7 +94,7 @@ impl State {
 }
 
 /// Map of in-flight requests to their cancellation status
-type InFlight = Arc<Mutex<HashMap<RequestId, Arc<AtomicBool>>>>;
+type InFlight = Arc<Mutex<FxHashMap<RequestId, Arc<AtomicBool>>>>;
 /// Job handled by the request thread pool
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
@@ -148,7 +148,7 @@ impl Server {
         Ok(Self {
             connection,
             workers,
-            in_flight: Arc::new(Mutex::new(HashMap::new())),
+            in_flight: Arc::new(Mutex::new(FxHashMap::default())),
         })
     }
 
@@ -212,7 +212,7 @@ impl Server {
         &self,
         client: &Arc<Client>,
         req: &Request,
-        docs: &HashMap<String, Resource>,
+        docs: &FxHashMap<String, Resource>,
         cancel_token: &Arc<AtomicBool>,
     ) -> Result<()> {
         let id = req.id.clone();
@@ -682,7 +682,7 @@ fn log_error(method: &String, message: &String) -> Message {
 }
 
 /// returns open java document from the editor, or an error
-fn java_document(docs: &HashMap<String, Resource>, uri: &Uri) -> Result<Arc<Document>> {
+fn java_document(docs: &FxHashMap<String, Resource>, uri: &Uri) -> Result<Arc<Document>> {
     match docs.get(&uri.to_string()) {
         Some(Resource::Java(doc)) => Ok(Arc::clone(doc)),
         Some(Resource::Other) => bail!("non-java document: {uri}"),
