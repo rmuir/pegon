@@ -9,7 +9,7 @@ pub fn custom_predicate(
 ) -> bool {
     match operator {
         "lt?" => {
-            assert!(args.len() > 1);
+            debug_assert!(args.len() > 1);
             let (QueryPredicateArg::Capture(left), QueryPredicateArg::Capture(right)) =
                 (&args[0], &args[1])
             else {
@@ -23,10 +23,12 @@ pub fn custom_predicate(
                 .nodes_for_capture_index(*right)
                 .next()
                 .expect("valid capture");
-            node1.utf8_text(data).unwrap_or_default() < node2.utf8_text(data).unwrap_or_default()
+            let slice1 = &data[node1.start_byte()..node1.end_byte()];
+            let slice2 = &data[node2.start_byte()..node2.end_byte()];
+            slice1 < slice2
         }
         "eol?" => {
-            assert!(args.len() == 1);
+            debug_assert!(args.len() == 1);
             let QueryPredicateArg::Capture(left) = &args[0] else {
                 panic!("invalid predicate arguments")
             };
