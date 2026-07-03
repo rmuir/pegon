@@ -239,6 +239,34 @@
   (#set! tokens.type "method")
   (#set! tokens.modifiers "defaultLibrary"))
 
+; Parameters
+((formal_parameter
+  name: (identifier) @range)
+  (#set! tokens.type "parameter")
+  (#set! tokens.modifiers "definition"))
+
+((catch_formal_parameter
+  name: (identifier) @range)
+  (#set! tokens.type "parameter")
+  (#set! tokens.modifiers "definition"))
+
+((spread_parameter
+  (variable_declarator
+    name: (identifier) @range)) ; int... foo
+  (#set! tokens.type "parameter")
+  (#set! tokens.modifiers "definition"))
+
+; Lambda parameter
+((inferred_parameters
+  (identifier) @range) ; (x,y) -> ...
+  (#set! tokens.type "parameter")
+  (#set! tokens.modifiers "definition"))
+
+((lambda_expression
+  parameters: (identifier) @range) ; x -> ...
+  (#set! tokens.type "parameter")
+  (#set! tokens.modifiers "definition"))
+
 ; decorators
 ; TODO: do a has-ancestor or similar here, not quite right
 ((annotation
