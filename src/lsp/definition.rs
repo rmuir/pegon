@@ -58,7 +58,7 @@ pub fn request(
         let selection = hit
             .nodes_for_capture_index(*SELECTION_CAPTURE)
             .next()
-            .expect("should have selection capture");
+            .context("should have selection capture")?;
         if source_position < selection.range().start_byte
             || source_position > selection.range().end_byte
         {
@@ -68,7 +68,7 @@ pub fn request(
         let target = hit
             .nodes_for_capture_index(*RANGE_CAPTURE)
             .next()
-            .expect("should have range capture");
+            .context("should have range capture")?;
         let target_selection_range = client
             .encode_range(&selection.range(), &doc.line_index)
             .context("valid range")?;

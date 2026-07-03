@@ -40,7 +40,7 @@ pub fn request(
     while let Some(hit) = matches.next() {
         let pattern = pattern(hit.pattern_index);
         let mut nodes = hit.nodes_for_capture_index(*RANGE_CAPTURE);
-        let node = nodes.next().expect("should have range capture");
+        let node = nodes.next().context("should have range capture")?;
         let start_range = node.range();
         let end_range = nodes.last().unwrap_or(node).range();
         let range = tree_sitter::Range {

@@ -59,7 +59,7 @@ pub fn request(
         let node = hit
             .nodes_for_capture_index(*RANGE_CAPTURE)
             .next()
-            .expect("should have range capture");
+            .context("should have range capture")?;
         if source_position < node.range().start_byte || source_position > node.range().end_byte {
             continue;
         }
