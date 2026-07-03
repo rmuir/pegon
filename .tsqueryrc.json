@@ -44,6 +44,11 @@
       "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
       "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
     },
+    "scopes": {
+      "variable": "identifier that becomes valid within scope",
+      "start": "beginning of the scope range",
+      "end": "end of the scope range"
+    },
     "symbols": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range",
@@ -156,6 +161,8 @@
               "hover.spec",
               "hover.description",
               "highlight.kind",
+              "scope.kind",
+              "scope.start.inclusive",
               "symbol.kind",
               "tokens.type",
               "tokens.modifiers"
