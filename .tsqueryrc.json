@@ -164,8 +164,8 @@
               "scope.kind",
               "scope.start.inclusive",
               "symbol.kind",
-              "tokens.type",
-              "tokens.modifiers"
+              "token.type",
+              "token.modifiers"
             ]
           }
         },
