@@ -689,3 +689,22 @@ fn java_document(docs: &HashMap<String, Resource>, uri: &Uri) -> Result<Arc<Docu
         None => bail!("document not open: {uri}"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::thread;
+
+    use crate::run_server;
+    use lsp_server::Connection;
+
+    /// make sure if the stream disconnects that the error makes it out
+    /// this ensure no leftover processes, which will annoy users!
+    #[test]
+    fn hard_disconnect() {
+        let (client, server) = Connection::memory();
+        let server_thread = thread::spawn(move || run_server(server));
+        drop(client);
+        let err = server_thread.join().unwrap().unwrap_err();
+        assert_eq!(err.to_string(), "disconnected channel");
+    }
+}

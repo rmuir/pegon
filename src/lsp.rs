@@ -21,6 +21,8 @@ mod selection_range;
 mod semantic_tokens;
 mod server;
 mod sync;
+#[cfg(test)]
+mod test_client;
 
 /// Run LSP server
 ///

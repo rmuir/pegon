@@ -1,5 +1,3 @@
-#![expect(clippy::panic, reason = "tests")]
-
 use core::cell::{Cell, RefCell};
 use core::time::Duration;
 use std::{
@@ -16,12 +14,11 @@ use gen_lsp_types::{
     InitializedNotification, InitializedParams, ShutdownRequest,
 };
 use lsp_server::{Connection, Message, Request, Response};
-use pegon::run_server;
 use serde::Serialize;
 use serde_json::Value;
 
 /// slimmed down and reworked from rust-analyzer test code
-pub struct LspClient {
+pub struct TestClient {
     /// counter for request IDs that we make
     req_id: Cell<i32>,
     /// response to `initialize()` with server capabilities
@@ -31,11 +28,11 @@ pub struct LspClient {
     /// Connection to Server
     conn: Connection,
     /// Server run in separate thread
-    #[expect(dead_code, reason = "for the drop")]
+    #[expect(unused, reason = "for the drop")]
     thread: JoinHandle<Result<(), Error>>,
 }
 
-impl LspClient {
+impl TestClient {
     /// Creates a new language server [`LspClient`].
     #[must_use]
     pub fn new(params: InitializeParams) -> Self {
@@ -45,7 +42,7 @@ impl LspClient {
             init_response: RefCell::default(),
             registrations: RefCell::default(),
             conn: client,
-            thread: thread::spawn(move || run_server(server)),
+            thread: thread::spawn(move || super::run_server(server)),
         };
         // initialize with the server and save the results
         let response = instance.request::<InitializeRequest>(params);
@@ -164,7 +161,7 @@ fn recv_timeout(receiver: &Receiver<Message>) -> Result<Option<Message>, ErrorKi
     }
 }
 
-impl Drop for LspClient {
+impl Drop for TestClient {
     fn drop(&mut self) {
         assert_eq!((), self.request::<ShutdownRequest>(()));
         self.notify::<ExitNotification>(());

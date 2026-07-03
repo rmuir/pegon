@@ -285,3 +285,115 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     }
     Ok((result, registrations))
 }
+
+#[cfg(test)]
+mod tests {
+    use gen_lsp_types::{
+        ClientCapabilities, DiagnosticClientCapabilities, DidChangeTextDocumentNotification,
+        DidCloseTextDocumentNotification, DidOpenTextDocumentNotification,
+        DocumentDiagnosticRequest, GeneralClientCapabilities, InitializeParams, Notification as _,
+        PositionEncodingKind, Request as _, TextDocumentClientCapabilities,
+        TextDocumentSyncClientCapabilities,
+    };
+
+    use crate::lsp::test_client::TestClient;
+
+    /// default to UTF-16 according to the spec
+    #[test]
+    fn encoding_default() {
+        let client = TestClient::new(InitializeParams::default());
+        assert_eq!(
+            Some(PositionEncodingKind::UTF16),
+            client.init_response().capabilities.position_encoding
+        );
+    }
+
+    /// pick the client's first offered encoding.
+    /// most likely it is the most performant for that client
+    #[test]
+    fn encoding_preferred() {
+        let client = TestClient::new(InitializeParams {
+            capabilities: ClientCapabilities {
+                general: Some(GeneralClientCapabilities {
+                    position_encodings: Some(vec![
+                        PositionEncodingKind::UTF8,
+                        PositionEncodingKind::UTF16,
+                    ]),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+        assert_eq!(
+            Some(PositionEncodingKind::UTF8),
+            client.init_response().capabilities.position_encoding
+        );
+    }
+
+    /// check all encoding kinds can be negotiated
+    #[test]
+    fn negotiate_encodings() {
+        for encoding in [
+            PositionEncodingKind::UTF8,
+            PositionEncodingKind::UTF16,
+            PositionEncodingKind::UTF32,
+        ] {
+            let client = TestClient::new(InitializeParams {
+                capabilities: ClientCapabilities {
+                    general: Some(GeneralClientCapabilities {
+                        position_encodings: Some(vec![encoding.clone()]),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            });
+            assert_eq!(
+                Some(encoding),
+                client.init_response().capabilities.position_encoding
+            );
+        }
+    }
+
+    #[test]
+    fn dynamic_registration() {
+        let client = TestClient::new(InitializeParams {
+            capabilities: ClientCapabilities {
+                text_document: Some(TextDocumentClientCapabilities {
+                    synchronization: Some(TextDocumentSyncClientCapabilities {
+                        dynamic_registration: Some(true),
+                        ..Default::default()
+                    }),
+                    diagnostic: Some(DiagnosticClientCapabilities {
+                        dynamic_registration: Some(true),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+        let result = client.registrations();
+        assert!(result.is_some());
+        let params = result.unwrap().registrations;
+        assert_eq!(params.len(), 4);
+        assert_eq!(
+            params[0].method,
+            DidOpenTextDocumentNotification::METHOD.to_string()
+        );
+        assert_eq!(
+            params[1].method,
+            DidChangeTextDocumentNotification::METHOD.to_string()
+        );
+        assert_eq!(
+            params[2].method,
+            DidCloseTextDocumentNotification::METHOD.to_string()
+        );
+        assert_eq!(
+            params[3].method,
+            DocumentDiagnosticRequest::METHOD.to_string()
+        );
+    }
+}

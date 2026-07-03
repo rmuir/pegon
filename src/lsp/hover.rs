@@ -174,3 +174,64 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
 });
 
 static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
+
+#[cfg(test)]
+mod tests {
+    use gen_lsp_types::{
+        Contents, DidOpenTextDocumentNotification, DidOpenTextDocumentParams, Hover, HoverParams,
+        HoverRequest, InitializeParams, MarkupContent, MarkupKind, Position, Range,
+        TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams,
+        WorkDoneProgressParams,
+    };
+    use indoc::indoc;
+
+    use crate::lsp::test_client::TestClient;
+
+    /// simple document
+    #[test]
+    fn simple() {
+        let client = TestClient::new(InitializeParams::default());
+        client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: "file:///Foo.java".into(),
+                language_id: "java".into(),
+                version: 0,
+                text: indoc! {"
+                public class foo {
+                    public abstract void bar(int x) {
+                    }
+                }
+            "}
+                .into(),
+            },
+        });
+        let result = client
+            .request::<HoverRequest>(HoverParams {
+                text_document_position_params: TextDocumentPositionParams {
+                    text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
+                    position: Position::new(1, 12),
+                },
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            })
+            .unwrap();
+        assert_eq!(
+        result,
+        Hover {
+            contents: Contents::MarkupContent(MarkupContent {
+                kind: MarkupKind::PlainText,
+                value: indoc! {"
+                    abstract
+                    ---
+                    abstract method modifier
+
+                    This method isn't concrete: a subclass must implement it.
+
+                    JLS \u{a7}8.4.3.1: https://docs.oracle.com/javase/specs/jls/se26/html/jls-8.html#jls-8.4.3.1
+                "}
+                .into(),
+            }),
+            range: Some(Range::new(Position::new(1, 11), Position::new(1, 19)))
+        }
+    );
+    }
+}
