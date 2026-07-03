@@ -17,6 +17,8 @@ use lsp_server::{Connection, Message, Request, Response};
 use serde::Serialize;
 use serde_json::Value;
 
+/// LSP client for test purposes
+///
 /// slimmed down and reworked from rust-analyzer test code
 pub struct TestClient {
     /// counter for request IDs that we make
@@ -33,7 +35,7 @@ pub struct TestClient {
 }
 
 impl TestClient {
-    /// Creates a new language server [`LspClient`].
+    /// Creates a new language server [`TestClient`].
     #[must_use]
     pub fn new(params: InitializeParams) -> Self {
         let (client, server) = Connection::memory();
@@ -50,7 +52,7 @@ impl TestClient {
         instance.notify::<InitializedNotification>(InitializedParams {});
         // ensure dynamic registration is complete
         instance.request::<ExecuteCommandRequest>(ExecuteCommandParams {
-            command: "bogus".to_owned(),
+            command: "bogus".into(),
             arguments: Some(vec![]),
             ..Default::default()
         });
@@ -70,6 +72,7 @@ impl TestClient {
         self.registrations.borrow().clone()
     }
 
+    /// Send a notification to the server
     pub fn notify<N>(&self, params: N::Params)
     where
         N: gen_lsp_types::Notification,
@@ -82,6 +85,7 @@ impl TestClient {
             .expect("able to send notification");
     }
 
+    /// Read a pending notification from the server
     pub fn read_notify<N>(&self) -> N::Params
     where
         N: gen_lsp_types::Notification,
@@ -97,6 +101,7 @@ impl TestClient {
         serde_json::from_value(msg.params).expect("able to deserialize")
     }
 
+    /// Send a request to the server and return the response
     pub fn request<R>(&self, params: R::Params) -> R::Result
     where
         R: gen_lsp_types::Request,
