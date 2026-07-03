@@ -1,6 +1,7 @@
 use tree_sitter::{Query, QueryMatch, QueryPredicateArg};
 
 /// Implement matching for custom predicates
+#[expect(clippy::indexing_slicing, reason = "prefer panic to silent failure")]
 pub fn custom_predicate(
     hit: &QueryMatch,
     data: &[u8],

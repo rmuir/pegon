@@ -74,7 +74,7 @@ pub fn tokens(
     let mut previous_line = 0;
     let mut previous_start = 0;
     while let Some((hit, capture_id)) = captures.next() {
-        let capture = hit.captures[*capture_id];
+        let capture = hit.captures.get(*capture_id).context("valid capture id")?;
         let node_range = capture.node.byte_range();
         if let Some(byte_range) = &byte_range
             && (node_range.end < byte_range.start || node_range.start > byte_range.end)
