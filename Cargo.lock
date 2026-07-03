@@ -338,7 +338,6 @@ dependencies = [
  "serde_json",
  "tree-sitter",
  "tree-sitter-java-orchard",
- "tree-sitter-language",
 ]
 
 [[package]]

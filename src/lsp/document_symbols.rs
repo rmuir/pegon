@@ -9,8 +9,7 @@ use gen_lsp_types::{
     SymbolInformation, SymbolKind, SymbolTag, Uri,
 };
 use tree_sitter::{
-    Language, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range,
-    StreamingIterator as _,
+    Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
 };
 
 use crate::support::queries::capture_id;
@@ -224,7 +223,7 @@ fn pattern(index: usize) -> &'static Pattern {
 /// compiled query that matches all symbol patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::LANGUAGE.into(),
+        &crate::support::language(),
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/symbols.scm"
@@ -274,6 +273,6 @@ static SIGNATURE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "s
 static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "detail"));
 
 static DIMENSIONS_KIND: LazyLock<u16> = LazyLock::new(|| {
-    let lang: Language = crate::support::LANGUAGE.into();
+    let lang = crate::support::language();
     lang.id_for_node_kind("dimensions", true)
 });

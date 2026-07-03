@@ -193,7 +193,7 @@ impl Worker {
     fn new(concise: bool, sender: Sender<Stats>) -> Self {
         let mut parser = Parser::new();
         parser
-            .set_language(&crate::support::LANGUAGE.into())
+            .set_language(&crate::support::language())
             .expect("parser should be included in the binary");
         Self {
             concise,

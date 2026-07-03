@@ -88,7 +88,7 @@ impl State {
     fn new() -> Result<Self> {
         let docs: HashMap<String, Resource> = HashMap::default();
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&crate::support::LANGUAGE.into())?;
+        parser.set_language(&crate::support::language())?;
         Ok(Self { docs, parser })
     }
 }
