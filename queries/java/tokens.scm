@@ -274,6 +274,9 @@
 
 ; decorators
 ; TODO: do a has-ancestor or similar here, not quite right
+("@" @range
+  (#set! token.type "decorator"))
+
 ((annotation
   name: (identifier) @range)
   (#set! token.type "decorator"))
