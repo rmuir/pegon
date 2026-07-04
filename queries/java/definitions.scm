@@ -83,6 +83,8 @@
 (try_with_resources_statement
   "try" @selection) @range
 
+; identifiers
+; (identifier) @selection @range
 ; declarations
 (module_declaration
   name: (_) @selection) @range

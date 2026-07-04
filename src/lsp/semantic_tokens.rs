@@ -92,12 +92,18 @@ pub fn tokens(
             let text = capture.node.utf8_text(data)?;
             if let Some(stack) = scopes.get(text) {
                 for scope in stack.iter().rev() {
-                    if scope.range.contains(&node_range.start) {
+                    if scope.range.contains(&node_range.start)
+                        || scope.identifier.contains(&node_range.start)
+                    {
                         token_type = scope.token_type;
                         break;
                     }
                 }
             }
+        }
+        // omit plain "variable" which does not help and causes noise
+        if token_type == *VARIABLE_TYPE && pattern.modifiers_bitset == 0 {
+            continue;
         }
         if node_range == previous_range {
             let previous: SemanticToken = result.pop().context("should exist")?;
@@ -152,6 +158,15 @@ pub fn tokens(
         data: result,
     })
 }
+
+/// indicates "variable" for omitting noise
+static VARIABLE_TYPE: LazyLock<u32> = LazyLock::new(|| {
+    super::SEMANTIC_TOKEN_TYPES
+        .binary_search(&"variable")
+        .expect("should be semantic token type")
+        .try_into()
+        .expect("should be u32")
+});
 
 /// compiled query that matches all semantic tokens patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {

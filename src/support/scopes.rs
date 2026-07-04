@@ -12,7 +12,6 @@ use crate::support::queries::capture_id;
 /// Single variable scope entry
 pub struct Scope {
     /// range of the identifier declaration
-    #[expect(unused, reason = "not yet")]
     pub identifier: Range<usize>,
     /// range where the identifier is valid
     pub range: Range<usize>,
