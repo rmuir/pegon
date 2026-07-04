@@ -66,3 +66,34 @@
     name: (identifier) @variable)
   body: (block) @start @end)
   (#set! scope.type "parameter"))
+
+; type parameter scopes
+((class_declaration
+  type_parameters: (type_parameters
+    (type_parameter
+      (type_identifier) @variable) @start)) @end
+  (#set! scope.type "typeParameter"))
+
+((constructor_declaration
+  type_parameters: (type_parameters
+    (type_parameter
+      (type_identifier) @variable) @start)) @end
+  (#set! scope.type "typeParameter"))
+
+((record_declaration
+  type_parameters: (type_parameters
+    (type_parameter
+      (type_identifier) @variable) @start)) @end
+  (#set! scope.type "typeParameter"))
+
+((interface_declaration
+  type_parameters: (type_parameters
+    (type_parameter
+      (type_identifier) @variable) @start)) @end
+  (#set! scope.type "typeParameter"))
+
+((method_declaration
+  type_parameters: (type_parameters
+    (type_parameter
+      (type_identifier) @variable) @start)) @end
+  (#set! scope.type "typeParameter"))

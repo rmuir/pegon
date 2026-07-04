@@ -156,7 +156,8 @@
   (#set! token.modifiers "definition"))
 
 ((type_identifier) @range
-  (#set! token.type "type"))
+  (#set! token.type "type")
+  (#set! token.scoped true))
 
 ; builtin-types
 ([
@@ -270,6 +271,12 @@
 ((lambda_expression
   parameters: (identifier) @range) ; x -> ...
   (#set! token.type "parameter")
+  (#set! token.modifiers "definition"))
+
+; type parameters
+((type_parameter
+  (type_identifier) @range)
+  (#set! token.type "typeParameter")
   (#set! token.modifiers "definition"))
 
 ; decorators

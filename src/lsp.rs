@@ -43,7 +43,7 @@ pub fn run_server(connection: Connection) -> Result<(), Error> {
 }
 
 /// Semantic token types legend
-pub static SEMANTIC_TOKEN_TYPES: [&str; 11] = [
+pub static SEMANTIC_TOKEN_TYPES: [&str; 12] = [
     "decorator",
     "keyword",
     "label",
@@ -54,6 +54,7 @@ pub static SEMANTIC_TOKEN_TYPES: [&str; 11] = [
     "parameter",
     "property",
     "type",
+    "typeParameter",
     "variable",
 ];
 
