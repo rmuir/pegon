@@ -100,6 +100,18 @@
   (#set! token.type "variable")
   (#set! token.scoped true))
 
+; variables
+((local_variable_declaration
+  declarator: (variable_declarator
+    name: (identifier) @range))
+  (#set! token.type "variable")
+  (#set! token.modifiers "definition"))
+
+((enhanced_for_statement
+  name: (identifier) @range)
+  (#set! token.type "variable")
+  (#set! token.modifiers "definition"))
+
 ; labels
 ((labeled_statement
   (identifier) @range)

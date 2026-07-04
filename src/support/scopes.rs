@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Error};
-use core::ops::ControlFlow;
+use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
 use rustc_hash::FxHashMap;
 use std::sync::{Arc, LazyLock};
@@ -13,9 +13,9 @@ use crate::support::queries::capture_id;
 pub struct Scope {
     /// range of the identifier declaration
     #[expect(unused, reason = "not yet")]
-    pub identifier: core::ops::Range<usize>,
+    pub identifier: Range<usize>,
     /// range where the identifier is valid
-    pub range: core::ops::Range<usize>,
+    pub range: Range<usize>,
     /// semantic token type (indexes into the legend)
     pub token_type: u32,
 }
