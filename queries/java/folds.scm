@@ -1,3 +1,13 @@
+; license
+((program
+  .
+  [
+    (block_comment)
+    (line_comment)
+  ]+ @range)
+  (#set! fold.kind "comment")
+  (#set! fold.lineoffset 1))
+
 ; adjacent imports
 ((import_declaration)+ @range
   (#set! fold.kind "imports"))
