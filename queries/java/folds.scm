@@ -2,29 +2,36 @@
 ((import_declaration)+ @range
   (#set! fold.kind "imports"))
 
-; multiline block /* comments */ or /** comments */
+; multiline javadoc comments: /** */
+; summarize with first real line
 ((block_comment) @range
-  (#match? @range "^/[*][*]?[\\s]*[\n].")
+  (#match? @range "^/[*][*][\\s]*[\n].")
   (#set! fold.kind "comment")
   (#set! fold.lineoffset 1))
 
-; other block comments
-((block_comment) @range
-  (#not-match? @range "^/[*][*]?[\\s]*[\n].")
-  (#set! fold.kind "comment"))
-
-; // comments
+; markdown javadoc comment blocks
 ((line_comment)+ @range
+  (#match? @range "^///")
+  (#not-match? @range "^///[^\\s]")
   (#set! fold.kind "comment"))
 
+; regions
 ; function-like bodies
-(constructor_body) @range
+((constructor_body) @range
+  (#match? @range "[\\n]")
+  (#set! fold.kind "region"))
 
-(compact_constructor_declaration
+((compact_constructor_declaration
   body: (block) @range)
+  (#match? @range "[\\n]")
+  (#set! fold.kind "region"))
 
-(method_declaration
+((method_declaration
   body: (block) @range)
+  (#match? @range "[\\n]")
+  (#set! fold.kind "region"))
 
-(static_initializer
+((static_initializer
   (block) @range)
+  (#match? @range "[\\n]")
+  (#set! fold.kind "region"))

@@ -62,7 +62,7 @@ pub fn request(
                 start_character: Some(0),
                 end_line: range.end.line,
                 end_character: Some(range.end.character),
-                kind: pattern.kind.clone(),
+                kind: Some(pattern.kind.clone()),
                 collapsed_text: None,
             });
         } else {
@@ -71,7 +71,7 @@ pub fn request(
                 start_character: Some(range.start.character),
                 end_line: range.end.line,
                 end_character: Some(range.end.character),
-                kind: pattern.kind.clone(),
+                kind: Some(pattern.kind.clone()),
                 collapsed_text: None,
             });
         }
@@ -82,7 +82,7 @@ pub fn request(
 /// single compiled pattern
 struct Pattern {
     /// kind of fold
-    kind: Option<FoldingRangeKind>,
+    kind: FoldingRangeKind,
     /// adjustment to start line
     line_offset: u32,
 }
@@ -128,10 +128,11 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
         }
         patterns.push(Pattern {
             kind: match kind {
-                Some("comment") => Some(FoldingRangeKind::Comment),
-                Some("imports") => Some(FoldingRangeKind::Imports),
-                Some(_) => panic!("unsupported fold kind {kind:?}"),
-                None => Some(FoldingRangeKind::Region),
+                Some("comment") => FoldingRangeKind::Comment,
+                Some("imports") => FoldingRangeKind::Imports,
+                Some("region") => FoldingRangeKind::Region,
+                Some(str) => FoldingRangeKind::Custom(str.into()),
+                _ => panic!("unspecified folding kind"),
             },
             line_offset: line_offset.unwrap_or_default(),
         });
