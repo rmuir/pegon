@@ -59,10 +59,5 @@ pub static SEMANTIC_TOKEN_TYPES: [&str; 12] = [
 ];
 
 /// Semantic token modifiers legend
-pub static SEMANTIC_TOKEN_MODIFIERS: [&str; 5] = [
-    "defaultLibrary",
-    "definition",
-    "modification",
-    "readonly",
-    "static",
-];
+pub static SEMANTIC_TOKEN_MODIFIERS: [&str; 4] =
+    ["defaultLibrary", "definition", "readonly", "static"];
