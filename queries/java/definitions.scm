@@ -87,7 +87,10 @@
 ; (identifier) @selection @range
 ; declarations
 (module_declaration
-  name: (_) @selection) @range
+  name: [
+    (identifier)
+    (scoped_identifier)
+  ] @selection) @range
 
 (package_declaration
   [

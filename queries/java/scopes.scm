@@ -26,7 +26,10 @@
     (inferred_parameters
       (identifier) @variable)
   ]
-  body: (_) @start @end)
+  body: [
+    (expression)
+    (block)
+  ] @start @end)
   (#set! scope.type "parameter"))
 
 ((constructor_declaration

@@ -52,7 +52,10 @@
     "("
     .
     (resource
-      name: (_) @label
+      name: [
+        (identifier)
+        (underscore_pattern)
+      ] @label
       "=" @label))
   body: (block
     "}" @position) @_region)
@@ -103,7 +106,7 @@
 ; for block start/end
 ((for_statement
   "for" @label @location
-  condition: (_) @label
+  condition: (expression)? @label
   body: (block
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -115,9 +118,12 @@
 ; for block start/end
 ((enhanced_for_statement
   "for" @label @location
-  name: (_) @label
+  name: [
+    (identifier)
+    (underscore_pattern)
+  ] @label
   ":" @label
-  value: (_) @label
+  value: (expression) @label
   body: (block
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -142,7 +148,10 @@
 ; module block start-end
 ((module_declaration
   "module" @label
-  name: (_) @label @location
+  name: [
+    (identifier)
+    (scoped_identifier)
+  ] @label @location
   body: (module_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -154,7 +163,7 @@
 ; enum block start-end
 ((enum_declaration
   "enum" @label
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (enum_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -165,7 +174,7 @@
 
 ; enum constant block start-end
 ((enum_constant
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (class_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -177,7 +186,7 @@
 ; enum block start-end
 ((class_declaration
   "class" @label
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (class_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -200,7 +209,7 @@
 
 ; constructor block start-end
 ((constructor_declaration
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (constructor_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -213,7 +222,7 @@
 ; record block start-end
 ((record_declaration
   "record" @label @location
-  name: (_) @label
+  name: (identifier) @label
   body: (class_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -225,7 +234,7 @@
 ; annotation type block start-end
 ((annotation_type_declaration
   "@interface" @label
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (annotation_type_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -237,7 +246,7 @@
 ; interface block start-end
 ((interface_declaration
   "interface" @label
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (interface_body
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -248,7 +257,10 @@
 
 ; array initializer start-end
 ((variable_declarator
-  name: (_) @label @location
+  name: [
+    (identifier)
+    (underscore_pattern)
+  ] @label @location
   "=" @label
   value: (array_initializer
     "}" @position) @_region)
@@ -260,7 +272,7 @@
 
 ; method block start-end
 ((method_declaration
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (block
     "}" @position) @_region)
   (#match? @_region "\n")
@@ -272,7 +284,7 @@
 
 ; compact constructor block start-end
 ((compact_constructor_declaration
-  name: (_) @label @location
+  name: (identifier) @label @location
   body: (block
     "}" @position) @_region)
   (#match? @_region "\n")

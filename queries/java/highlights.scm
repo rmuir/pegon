@@ -143,7 +143,10 @@
 ; module block start-end
 ((module_declaration
   "module" @reference
-  name: (_) @reference
+  name: [
+    (identifier)
+    (scoped_identifier)
+  ] @reference
   body: (module_body
     "{" @range @reference
     "}" @range @reference))
@@ -152,7 +155,7 @@
 ; enum block start-end
 ((enum_declaration
   "enum" @reference
-  name: (_) @reference
+  name: (identifier) @reference
   body: (enum_body
     "{" @range @reference
     "}" @range @reference))
@@ -160,16 +163,16 @@
 
 ; enum constant block start-end
 ((enum_constant
-  name: (_) @reference
+  name: (identifier) @reference
   body: (class_body
     "{" @range @reference
     "}" @range @reference))
   (#set! highlight.kind 2))
 
-; enum block start-end
+; class block start-end
 ((class_declaration
   "class" @reference
-  name: (_) @reference
+  name: (identifier) @reference
   body: (class_body
     "{" @range @reference
     "}" @range @reference))
@@ -185,7 +188,7 @@
 
 ; constructor block start-end
 ((constructor_declaration
-  name: (_) @reference
+  name: (identifier) @reference
   body: (constructor_body
     "{" @range @reference
     "}" @range @reference))
@@ -194,7 +197,7 @@
 ; record block start-end
 ((record_declaration
   "record" @reference
-  name: (_) @reference
+  name: (identifier) @reference
   body: (class_body
     "{" @range @reference
     "}" @range @reference))
@@ -203,7 +206,7 @@
 ; annotation type block start-end
 ((annotation_type_declaration
   "@interface" @reference
-  name: (_) @reference
+  name: (identifier) @reference
   body: (annotation_type_body
     "{" @range @reference
     "}" @range @reference))
@@ -212,7 +215,7 @@
 ; interface block start-end
 ((interface_declaration
   "interface" @reference
-  name: (_) @reference
+  name: (identifier) @reference
   body: (interface_body
     "{" @range @reference
     "}" @range @reference))
@@ -220,7 +223,10 @@
 
 ; array initializer start-end
 ((variable_declarator
-  name: (_) @reference
+  name: [
+    (identifier)
+    (underscore_pattern)
+  ] @reference
   "=" @reference
   value: (array_initializer
     "{" @range @reference
@@ -229,7 +235,7 @@
 
 ; method block start-end
 ((method_declaration
-  name: (_) @reference
+  name: (identifier) @reference
   body: (block
     "{" @range @reference
     "}" @range @reference))
@@ -237,7 +243,7 @@
 
 ; compact constructor block start-end
 ((compact_constructor_declaration
-  name: (_) @reference
+  name: (identifier) @reference
   body: (block
     "{" @range @reference
     "}" @range @reference))

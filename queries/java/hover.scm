@@ -167,7 +167,7 @@
 ; instanceof (non-record pattern)
 ((instanceof_expression
   "instanceof" @range
-  name: (_))
+  name: (identifier))
   (#set! hover.description "True if expression is non-null and matches.")
   (#set! hover.kind "pattern match operator")
   (#set! hover.spec "15.20.2"))
@@ -175,7 +175,7 @@
 ; instanceof (record pattern)
 ((instanceof_expression
   "instanceof" @range
-  pattern: (_))
+  pattern: (record_pattern))
   (#set! hover.description "True if expression is non-null and matches.")
   (#set! hover.kind "pattern match operator")
   (#set! hover.spec "15.20.2"))
