@@ -1,21 +1,18 @@
 # make make sane
 .DELETE_ON_ERROR:
-SHELL := /bin/bash
 .SHELLFLAGS := --norc -euo pipefail -c
+SHELL := /bin/bash
 
 .PHONY: pegon
 pegon: ## Create binary
-	# create target/release/pegon
 	cargo build --release
 
 .PHONY: wheel
 wheel: ## Create python package
-	# build python package with maturin
 	uv build
 
 .PHONY: lint
 lint: ## Lint, format, test
-	# run checks on all files
 	uv run --frozen --only-dev prek --all-files --stage pre-push
 
 .PHONY: bench
