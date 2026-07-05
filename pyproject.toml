@@ -39,15 +39,15 @@ dev = [
   # github actions
   "actionlint-py==1.7.12.24",
   # yaml schema
-  "check-jsonschema==0.37.3",
+  "check-jsonschema==0.37.4",
   # commits
   "committed==1.1.11",
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
-  "prek==0.4.6",
+  "prek==0.4.8",
   # markdown
-  "rumdl==0.2.27",
+  "rumdl==0.2.28",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml
