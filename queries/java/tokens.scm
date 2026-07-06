@@ -137,6 +137,7 @@
   (#set! token.modifiers "modification"))
 
 ; gonna be slow
+; TODO: should be property
 ((identifier) @range
   (#set! token.type "variable")
   (#set! token.scoped true))
