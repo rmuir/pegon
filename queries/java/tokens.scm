@@ -97,50 +97,42 @@
 
 ; modifications
 ((assignment_expression
-  left: (identifier) @range)
+  left: [
+    (identifier) @range
+    (array_access
+      array: (identifier) @range)
+  ])
   (#set! token.type "variable")
   (#set! token.modifiers "modification"))
 
 ((update_expression
-  (identifier) @range)
-  (#set! token.type "variable")
-  (#set! token.modifiers "modification"))
-
-((assignment_expression
-  left: (array_access
-    array: (identifier) @range))
-  (#set! token.type "variable")
-  (#set! token.modifiers "modification"))
-
-((update_expression
-  (array_access
-    array: (identifier) @range))
+  [
+    (identifier) @range
+    (array_access
+      array: (identifier) @range)
+  ])
   (#set! token.type "variable")
   (#set! token.modifiers "modification"))
 
 ((assignment_expression
-  left: (field_access
-    field: (identifier) @range))
+  left: [
+    (field_access
+      field: (identifier) @range)
+    (array_access
+      array: (field_access
+        field: (identifier) @range))
+  ])
   (#set! token.type "property")
   (#set! token.modifiers "modification"))
 
 ((update_expression
-  (field_access
-    field: (identifier) @range))
-  (#set! token.type "property")
-  (#set! token.modifiers "modification"))
-
-((assignment_expression
-  left: (array_access
-    array: (field_access
-      field: (identifier) @range)))
-  (#set! token.type "property")
-  (#set! token.modifiers "modification"))
-
-((update_expression
-  (array_access
-    array: (field_access
-      field: (identifier) @range)))
+  [
+    (field_access
+      field: (identifier) @range)
+    (array_access
+      array: (field_access
+        field: (identifier) @range))
+  ])
   (#set! token.type "property")
   (#set! token.modifiers "modification"))
 
