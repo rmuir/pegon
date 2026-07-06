@@ -63,7 +63,7 @@ anyhow = "1.0.103"
 # CLI argument processing
 clap = { version = "4.6.1", features = ["derive"] }
 # threading support
-crossbeam-channel = "0.5.15"
+crossbeam-channel = "0.5.16"
 # LSP data structures
 gen-lsp-types = "0.9.0"
 # Traversing directories, respecting ignore files
