@@ -372,6 +372,14 @@
   key: (identifier) @range)
   (#set! token.type "property"))
 
+; record "parameters" are really properties of the record
+((record_declaration
+  parameters: (formal_parameters
+    (formal_parameter
+      name: (identifier) @range)))
+  (#set! token.type "property")
+  (#set! token.modifiers "definition"))
+
 ; builtin variables
 ([
   (this)

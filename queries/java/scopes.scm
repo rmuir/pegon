@@ -50,7 +50,7 @@
     (formal_parameter
       name: (identifier) @variable))
   body: (class_body) @start @end)
-  (#set! scope.type "parameter"))
+  (#set! scope.type "property"))
 
 ((method_declaration
   parameters: (formal_parameters
