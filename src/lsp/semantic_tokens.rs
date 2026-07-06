@@ -107,11 +107,13 @@ pub fn tokens(
                 delta_line: previous.delta_line,
                 delta_start: previous.delta_start,
                 length: previous.length,
+                // override the type if we are a later pattern
                 token_type: if hit.pattern_index > previous_index {
                     token_type
                 } else {
                     previous.token_type
                 },
+                // merge modifiers
                 token_modifiers_bitset: previous.token_modifiers_bitset | pattern.modifiers_bitset,
             });
             previous_index = min(previous_index, hit.pattern_index);
