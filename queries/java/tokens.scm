@@ -178,11 +178,6 @@
   (#set! token.type "type")
   (#set! token.modifiers "definition"))
 
-((annotation_type_declaration
-  name: (identifier) @range)
-  (#set! token.type "decorator")
-  (#set! token.modifiers "definition"))
-
 ((class_declaration
   name: (identifier) @range)
   (#set! token.type "type")
@@ -333,26 +328,28 @@
   (#set! token.modifiers "definition"))
 
 ; decorators
-; TODO: do a has-ancestor or similar here, not quite right
 ("@" @range
   (#set! token.type "decorator"))
 
-((annotation
+((annotation_type_declaration
   name: (identifier) @range)
-  (#set! token.type "decorator"))
+  (#set! token.type "decorator")
+  (#set! token.modifiers "definition"))
 
 ((annotation
-  name: (scoped_identifier
-    name: (identifier) @range))
+  name: [
+    (identifier) @range
+    (scoped_identifier
+      name: (identifier)) @range
+  ])
   (#set! token.type "decorator"))
 
 ((marker_annotation
-  name: (identifier) @range)
-  (#set! token.type "decorator"))
-
-((marker_annotation
-  name: (scoped_identifier
-    name: (identifier) @range))
+  name: [
+    (identifier) @range
+    (scoped_identifier
+      name: (identifier) @range)
+  ])
   (#set! token.type "decorator"))
 
 ((annotation_type_element_declaration
