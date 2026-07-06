@@ -45,7 +45,7 @@
       "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
     },
     "scopes": {
-      "variable": "identifier that becomes valid within scope",
+      "definition": "identifier that becomes valid within scope",
       "start": "beginning of the scope range",
       "end": "end of the scope range"
     },

@@ -1,9 +1,8 @@
-; TODO: capturing and using modifiers would be nice (e.g. readonly), also types, definitely qualified types...
 ; fields can be declared at the very bottom of the file and accessed anywhere from inside class's body
 ((class_body
   (field_declaration
     declarator: (variable_declarator
-      name: (identifier) @variable))) @start @end
+      name: (identifier) @definition))) @start @end
   (#set! scope.type "property"))
 
 ; local variables can only be accessed after they are declared. they may shadow fields
@@ -11,7 +10,7 @@
 ((block
   (local_variable_declaration
     declarator: (variable_declarator
-      name: (identifier) @variable)) @start
+      name: (identifier) @definition)) @start
   "}" @end)
   (#set! scope.type "variable")
   (#set! scope.start.inclusive false))
@@ -19,12 +18,12 @@
 ; parameters can be accessed inside respective bodies of the things they parameterize
 ((lambda_expression
   parameters: [
-    (identifier) @variable
+    (identifier) @definition
     (formal_parameters
       (formal_parameter
-        name: (identifier) @variable))
+        name: (identifier) @definition))
     (inferred_parameters
-      (identifier) @variable)
+      (identifier) @definition)
   ]
   body: [
     (expression)
@@ -36,19 +35,18 @@
   parameters: (formal_parameters
     [
       (formal_parameter
-        name: (identifier) @variable)
+        name: (identifier) @definition)
       (spread_parameter
         (variable_declarator
-          name: (identifier) @variable))
+          name: (identifier) @definition))
     ])
   body: (constructor_body) @start @end)
   (#set! scope.type "parameter"))
 
-; TODO: not so sure, i think these should be "property" ?
 ((record_declaration
   parameters: (formal_parameters
     (formal_parameter
-      name: (identifier) @variable))
+      name: (identifier) @definition))
   body: (class_body) @start @end)
   (#set! scope.type "property"))
 
@@ -56,17 +54,17 @@
   parameters: (formal_parameters
     [
       (formal_parameter
-        name: (identifier) @variable)
+        name: (identifier) @definition)
       (spread_parameter
         (variable_declarator
-          name: (identifier) @variable))
+          name: (identifier) @definition))
     ])
   body: (block) @start @end)
   (#set! scope.type "parameter"))
 
 ((catch_clause
   (catch_formal_parameter
-    name: (identifier) @variable)
+    name: (identifier) @definition)
   body: (block) @start @end)
   (#set! scope.type "parameter"))
 
@@ -74,29 +72,29 @@
 ((class_declaration
   type_parameters: (type_parameters
     (type_parameter
-      (type_identifier) @variable) @start)) @end
+      (type_identifier) @definition) @start)) @end
   (#set! scope.type "typeParameter"))
 
 ((constructor_declaration
   type_parameters: (type_parameters
     (type_parameter
-      (type_identifier) @variable) @start)) @end
+      (type_identifier) @definition) @start)) @end
   (#set! scope.type "typeParameter"))
 
 ((record_declaration
   type_parameters: (type_parameters
     (type_parameter
-      (type_identifier) @variable) @start)) @end
+      (type_identifier) @definition) @start)) @end
   (#set! scope.type "typeParameter"))
 
 ((interface_declaration
   type_parameters: (type_parameters
     (type_parameter
-      (type_identifier) @variable) @start)) @end
+      (type_identifier) @definition) @start)) @end
   (#set! scope.type "typeParameter"))
 
 ((method_declaration
   type_parameters: (type_parameters
     (type_parameter
-      (type_identifier) @variable) @start)) @end
+      (type_identifier) @definition) @start)) @end
   (#set! scope.type "typeParameter"))

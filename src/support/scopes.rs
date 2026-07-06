@@ -51,9 +51,9 @@ pub fn scopes(
         let pattern = pattern(hit.pattern_index);
 
         let var_node = hit
-            .nodes_for_capture_index(*VARIABLE_CAPTURE)
+            .nodes_for_capture_index(*DEFINITION_CAPTURE)
             .next()
-            .context("variable capture should exist")?;
+            .context("definition capture should exist")?;
 
         let start_node = hit
             .nodes_for_capture_index(*START_CAPTURE)
@@ -141,8 +141,8 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     patterns
 });
 
-/// index of the `@variable` capture
-static VARIABLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "variable"));
+/// index of the `@definition` capture
+static DEFINITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "definition"));
 
 /// index of the `@start` capture
 static START_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "start"));
