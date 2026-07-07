@@ -55,15 +55,26 @@ pub fn scopes(
             .next()
             .context("definition capture should exist")?;
 
-        let start_node = hit
+        let mut start_node = hit
             .nodes_for_capture_index(*START_CAPTURE)
             .next()
             .context("start capture should exist")?;
 
-        let end_node = hit
+        let mut end_node = hit
             .nodes_for_capture_index(*END_CAPTURE)
             .next()
             .context("end capture should exist")?;
+
+        if pattern.flow {
+            let mut node = tree.root_node();
+            while let Some(child) = node.child_with_descendant(var_node) {
+                if child.kind() == "block" {
+                    start_node = child;
+                    end_node = child;
+                }
+                node = child;
+            }
+        }
 
         let key = var_node.utf8_text(data)?.to_owned();
         let value = scopes.entry(key).or_insert_with(|| Vec::with_capacity(4));
@@ -86,6 +97,8 @@ pub struct Pattern {
     pub token_type: u32,
     /// whether the start capture is inclusive or exclusive
     pub start_inclusive: bool,
+    /// whether scope is based on control flow rather than lexical
+    pub flow: bool,
 }
 
 /// Look up rule by pattern index
@@ -113,11 +126,16 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     for index in 0..count {
         let mut token_type = None;
         let mut start_inclusive = true;
+        let mut flow = false;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
+                "scope.flow" => {
+                    let value = value.expect("scope.flow should have a value");
+                    flow = value.parse::<bool>().expect("valid boolean");
+                }
                 "scope.type" => {
                     let value = value.expect("token.type should have a value");
                     token_type = crate::lsp::SEMANTIC_TOKEN_TYPES.binary_search(&value).ok();
@@ -136,6 +154,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 .try_into()
                 .expect("should be u32"),
             start_inclusive,
+            flow,
         });
     }
     patterns

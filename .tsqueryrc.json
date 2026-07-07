@@ -161,6 +161,7 @@
               "hover.spec",
               "hover.description",
               "highlight.kind",
+              "scope.flow",
               "scope.type",
               "scope.start.inclusive",
               "symbol.kind",

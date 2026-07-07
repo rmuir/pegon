@@ -34,6 +34,21 @@
   body: (block) @end)
   (#set! scope.type "variable"))
 
+; JEP 394
+((instanceof_expression
+  name: (identifier) @definition @start @end)
+  (#set! scope.type "variable")
+  (#set! scope.flow true))
+
+; JEP 440
+((instanceof_expression
+  pattern: (record_pattern
+    (record_pattern_body
+      (record_pattern_component
+        (identifier) @definition @start @end))))
+  (#set! scope.type "variable")
+  (#set! scope.flow true))
+
 ; parameters can be accessed inside respective bodies of the things they parameterize
 ((lambda_expression
   parameters: [

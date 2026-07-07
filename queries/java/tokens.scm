@@ -137,9 +137,9 @@
   (#set! token.modifiers "modification"))
 
 ; gonna be slow
-; TODO: should be property
+; fall back to property if we aren't declared within doc
 ((identifier) @range
-  (#set! token.type "variable")
+  (#set! token.type "property")
   (#set! token.scoped true))
 
 ; variable definitions
@@ -151,6 +151,16 @@
 
 ((enhanced_for_statement
   name: (identifier) @range)
+  (#set! token.type "variable")
+  (#set! token.modifiers "definition"))
+
+((instanceof_expression
+  name: (identifier) @range)
+  (#set! token.type "variable")
+  (#set! token.modifiers "definition"))
+
+((record_pattern_component
+  (identifier) @range)
   (#set! token.type "variable")
   (#set! token.modifiers "definition"))
 
