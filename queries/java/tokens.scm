@@ -160,7 +160,12 @@
   (#set! token.modifiers "definition"))
 
 ((record_pattern_component
-  (identifier) @range)
+  (identifier) @range .)
+  (#set! token.type "variable")
+  (#set! token.modifiers "definition"))
+
+((type_pattern
+  (identifier) @range .)
   (#set! token.type "variable")
   (#set! token.modifiers "definition"))
 

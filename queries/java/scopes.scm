@@ -45,9 +45,17 @@
   pattern: (record_pattern
     (record_pattern_body
       (record_pattern_component
-        (identifier) @definition @start @end))))
+        (identifier) @definition @start @end .))))
   (#set! scope.type "variable")
   (#set! scope.flow true))
+
+; JEP 441
+((switch_rule
+  (switch_label
+    (pattern
+      (type_pattern
+        (identifier) @definition @start .)))) @end
+  (#set! scope.type "variable"))
 
 ; parameters can be accessed inside respective bodies of the things they parameterize
 ((lambda_expression
