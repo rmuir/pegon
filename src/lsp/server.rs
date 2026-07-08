@@ -694,7 +694,7 @@ fn java_document(docs: &FxHashMap<String, Resource>, uri: &Uri) -> Result<Arc<Do
 mod tests {
     use std::thread;
 
-    use crate::run_server;
+    use crate::lsp::run_server;
     use lsp_server::Connection;
 
     /// make sure if the stream disconnects that the error makes it out
