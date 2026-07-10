@@ -46,7 +46,7 @@ pub fn tokens(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
     let data = doc.text.as_bytes();
-    let scopes = crate::support::scopes::scopes(&doc.tree, data, cancel_token)?;
+    let scopes = super::semantic_scopes::scopes(&doc.tree, data, cancel_token)?;
     if scopes.is_empty() {
         bail!("scopes did not work");
     }
@@ -157,6 +157,31 @@ pub fn tokens(
     })
 }
 
+/// Semantic token types legend
+pub static TOKEN_TYPES: [&str; 12] = [
+    "decorator",
+    "keyword",
+    "label",
+    "method",
+    "modifier",
+    "namespace",
+    "operator",
+    "parameter",
+    "property",
+    "type",
+    "typeParameter",
+    "variable",
+];
+
+/// Semantic token modifiers legend
+pub static TOKEN_MODIFIERS: [&str; 5] = [
+    "defaultLibrary",
+    "definition",
+    "modification",
+    "readonly",
+    "static",
+];
+
 /// compiled query that matches all semantic tokens patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
@@ -197,13 +222,13 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             match key {
                 "token.type" => {
                     let value = value.expect("token.type should have a value");
-                    token_type = super::SEMANTIC_TOKEN_TYPES.binary_search(&value).ok();
+                    token_type = TOKEN_TYPES.binary_search(&value).ok();
                     assert!(token_type.is_some(), "unknown token type: {value}");
                 }
                 "token.modifiers" => {
                     let value = value.expect("token.modifiers should have a value");
                     for modifier in value.split(',') {
-                        let bit = super::SEMANTIC_TOKEN_MODIFIERS
+                        let bit = TOKEN_MODIFIERS
                             .binary_search(&modifier)
                             .expect("valid modifier");
                         modifiers_bitset |= 1 << bit;

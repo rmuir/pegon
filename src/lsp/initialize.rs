@@ -93,11 +93,11 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     let semantic_tokens_options = SemanticTokensRegistrationOptions {
         semantic_tokens_options: SemanticTokensOptions {
             legend: SemanticTokensLegend {
-                token_types: super::SEMANTIC_TOKEN_TYPES
+                token_types: super::semantic_tokens::TOKEN_TYPES
                     .into_iter()
                     .map(String::from)
                     .collect(),
-                token_modifiers: super::SEMANTIC_TOKEN_MODIFIERS
+                token_modifiers: super::semantic_tokens::TOKEN_MODIFIERS
                     .into_iter()
                     .map(String::from)
                     .collect(),

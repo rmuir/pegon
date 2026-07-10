@@ -138,7 +138,9 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 }
                 "scope.type" => {
                     let value = value.expect("token.type should have a value");
-                    token_type = crate::lsp::SEMANTIC_TOKEN_TYPES.binary_search(&value).ok();
+                    token_type = super::semantic_tokens::TOKEN_TYPES
+                        .binary_search(&value)
+                        .ok();
                     assert!(token_type.is_some(), "unknown token type: {value}");
                 }
                 "scope.start.inclusive" => {

@@ -2,7 +2,6 @@
 
 pub mod diagnostics;
 pub mod queries;
-pub mod scopes;
 
 /// Tree-sitter grammar in use
 pub fn language() -> tree_sitter::Language {

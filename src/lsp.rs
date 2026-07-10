@@ -18,6 +18,7 @@ mod hover;
 mod initialize;
 mod inlay_hints;
 mod selection_range;
+mod semantic_scopes;
 mod semantic_tokens;
 mod server;
 mod sync;
@@ -41,28 +42,3 @@ pub fn run_server(connection: Connection) -> Result<(), Error> {
     let server = Server::new(connection, &client, id)?;
     server.main_loop(&Arc::new(client))
 }
-
-/// Semantic token types legend
-pub static SEMANTIC_TOKEN_TYPES: [&str; 12] = [
-    "decorator",
-    "keyword",
-    "label",
-    "method",
-    "modifier",
-    "namespace",
-    "operator",
-    "parameter",
-    "property",
-    "type",
-    "typeParameter",
-    "variable",
-];
-
-/// Semantic token modifiers legend
-pub static SEMANTIC_TOKEN_MODIFIERS: [&str; 5] = [
-    "defaultLibrary",
-    "definition",
-    "modification",
-    "readonly",
-    "static",
-];
