@@ -1,25 +1,33 @@
-#![allow(clippy::allow_attributes_without_reason)]
-#![allow(unused)]
-use std::{
-    collections::VecDeque,
-    sync::{Arc, Mutex},
-};
+//! Caches semantic tokens to support delta requests
+//!
+//! To avoid complex invalidation/tracking, it's a simple ring-buffer
+//! containing the last N responses. result IDs are blake3 hashes of the tokens.
+//!
+//! This avoids any interaction with didOpen/didClose and keeps it simple.
+use std::{collections::VecDeque, sync::Mutex};
 
 use anyhow::{Context as _, Error};
 use gen_lsp_types::{SemanticToken, SemanticTokensEdit};
 
+/// Ring-buffer of cache entries
 #[derive(Default)]
 pub struct Cache(Mutex<VecDeque<CacheEntry>>);
 
+/// Cache entry for a previous response
 struct CacheEntry {
+    /// the actual semantic tokens
     tokens: Vec<SemanticToken>,
+    /// blake3 hash of the tokens
     result_id: String,
 }
 
+/// Ring-buffer length, we keep the size bounded
 const HISTORY_LEN: usize = 16;
 
 impl Cache {
-    /// Pushes a new cache entry
+    /// Pushes a new cache entry.
+    ///
+    /// Returns the result id (hash) of the tokens
     pub fn push(&self, data: &[SemanticToken]) -> String {
         let integers: Vec<u32> = data.iter().copied().flat_map(<[u32; 5]>::from).collect();
         let bytes: Vec<u8> = integers
@@ -58,7 +66,7 @@ impl Cache {
     }
 }
 
-/// byte-level diff of semantic tokens
+/// diff of semantic tokens
 /// see rust-analyzer implementation for inspiration
 fn diff(old: &[SemanticToken], new: &[SemanticToken]) -> Result<Vec<SemanticTokensEdit>, Error> {
     // common prefix shared by old and new
