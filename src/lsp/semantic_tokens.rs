@@ -3,7 +3,7 @@ use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock};
 
-use anyhow::{Context as _, Result, bail};
+use anyhow::{Context as _, Result};
 use gen_lsp_types::{
     SemanticToken, SemanticTokens, SemanticTokensDelta, SemanticTokensDeltaParams,
     SemanticTokensDeltaResponse, SemanticTokensParams, SemanticTokensRangeParams,
@@ -74,9 +74,6 @@ pub fn tokens(
 ) -> Result<Vec<SemanticToken>> {
     let data = doc.text.as_bytes();
     let scopes = super::semantic_scopes::scopes(&doc.tree, data, cancel_token)?;
-    if scopes.is_empty() {
-        bail!("scopes did not work");
-    }
     let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     if let Some(byte_range) = byte_range {

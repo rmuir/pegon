@@ -7,6 +7,7 @@ use lsp_server::Connection;
 use client::Client;
 use server::Server;
 
+mod analysis;
 mod client;
 mod code_action;
 mod definition;

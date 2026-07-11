@@ -21,6 +21,8 @@ pub fn request(
 ) -> Result<Option<DefinitionResponse>> {
     let position = params.text_document_position_params.position;
     let bytes = doc.text.as_bytes();
+    // TODO: do this lazily
+    let scopes = super::analysis::scopes(&doc.tree, bytes, cancel_token)?;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client
@@ -54,13 +56,19 @@ pub fn request(
         if hit.pattern_index < best_match {
             continue;
         }
+        let pattern = pattern(hit.pattern_index);
+        if pattern.bail {
+            eprintln!("bailing");
+            return Ok(None);
+        }
         // check if it is a true match, we must be inside the selection capture
         let selection = hit
             .nodes_for_capture_index(*SELECTION_CAPTURE)
             .next()
             .context("should have selection capture")?;
-        if source_position < selection.range().start_byte
-            || source_position > selection.range().end_byte
+        let mut selection_range = selection.range();
+        if source_position < selection_range.start_byte
+            || source_position > selection_range.end_byte
         {
             continue;
         }
@@ -69,21 +77,46 @@ pub fn request(
             .nodes_for_capture_index(*RANGE_CAPTURE)
             .next()
             .context("should have range capture")?;
-        let target_selection_range = client
-            .encode_range(&selection.range(), &doc.line_index)
-            .context("valid range")?;
-        let target_range = client
-            .encode_range(&target.range(), &doc.line_index)
-            .context("valid range")?;
+        let mut target_range = target.range();
+
+        if pattern.scoped {
+            let text = selection.utf8_text(bytes)?;
+            let mut found = false;
+            if let Some(stack) = scopes.get(text) {
+                for scope in stack.iter().rev() {
+                    if (scope.range.start_byte <= selection_range.start_byte
+                        && scope.range.end_byte >= selection_range.start_byte)
+                        || (scope.identifier.start_byte <= selection_range.start_byte
+                            && scope.identifier.end_byte >= selection_range.end_byte)
+                    {
+                        target_range = scope.identifier;
+                        selection_range = scope.identifier;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if !found {
+                continue;
+            }
+        }
         result = Some(LocationLink {
-            target_range,
-            origin_selection_range: Some(target_selection_range),
+            target_range: client
+                .encode_range(&target_range, &doc.line_index)
+                .context("valid range")?,
+            origin_selection_range: Some(
+                client
+                    .encode_range(&selection.range(), &doc.line_index)
+                    .context("valid range")?,
+            ),
             target_uri: params
                 .text_document_position_params
                 .text_document
                 .uri
                 .clone(),
-            target_selection_range,
+            target_selection_range: client
+                .encode_range(&selection_range, &doc.line_index)
+                .context("valid range")?,
         });
         best_match = hit.pattern_index;
     }
@@ -111,6 +144,46 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .expect("query should compile")
+});
+
+// single compiled pattern
+struct Pattern {
+    bail: bool,
+    scoped: bool,
+}
+
+/// Look up rule by pattern index
+#[must_use]
+fn pattern(index: usize) -> &'static Pattern {
+    PATTERNS.get(index).expect("pattern should exist")
+}
+
+/// array of rules indexed by patterns of `QUERY`
+static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
+    let count = QUERY.pattern_count();
+    let mut patterns = Vec::with_capacity(count);
+    for index in 0..count {
+        let mut bail = false;
+        let mut scoped = false;
+        let props = QUERY.property_settings(index);
+        for prop in props {
+            let key = prop.key.as_ref();
+            let value = prop.value.as_deref();
+            match key {
+                "definition.bail" => {
+                    let value = value.expect("definition.bail should have a value");
+                    bail = value.parse::<bool>().expect("valid boolean");
+                }
+                "definition.scoped" => {
+                    let value = value.expect("definition.scoped should have a value");
+                    scoped = value.parse::<bool>().expect("valid boolean");
+                }
+                _ => panic!("{key}: unknown metadata key"),
+            }
+        }
+        patterns.push(Pattern { bail, scoped });
+    }
+    patterns
 });
 
 static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));

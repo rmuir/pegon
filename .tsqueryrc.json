@@ -16,6 +16,11 @@
     "java": "java-orchard"
   },
   "valid_captures": {
+    "analysis": {
+      "definition": "identifier that becomes valid within scope",
+      "start": "beginning of the scope range",
+      "end": "end of the scope range"
+    },
     "definitions": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range"
@@ -143,6 +148,11 @@
           "arity": "required",
           "constraint": {
             "enum": [
+              "analysis.flow",
+              "analysis.type",
+              "analysis.start.inclusive",
+              "definition.bail",
+              "definition.scoped",
               "diagnostic.context.label",
               "diagnostic.fix",
               "diagnostic.help",

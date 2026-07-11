@@ -84,7 +84,14 @@
   "try" @selection) @range
 
 ; identifiers
-; (identifier) @selection @range
+((identifier) @range @selection
+  (#set! definition.scoped true))
+
+; but not these yet
+((field_access
+  field: (identifier) @range @selection)
+  (#set! definition.bail true))
+
 ; declarations
 (module_declaration
   name: [
