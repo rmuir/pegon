@@ -29,6 +29,7 @@ missing_assert_message = "allow"
 missing_docs_in_private_items = "allow"
 missing_inline_in_public_items = "allow"
 missing_panics_doc = "allow"
+missing_trait_methods = "allow"
 needless_raw_strings = "allow"
 pub_use = "allow"
 pub_with_shorthand = "allow"
@@ -36,7 +37,12 @@ question_mark_used = "allow"
 self_named_module_files = "allow"
 shadow_reuse = "allow"
 single_call_fn = "allow"
+std_instead_of_alloc = "allow"
+std_instead_of_core = "allow"
 too_many_lines = "allow"
+
+# or even just plain buggy
+inline_modules = "allow"
 
 # TODO: uses can be reduced
 as_conversions = "allow"
@@ -45,7 +51,6 @@ panic = "allow"
 pattern_type_mismatch = "allow"
 print_stderr = "allow"
 print_stdout = "allow"
-std_instead_of_alloc = "allow"
 todo = "allow"
 
 [lib]
@@ -73,7 +78,7 @@ indoc = "2.0.7"
 # convert offsets <-> lsp positions
 line-index = "0.1.2"
 # LSP support
-lsp-server = "0.8.0"
+lsp-server = "0.9.0"
 # faster hashing for symbols, etc
 rustc-hash = "2.1.3"
 # serialization

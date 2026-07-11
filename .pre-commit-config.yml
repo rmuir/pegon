@@ -242,7 +242,7 @@ repos:
         entry: cargo
         args: ["check", "--all-targets"]
         env:
-          RUSTFLAGS: "-D warnings"
+          CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -259,7 +259,7 @@ repos:
         entry: cargo
         args: ["clippy", "--all-targets", "--", "-D", "warnings"]
         env:
-          RUSTFLAGS: "-D warnings"
+          CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -276,8 +276,7 @@ repos:
         entry: cargo
         args: ["doc", "--no-deps", "--document-private-items", "--all-features"]
         env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
+          CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -294,8 +293,7 @@ repos:
         entry: cargo
         args: ["test"]
         env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
+          CARGO_BUILD_WARNINGS: deny
         # run across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -337,8 +335,7 @@ repos:
         entry: cargo
         args: ["fix", "--allow-dirty", "--allow-staged"]
         env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
+          CARGO_BUILD_WARNINGS: deny
         types: ["rust"]
 
       - id: cargo-fmt
@@ -347,8 +344,7 @@ repos:
         entry: cargo
         args: ["fmt", "--all"]
         env:
-          RUSTFLAGS: "-D warnings"
-          RUSTDOCFLAGS: "-D warnings"
+          CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false

@@ -18,6 +18,7 @@ mod hover;
 mod initialize;
 mod inlay_hints;
 mod selection_range;
+mod semantic_cache;
 mod semantic_scopes;
 mod semantic_tokens;
 mod server;

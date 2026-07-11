@@ -1,9 +1,7 @@
 use core::cell::{Cell, RefCell};
 use core::time::Duration;
-use std::{
-    io::ErrorKind,
-    thread::{self, JoinHandle},
-};
+use std::io::ErrorKind;
+use std::thread::{self, JoinHandle};
 
 use anyhow::{Error, Result};
 use crossbeam_channel::{Receiver, after, select};
@@ -13,7 +11,7 @@ use gen_lsp_types::{
     ExitNotification, InitializeParams, InitializeRequest, InitializeResult,
     InitializedNotification, InitializedParams, ShutdownRequest,
 };
-use lsp_server::{Connection, Message, Request, Response};
+use lsp_server::{Connection, Message, Request, Response, ResponseKind};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -127,10 +125,12 @@ impl TestClient {
                 Message::Notification(_) => (),
                 Message::Response(res) => {
                     assert_eq!(res.id, id);
-                    if let Some(err) = res.error {
-                        return serde_json::to_value(err).expect("should serialize");
-                    }
-                    return res.result.expect("able to deserialize");
+                    return match res.response_kind {
+                        ResponseKind::Ok { result } => result,
+                        ResponseKind::Err { error } => {
+                            serde_json::to_value(error).expect("should serialize")
+                        }
+                    };
                 }
             }
         }

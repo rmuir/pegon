@@ -29,7 +29,7 @@ pub fn custom_predicate(
             slice1 < slice2
         }
         "eol?" => {
-            debug_assert!(args.len() == 1);
+            debug_assert_eq!(args.len(), 1);
             let QueryPredicateArg::Capture(left) = &args[0] else {
                 panic!("invalid predicate arguments")
             };
