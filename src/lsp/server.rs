@@ -19,6 +19,8 @@ use std::{
 
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
+use gen_lsp_types::SemanticTokensDeltaParams;
+use gen_lsp_types::SemanticTokensDeltaRequest;
 use gen_lsp_types::{
     CancelParams, CodeAction, CodeActionParams, CodeActionRequest, CodeActionResolveRequest,
     DefinitionParams, DefinitionRequest, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
@@ -49,6 +51,8 @@ pub struct Server {
     workers: ThreadPool,
     /// Current in-flight requests, either queued or being processed by workers
     in_flight: InFlight,
+    /// Cache of recent semantic tokens responses (for delta purposes)
+    semantic_cache: Arc<super::semantic_cache::Cache>,
 }
 
 /// A client-managed resource (file)
@@ -65,6 +69,8 @@ pub enum Resource {
 }
 
 /// A client-managed java document
+///
+/// An immutable snapshot
 pub struct Document {
     /// Full text of document
     pub text: String,
@@ -149,6 +155,7 @@ impl Server {
             connection,
             workers,
             in_flight: Arc::new(Mutex::new(FxHashMap::default())),
+            semantic_cache: Arc::new(super::semantic_cache::Cache::default()),
         })
     }
 
@@ -186,7 +193,7 @@ impl Server {
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
-                    match handle_notification(client.as_ref(), note, &mut state, &self.in_flight) {
+                    match self.handle_notification(client.as_ref(), note, &mut state) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
@@ -493,6 +500,7 @@ impl Server {
             "textDocument/semanticTokens/full" => {
                 let params: SemanticTokensParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(docs, &params.text_document.uri)?;
+                let cache = Arc::clone(&self.semantic_cache);
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel_token, &in_flight, &id) {
                         drop(sender.send(response));
@@ -507,8 +515,36 @@ impl Server {
                             doc.as_ref(),
                             &params,
                             &cancel_token,
+                            &cache,
                         ) {
                             Ok(result) => response::<SemanticTokensRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "textDocument/semanticTokens/full/delta" => {
+                let params: SemanticTokensDeltaParams = serde_json::from_value(req.params.clone())?;
+                let doc = java_document(docs, &params.text_document.uri)?;
+                let cache = Arc::clone(&self.semantic_cache);
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&cancel_token, &in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &cancel_token,
+                        &in_flight,
+                        id.clone(),
+                        match super::semantic_tokens::delta(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                            &cancel_token,
+                            &cache,
+                        ) {
+                            Ok(result) => response::<SemanticTokensDeltaRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );
@@ -551,60 +587,61 @@ impl Server {
             }
         }
     }
-}
 
-/// Handle an incoming notification.
-///
-/// These notifications are worked on the main thread directly. This
-/// ensures requests see the correct versions of documents.
-///
-/// In our case notification has an "optional response".
-/// if the client doesn't support pull diagnostics then we've got
-/// a push diagnostics "response" that we'll `notify()` back.
-fn handle_notification(
-    client: &Client,
-    note: lsp_server::Notification,
-    state: &mut State,
-    in_flight: &InFlight,
-) -> Result<Option<Message>> {
-    let response = match note.method.as_str() {
-        "textDocument/didOpen" => {
-            let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
-            let uri = params.text_document.uri.clone();
-            super::sync::did_open(client, params, state).context(uri.to_string())?
-        }
-        "textDocument/didChange" => {
-            let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
-            let uri = params.text_document.text_document_identifier.uri.clone();
-            super::sync::did_change(client, params, state).context(uri.to_string())?
-        }
-        "textDocument/didClose" => {
-            let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
-            let uri = params.text_document.uri.clone();
-            super::sync::did_close(client, params, state).context(uri.to_string())?
-        }
-        "$/cancelRequest" => {
-            let params: CancelParams = serde_json::from_value(note.params)?;
-            let request_id: RequestId = match params.id {
-                Id::Int(id) => id.into(),
-                Id::String(id) => id.into(),
-            };
-            if let Some(cancelled) = in_flight
-                .lock()
-                .map_err(|err| anyhow!("poisoned: {err}"))?
-                .get(&request_id)
-            {
-                cancelled.store(true, Ordering::Relaxed);
+    /// Handle an incoming notification.
+    ///
+    /// These notifications are worked on the main thread directly. This
+    /// ensures requests see the correct versions of documents.
+    ///
+    /// In our case notification has an "optional response".
+    /// if the client doesn't support pull diagnostics then we've got
+    /// a push diagnostics "response" that we'll `notify()` back.
+    fn handle_notification(
+        &self,
+        client: &Client,
+        note: lsp_server::Notification,
+        state: &mut State,
+    ) -> Result<Option<Message>> {
+        let response = match note.method.as_str() {
+            "textDocument/didOpen" => {
+                let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
+                let uri = params.text_document.uri.clone();
+                super::sync::did_open(client, params, state).context(uri.to_string())?
             }
-            None
+            "textDocument/didChange" => {
+                let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
+                let uri = params.text_document.text_document_identifier.uri.clone();
+                super::sync::did_change(client, params, state).context(uri.to_string())?
+            }
+            "textDocument/didClose" => {
+                let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
+                let uri = params.text_document.uri.clone();
+                super::sync::did_close(client, params, state).context(uri.to_string())?
+            }
+            "$/cancelRequest" => {
+                let params: CancelParams = serde_json::from_value(note.params)?;
+                let request_id: RequestId = match params.id {
+                    Id::Int(id) => id.into(),
+                    Id::String(id) => id.into(),
+                };
+                if let Some(cancelled) = self
+                    .in_flight
+                    .lock()
+                    .map_err(|err| anyhow!("poisoned: {err}"))?
+                    .get(&request_id)
+                {
+                    cancelled.store(true, Ordering::Relaxed);
+                }
+                None
+            }
+            // can be safely ignored according to specification
+            method if method.starts_with("$/") => None,
+            // log an error otherwise
+            _ => bail!("unexpected notification"),
         }
-        // can be safely ignored according to specification
-        method if method.starts_with("$/") => None,
-        // log an error otherwise
-        _ => bail!("unexpected notification"),
+        .map(notification::<PublishDiagnosticsNotification>);
+        Ok(response)
     }
-    .map(notification::<PublishDiagnosticsNotification>);
-    Ok(response)
 }
 
 /// returns a cancellation response when the request was already cancelled in the queue

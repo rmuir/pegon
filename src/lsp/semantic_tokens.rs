@@ -5,11 +5,14 @@ use std::sync::{Arc, LazyLock};
 
 use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
-    SemanticToken, SemanticTokens, SemanticTokensParams, SemanticTokensRangeParams,
+    SemanticToken, SemanticTokens, SemanticTokensDelta, SemanticTokensDeltaParams,
+    SemanticTokensDeltaResponse, SemanticTokensParams, SemanticTokensRangeParams,
 };
 use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
 };
+
+use crate::lsp::semantic_cache::Cache;
 
 use super::{Client, server::Document};
 
@@ -18,8 +21,11 @@ pub fn full(
     doc: &Document,
     _params: &SemanticTokensParams,
     cancel_token: &Arc<AtomicBool>,
+    cache: &Arc<Cache>,
 ) -> Result<SemanticTokens> {
-    tokens(client, doc, None, cancel_token)
+    let tokens = tokens(client, doc, None, cancel_token)?;
+    let result_id = cache.push(&tokens);
+    Ok(SemanticTokens::new(Some(result_id), tokens))
 }
 
 pub fn range(
@@ -31,12 +37,33 @@ pub fn range(
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
-    tokens(
-        client,
-        doc,
-        Some(&(range.start_byte..range.end_byte)),
-        cancel_token,
-    )
+    let byte_range = Some(&(range.start_byte..range.end_byte));
+    let tokens = tokens(client, doc, byte_range, cancel_token)?;
+    Ok(SemanticTokens::new(None, tokens))
+}
+
+pub fn delta(
+    client: &Client,
+    doc: &Document,
+    params: &SemanticTokensDeltaParams,
+    cancel_token: &Arc<AtomicBool>,
+    cache: &Arc<Cache>,
+) -> Result<SemanticTokensDeltaResponse> {
+    let tokens = tokens(client, doc, None, cancel_token)?;
+    let diff = cache.delta(&params.previous_result_id, &tokens);
+    let result_id = cache.push(&tokens);
+    if let Some(diff) = diff {
+        Ok(SemanticTokensDeltaResponse::SemanticTokensDelta(
+            SemanticTokensDelta {
+                result_id: Some(result_id),
+                edits: diff,
+            },
+        ))
+    } else {
+        Ok(SemanticTokensDeltaResponse::SemanticTokens(
+            SemanticTokens::new(Some(result_id), tokens),
+        ))
+    }
 }
 
 pub fn tokens(
@@ -44,7 +71,7 @@ pub fn tokens(
     doc: &Document,
     byte_range: Option<&Range<usize>>,
     cancel_token: &Arc<AtomicBool>,
-) -> Result<SemanticTokens> {
+) -> Result<Vec<SemanticToken>> {
     let data = doc.text.as_bytes();
     let scopes = super::semantic_scopes::scopes(&doc.tree, data, cancel_token)?;
     if scopes.is_empty() {
@@ -151,10 +178,7 @@ pub fn tokens(
             previous_index = hit.pattern_index;
         }
     }
-    Ok(SemanticTokens {
-        result_id: None,
-        data: result,
-    })
+    Ok(result)
 }
 
 /// Semantic token types legend

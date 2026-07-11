@@ -14,9 +14,9 @@ use gen_lsp_types::{
     HoverRegistrationOptions, HoverRequest, InitializeResult, InlayHintOptions, InlayHintProvider,
     InlayHintRegistrationOptions, InlayHintRequest, Notification as _, Registration, Request as _,
     SelectionRangeOptions, SelectionRangeProvider, SelectionRangeRegistrationOptions,
-    SelectionRangeRequest, SemanticTokensLegend, SemanticTokensOptions, SemanticTokensOptionsRange,
-    SemanticTokensProvider, SemanticTokensRegistrationOptions, SemanticTokensRequest,
-    ServerCapabilities, ServerInfo, StaticRegistrationOptions,
+    SelectionRangeRequest, SemanticTokensFullDelta, SemanticTokensLegend, SemanticTokensOptions,
+    SemanticTokensOptionsRange, SemanticTokensProvider, SemanticTokensRegistrationOptions,
+    SemanticTokensRequest, ServerCapabilities, ServerInfo, StaticRegistrationOptions,
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
     TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
@@ -103,7 +103,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                     .collect(),
             },
             range: Some(SemanticTokensOptionsRange::Bool(true)),
-            full: Some(Full::Bool(true)), // TODO: delta?
+            full: Some(Full::SemanticTokensFullDelta(SemanticTokensFullDelta {
+                delta: Some(true),
+            })),
             work_done_progress_options,
         },
         static_registration_options: StaticRegistrationOptions {
