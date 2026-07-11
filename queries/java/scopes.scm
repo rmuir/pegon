@@ -1,3 +1,7 @@
+; Just enough scope information to do what highlighting needs.
+; The main purpose is to distinguish "variable" from "parameter" from "property".
+; In java, coloring these consistently and differently can greatly help in code readability.
+;
 ; fields can be declared at the very bottom of the file and accessed anywhere from inside class's body
 ; fields (e.g. in an object creation expression) can shadow things such as local variables!
 ((class_body
