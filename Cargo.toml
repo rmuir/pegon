@@ -74,7 +74,7 @@ crossbeam-channel = "0.5.16"
 # LSP data structures
 gen-lsp-types = "0.10.0"
 # Traversing directories, respecting ignore files
-ignore = "0.4.27"
+ignore = "0.4.28"
 # indented string literals
 indoc = "2.0.7"
 # convert offsets <-> lsp positions
@@ -88,7 +88,7 @@ serde = "1.0.228"
 # json serialization
 serde_json = "1.0.150"
 # Parser framework
-tree-sitter = "0.26.10"
+tree-sitter = "=0.26.10"  # not sure why 0.26.11 is twice as slow!
 # Parser for java language
 tree-sitter-java-orchard = "0.5.8"
 
