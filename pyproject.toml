@@ -45,7 +45,7 @@ dev = [
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
-  "prek==0.4.8",
+  "prek==0.4.9",
   # markdown
   "rumdl==0.2.30",
   # bash in github actions
