@@ -273,3 +273,103 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     }
     patterns
 });
+
+#[cfg(test)]
+mod tests {
+    use gen_lsp_types::{
+        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InitializeParams,
+        PartialResultParams, SemanticToken, SemanticTokens, SemanticTokensParams,
+        SemanticTokensRequest, TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
+    };
+    use indoc::indoc;
+
+    use crate::lsp::test_client::TestClient;
+
+    // returns token type for testing
+    fn token_type(ttype: &str) -> u32 {
+        super::TOKEN_TYPES
+            .binary_search(&ttype)
+            .unwrap()
+            .try_into()
+            .unwrap()
+    }
+
+    // returns token type for testing
+    fn modifier(modifier: &str) -> u32 {
+        1 << super::TOKEN_MODIFIERS.binary_search(&modifier).unwrap()
+    }
+
+    // helper since there isn't a ::new for this one
+    fn token(
+        delta_line: u32,
+        delta_start: u32,
+        length: u32,
+        token_type: u32,
+        token_modifiers_bitset: u32,
+    ) -> SemanticToken {
+        SemanticToken {
+            delta_line,
+            delta_start,
+            length,
+            token_type,
+            token_modifiers_bitset,
+        }
+    }
+
+    /// simple document
+    #[test]
+    fn simple() {
+        let client = TestClient::new(InitializeParams::default());
+        client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: "file:///Foo.java".into(),
+                language_id: "java".into(),
+                version: 0,
+                text: indoc! {"
+                public class foo {
+                    int field = 5;
+                    public abstract int bar(int param) {
+                        int local = field + param;
+                        return local;
+                    }
+                }
+            "}
+                .into(),
+            },
+        });
+        let result = client
+            .request::<SemanticTokensRequest>(SemanticTokensParams {
+                text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
+                partial_result_params: PartialResultParams::default(),
+                work_done_progress_params: WorkDoneProgressParams::default(),
+            })
+            .unwrap();
+        assert_eq!(
+            result,
+            SemanticTokens {
+                result_id: Some(
+                    "0c4aa1ee9442436e0a80dc24332baced5cc87e7bc271d2c609ba006733d599c1".into()
+                ),
+                data: vec![
+                    token(0, 0, 6, token_type("modifier"), 0), // public
+                    token(0, 7, 5, token_type("keyword"), 0),  // class
+                    token(0, 6, 3, token_type("type"), modifier("definition")), // foo
+                    token(1, 4, 3, token_type("type"), modifier("defaultLibrary")), // int
+                    token(0, 4, 5, token_type("property"), modifier("definition")), // field
+                    token(1, 4, 6, token_type("modifier"), 0), // public
+                    token(0, 7, 8, token_type("modifier"), 0), // abstract
+                    token(0, 9, 3, token_type("type"), modifier("defaultLibrary")), // int
+                    token(0, 4, 3, token_type("method"), modifier("definition")), // bar
+                    token(0, 4, 3, token_type("type"), modifier("defaultLibrary")), // int
+                    token(0, 4, 5, token_type("parameter"), modifier("definition")), // param
+                    token(1, 8, 3, token_type("type"), modifier("defaultLibrary")), // int
+                    token(0, 4, 5, token_type("variable"), modifier("definition")), // local
+                    token(0, 8, 5, token_type("property"), 0), // field
+                    token(0, 8, 5, token_type("parameter"), 0), // param
+                    token(1, 8, 6, token_type("keyword"), 0),  // return
+                    token(0, 7, 5, token_type("variable"), 0), // local
+                ]
+            }
+        );
+    }
+}
