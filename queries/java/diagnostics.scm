@@ -231,12 +231,7 @@
 
 ; Line-wrapped package declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
-((package_declaration
-  .
-  [
-    (identifier)
-    (scoped_identifier)
-  ]) @error
+((package_declaration) @error
   (#match? @error "\n")
   (#set! diagnostic.name "wrapped-package")
   (#set! diagnostic.title "Line-wrapped package declaration: `{node.text}`")
