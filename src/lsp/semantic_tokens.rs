@@ -13,6 +13,7 @@ use tree_sitter::{
 };
 
 use crate::lsp::semantic_cache::Cache;
+use crate::support::queries::capture_id;
 
 use super::{Client, server::Document};
 
@@ -102,6 +103,9 @@ pub fn tokens(
     let mut previous_start = 0;
     while let Some((hit, capture_id)) = captures.next() {
         let capture = hit.captures.get(*capture_id).context("valid capture id")?;
+        if capture.index != *RANGE_CAPTURE {
+            continue;
+        }
         let node_range = capture.node.byte_range();
         if let Some(byte_range) = &byte_range
             && (node_range.end < byte_range.start || node_range.start > byte_range.end)
@@ -214,6 +218,8 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     )
     .expect("query should compile")
 });
+
+static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
 
 // single compiled pattern
 struct Pattern {

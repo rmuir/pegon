@@ -299,6 +299,23 @@
   name: (identifier) @range)
   (#set! token.type "method"))
 
+; method call on unqualified type
+((method_invocation
+  object: (identifier) @_receiver
+  name: (identifier) @range)
+  (#match? @_receiver "^[A-Z].*[a-z]")
+  (#set! token.type "method")
+  (#set! token.modifiers "static"))
+
+; method call on qualified type
+((method_invocation
+  object: (field_access
+    field: (identifier) @_receiver)
+  name: (identifier) @range)
+  (#match? @_receiver "^[A-Z].*[a-z]")
+  (#set! token.type "method")
+  (#set! token.modifiers "static"))
+
 ((method_reference
   (identifier) @range .)
   (#set! token.type "method"))
