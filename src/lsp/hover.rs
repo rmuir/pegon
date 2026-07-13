@@ -71,35 +71,36 @@ pub fn request(
             .context("valid range")?;
 
         let value = match pattern {
-            Pattern::Spec(pattern) => {
-                let description = &pattern.description;
-                let kind = &pattern.summary;
-                let spec = &pattern.reference;
-                let (spec_chapter, _) = spec
+            Pattern::Spec(SpecPattern {
+                summary,
+                description,
+                reference,
+            }) => {
+                let (spec_chapter, _) = reference
                     .split_once('.')
                     .context("should be valid JLS spec ref")?;
-                let spec_url = format!("{SPEC_PREFIX}/jls-{spec_chapter}.html#jls-{spec}");
+                let spec_url = format!("{SPEC_PREFIX}/jls-{spec_chapter}.html#jls-{reference}");
                 if markdown {
                     formatdoc! {"
                         ```java
                         {text}
                         ```
                         ---
-                        `{kind}`
+                        `{summary}`
 
                         {description}
 
-                        [JLS §{spec}]({spec_url})
+                        [JLS §{reference}]({spec_url})
                     "}
                 } else {
                     formatdoc! {"
                         {text}
                         ---
-                        {kind}
+                        {summary}
 
                         {description}
 
-                        JLS §{spec}: {spec_url}
+                        JLS §{reference}: {spec_url}
                     "}
                 }
             }
@@ -120,13 +121,13 @@ pub fn request(
     Ok(result)
 }
 
-/// when linking to the specification, use this URL as the base
-const SPEC_PREFIX: &str = "https://docs.oracle.com/javase/specs/jls/se26/html";
-
 /// single compiled pattern
 enum Pattern {
     Spec(SpecPattern),
 }
+
+/// when linking to the specification, use this URL as the base
+const SPEC_PREFIX: &str = "https://docs.oracle.com/javase/specs/jls/se26/html";
 
 struct SpecPattern {
     /// summary
