@@ -69,21 +69,17 @@ pub fn request(
         let range = client
             .encode_range(&node.range(), &doc.line_index)
             .context("valid range")?;
-        let description = &pattern.description;
-        let kind = &pattern.kind;
-        let spec = &pattern.spec;
-        let (spec_chapter, _) = spec
-            .split_once('.')
-            .context("should be valid JLS spec ref")?;
-        let spec_url = format!("{SPEC_PREFIX}/jls-{spec_chapter}.html#jls-{spec}");
-        result = Some(Hover {
-            contents: Contents::MarkupContent(MarkupContent {
-                kind: if markdown {
-                    MarkupKind::Markdown
-                } else {
-                    MarkupKind::PlainText
-                },
-                value: if markdown {
+
+        let value = match pattern {
+            Pattern::Spec(pattern) => {
+                let description = &pattern.description;
+                let kind = &pattern.summary;
+                let spec = &pattern.reference;
+                let (spec_chapter, _) = spec
+                    .split_once('.')
+                    .context("should be valid JLS spec ref")?;
+                let spec_url = format!("{SPEC_PREFIX}/jls-{spec_chapter}.html#jls-{spec}");
+                if markdown {
                     formatdoc! {"
                         ```java
                         {text}
@@ -105,7 +101,17 @@ pub fn request(
 
                         JLS §{spec}: {spec_url}
                     "}
+                }
+            }
+        };
+        result = Some(Hover {
+            contents: Contents::MarkupContent(MarkupContent {
+                kind: if markdown {
+                    MarkupKind::Markdown
+                } else {
+                    MarkupKind::PlainText
                 },
+                value,
             }),
             range: Some(range),
         });
@@ -118,13 +124,17 @@ pub fn request(
 const SPEC_PREFIX: &str = "https://docs.oracle.com/javase/specs/jls/se26/html";
 
 /// single compiled pattern
-struct Pattern {
-    /// kind of node
-    kind: String,
-    /// link to spec
-    spec: String,
-    /// description of node
+enum Pattern {
+    Spec(SpecPattern),
+}
+
+struct SpecPattern {
+    /// summary
+    summary: String,
+    /// description
     description: String,
+    /// reference
+    reference: String,
 }
 
 /// Look up rule by pattern index
@@ -150,25 +160,28 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
-        let mut kind: Option<&str> = None;
-        let mut spec: Option<&str> = None;
+        let mut summary: Option<&str> = None;
+        let mut reference: Option<&str> = None;
         let mut description: Option<&str> = None;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
             let value = prop.value.as_deref();
             match key {
-                "hover.description" => description = value,
-                "hover.kind" => kind = value,
-                "hover.spec" => spec = value,
+                "hover.spec.description" => description = value,
+                "hover.spec.summary" => summary = value,
+                "hover.spec.reference" => reference = value,
+                "hover.kind" => {
+                    assert_eq!(value, Some("spec"));
+                }
                 _ => panic!("{key}: unknown metadata key"),
             }
         }
-        patterns.push(Pattern {
-            kind: kind.expect("should exist").into(),
-            spec: spec.expect("should exist").into(),
+        patterns.push(Pattern::Spec(SpecPattern {
+            summary: summary.expect("should exist").into(),
+            reference: reference.expect("should exist").into(),
             description: description.expect("should exist").into(),
-        });
+        }));
     }
     patterns
 });
