@@ -84,11 +84,7 @@ pub fn request(
             let mut found = false;
             if let Some(stack) = scopes.get(text) {
                 for scope in stack.iter().rev() {
-                    if (scope.range.start_byte <= selection_range.start_byte
-                        && scope.range.end_byte >= selection_range.start_byte)
-                        || (scope.identifier.start_byte <= selection_range.start_byte
-                            && scope.identifier.end_byte >= selection_range.end_byte)
-                    {
+                    if scope.contains(selection_range.start_byte) {
                         target_range = scope.identifier;
                         selection_range = scope.identifier;
                         found = true;

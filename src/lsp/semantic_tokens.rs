@@ -74,7 +74,7 @@ pub fn tokens(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<Vec<SemanticToken>> {
     let data = doc.text.as_bytes();
-    let scopes = super::semantic_scopes::scopes(&doc.tree, data, cancel_token)?;
+    let scopes = super::analysis::scopes(&doc.tree, data, cancel_token)?;
     let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     if let Some(byte_range) = byte_range {
@@ -116,14 +116,13 @@ pub fn tokens(
         let pattern = pattern(hit.pattern_index);
         // TODO: optimize
         let mut token_type = pattern.token_type;
+        let modifiers_bitset = pattern.modifiers_bitset;
         if pattern.scoped {
             let text = capture.node.utf8_text(data)?;
             if let Some(stack) = scopes.get(text) {
                 for scope in stack.iter().rev() {
-                    if scope.range.contains(&node_range.start)
-                        || scope.identifier.contains(&node_range.start)
-                    {
-                        token_type = scope.token_type;
+                    if scope.contains(node_range.start) {
+                        token_type = scope.semantic_token_type();
                         break;
                     }
                 }
@@ -142,7 +141,7 @@ pub fn tokens(
                     previous.token_type
                 },
                 // merge modifiers
-                token_modifiers_bitset: previous.token_modifiers_bitset | pattern.modifiers_bitset,
+                token_modifiers_bitset: previous.token_modifiers_bitset | modifiers_bitset,
             });
             previous_index = min(previous_index, hit.pattern_index);
         } else {
@@ -171,7 +170,7 @@ pub fn tokens(
                     .checked_sub(range.start.character)
                     .context("valid delta")?,
                 token_type,
-                token_modifiers_bitset: pattern.modifiers_bitset,
+                token_modifiers_bitset: modifiers_bitset,
             });
             previous_line = range.start.line;
             previous_start = range.start.character;

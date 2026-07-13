@@ -1,9 +1,8 @@
 ((program
   (import_declaration
-    "import"
-    .
     (scoped_identifier
-      name: (identifier) @definition @start) @type)) @end
+      name: (identifier) @definition @start) @type) @_node) @end
+  (#not-match? @_node "^import\\s+static")
   (#set! analysis.kind "type"))
 
 ((class_body

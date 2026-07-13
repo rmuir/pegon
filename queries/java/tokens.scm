@@ -266,6 +266,15 @@
   (#match? @range "^[a-z_][a-z0-9_]+$")
   (#set! token.type "namespace"))
 
+; static import java.lang.xxx.YYYY
+((import_declaration
+  "static"
+  (scoped_identifier
+    name: (identifier) @range))
+  (#match? @range "^[a-z]")
+  (#set! token.type "method")
+  (#set! token.modifiers "static"))
+
 ; new java.lang.xxx()
 (scoped_type_identifier
   (type_identifier) @range

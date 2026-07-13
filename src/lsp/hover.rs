@@ -76,11 +76,7 @@ pub fn request(
                 let mut reference: Option<String> = None;
                 if let Some(stack) = scopes.get(text) {
                     for scope in stack.iter().rev() {
-                        if (scope.range.start_byte <= node_range.start_byte
-                            && scope.range.end_byte >= node_range.start_byte)
-                            || (scope.identifier.start_byte <= node_range.start_byte
-                                && scope.identifier.end_byte >= node_range.end_byte)
-                        {
+                        if scope.contains(node_range.start_byte) {
                             let java_type = if let Some(java_type) = scope.java_type {
                                 str::from_utf8(
                                     bytes

@@ -22,6 +22,18 @@ pub struct Scope {
     pub pattern_id: usize,
 }
 
+impl Scope {
+    /// true if the scope contains specified position
+    pub const fn contains(&self, position: usize) -> bool {
+        (self.range.start_byte <= position && self.range.end_byte >= position)
+            || (self.identifier.start_byte <= position && self.identifier.end_byte >= position)
+    }
+
+    pub fn semantic_token_type(&self) -> u32 {
+        pattern(self.pattern_id).token_type
+    }
+}
+
 /// Returns a map of scopes keyed by identifier in the document
 ///
 /// # Errors
@@ -113,6 +125,8 @@ pub fn scopes<'data>(
 pub struct Pattern {
     /// identifier type
     pub kind: Kind,
+    /// semantic token type
+    pub token_type: u32,
     /// whether the start capture is inclusive or exclusive
     pub start_inclusive: bool,
     /// whether scope is based on control flow rather than lexical
@@ -165,6 +179,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
         let mut kind = None;
+        let mut token_type = None;
         let mut start_inclusive = true;
         let mut flow = false;
         let props = QUERY.property_settings(index);
@@ -186,6 +201,10 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                         "variable" => Kind::Variable,
                         _ => panic!("unknown kind: {value}"),
                     });
+                    token_type = super::semantic_tokens::TOKEN_TYPES
+                        .binary_search(&value)
+                        .ok();
+                    assert!(token_type.is_some(), "unknown token type: {value}");
                 }
                 "analysis.start.inclusive" => {
                     let value = value.expect("analysis.start.inclusive should have a value");
@@ -196,6 +215,10 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
         }
         patterns.push(Pattern {
             kind: kind.expect("analysis.kind should be set"),
+            token_type: token_type
+                .expect("analysis kind should be set")
+                .try_into()
+                .expect("should be u32"),
             start_inclusive,
             flow,
         });
