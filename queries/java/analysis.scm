@@ -4,7 +4,7 @@
     .
     (scoped_identifier
       name: (identifier) @definition @start) @type)) @end
-  (#set! analysis.kind "importedType"))
+  (#set! analysis.kind "type"))
 
 ((class_body
   (field_declaration

@@ -122,7 +122,7 @@ pub struct Pattern {
 /// Classifies the scope entry
 #[derive(Copy, Clone)]
 pub enum Kind {
-    ImportedType,
+    Type,
     Parameter,
     Property,
     TypeParameter,
@@ -132,7 +132,7 @@ pub enum Kind {
 impl Display for Kind {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Self::ImportedType => write!(f, "imported type"),
+            Self::Type => write!(f, "type"),
             Self::Parameter => write!(f, "parameter"),
             Self::Property => write!(f, "field"),
             Self::TypeParameter => write!(f, "type parameter"),
@@ -179,7 +179,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 "analysis.kind" => {
                     let value = value.expect("analysis.type should have a value");
                     kind = Some(match value {
-                        "importedType" => Kind::ImportedType,
+                        "type" => Kind::Type,
                         "parameter" => Kind::Parameter,
                         "property" => Kind::Property,
                         "typeParameter" => Kind::TypeParameter,
