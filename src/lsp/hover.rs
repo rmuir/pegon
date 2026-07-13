@@ -22,6 +22,8 @@ pub fn request(
 ) -> Result<Option<Hover>> {
     let markdown = client.prefers_hover_markdown();
     let bytes = doc.text.as_bytes();
+    // TODO: do this lazily
+    let scopes = super::analysis::scopes(&doc.tree, bytes, cancel_token)?;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client
@@ -60,17 +62,57 @@ pub fn request(
             .nodes_for_capture_index(*RANGE_CAPTURE)
             .next()
             .context("should have range capture")?;
-        if source_position < node.range().start_byte || source_position > node.range().end_byte {
+        let node_range = node.range();
+        if source_position < node_range.start_byte || source_position > node_range.end_byte {
             continue;
         }
 
         let text = node.utf8_text(bytes)?;
         let pattern = pattern(hit.pattern_index);
-        let range = client
-            .encode_range(&node.range(), &doc.line_index)
-            .context("valid range")?;
 
         let value = match pattern {
+            Pattern::Bail => None,
+            Pattern::Reference => {
+                let mut reference: Option<String> = None;
+                if let Some(stack) = scopes.get(text) {
+                    for scope in stack.iter().rev() {
+                        if (scope.range.start_byte <= node_range.start_byte
+                            && scope.range.end_byte >= node_range.start_byte)
+                            || (scope.identifier.start_byte <= node_range.start_byte
+                                && scope.identifier.end_byte >= node_range.end_byte)
+                        {
+                            let java_type = if let Some(java_type) = scope.java_type {
+                                str::from_utf8(
+                                    bytes
+                                        .get(java_type.start_byte..java_type.end_byte)
+                                        .context("valid slice")?,
+                                )?
+                            } else {
+                                "var"
+                            };
+                            let kind = super::analysis::pattern(scope.pattern_id).kind;
+                            reference = if markdown {
+                                Some(formatdoc! {"
+                                    ```java
+                                    {java_type} {text}
+                                    ```
+                                    ---
+                                    `{kind}`
+                                "})
+                            } else {
+                                Some(formatdoc! {"
+                                    {java_type} {text}
+                                    ---
+                                    {kind}
+                                "})
+                            };
+                            break;
+                        }
+                    }
+                }
+
+                reference
+            }
             Pattern::Spec(SpecPattern {
                 summary,
                 description,
@@ -81,7 +123,7 @@ pub fn request(
                     .context("should be valid JLS spec ref")?;
                 let spec_url = format!("{SPEC_PREFIX}/jls-{spec_chapter}.html#jls-{reference}");
                 if markdown {
-                    formatdoc! {"
+                    Some(formatdoc! {"
                         ```java
                         {text}
                         ```
@@ -91,9 +133,9 @@ pub fn request(
                         {description}
 
                         [JLS §{reference}]({spec_url})
-                    "}
+                    "})
                 } else {
-                    formatdoc! {"
+                    Some(formatdoc! {"
                         {text}
                         ---
                         {summary}
@@ -101,11 +143,14 @@ pub fn request(
                         {description}
 
                         JLS §{reference}: {spec_url}
-                    "}
+                    "})
                 }
             }
         };
-        result = Some(Hover {
+        let range = client
+            .encode_range(&node.range(), &doc.line_index)
+            .context("valid range")?;
+        result = value.map(|value| Hover {
             contents: Contents::MarkupContent(MarkupContent {
                 kind: if markdown {
                     MarkupKind::Markdown
@@ -124,6 +169,8 @@ pub fn request(
 /// single compiled pattern
 enum Pattern {
     Spec(SpecPattern),
+    Reference,
+    Bail,
 }
 
 /// when linking to the specification, use this URL as the base
@@ -161,6 +208,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
+        let mut kind: Option<&str> = None;
         let mut summary: Option<&str> = None;
         let mut reference: Option<&str> = None;
         let mut description: Option<&str> = None;
@@ -172,17 +220,20 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                 "hover.spec.description" => description = value,
                 "hover.spec.summary" => summary = value,
                 "hover.spec.reference" => reference = value,
-                "hover.kind" => {
-                    assert_eq!(value, Some("spec"));
-                }
+                "hover.kind" => kind = value,
                 _ => panic!("{key}: unknown metadata key"),
             }
         }
-        patterns.push(Pattern::Spec(SpecPattern {
-            summary: summary.expect("should exist").into(),
-            reference: reference.expect("should exist").into(),
-            description: description.expect("should exist").into(),
-        }));
+        patterns.push(match kind {
+            Some("reference") => Pattern::Reference,
+            Some("bail") => Pattern::Bail,
+            Some("spec") => Pattern::Spec(SpecPattern {
+                summary: summary.expect("should exist").into(),
+                reference: reference.expect("should exist").into(),
+                description: description.expect("should exist").into(),
+            }),
+            _ => panic!("{kind:?}: unknown metadata kind"),
+        });
     }
     patterns
 });

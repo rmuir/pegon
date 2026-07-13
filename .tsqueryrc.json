@@ -19,7 +19,8 @@
     "analysis": {
       "definition": "identifier that becomes valid within scope",
       "start": "beginning of the scope range",
-      "end": "end of the scope range"
+      "end": "end of the scope range",
+      "type": "java type of the symbol"
     },
     "definitions": {
       "range": "full range of the symbol",
@@ -149,7 +150,7 @@
           "constraint": {
             "enum": [
               "analysis.flow",
-              "analysis.type",
+              "analysis.kind",
               "analysis.start.inclusive",
               "definition.bail",
               "definition.scoped",

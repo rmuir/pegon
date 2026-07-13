@@ -282,3 +282,12 @@
   (#set! hover.spec.description
     "Try statement with automatic resource closure, `catch` blocks for resource exception handling, and a `finally` block that is always executed.")
   (#set! hover.spec.reference "14.20.3.2"))
+
+; identifiers
+((identifier) @range
+  (#set! hover.kind "reference"))
+
+; but not these yet
+((field_access
+  field: (identifier) @range)
+  (#set! hover.kind "bail"))

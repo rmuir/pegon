@@ -2,6 +2,7 @@ use anyhow::{Context as _, Error};
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 use rustc_hash::FxHashMap;
+use std::fmt::{Display, Formatter};
 use std::sync::{Arc, LazyLock};
 use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _, Tree,
@@ -15,9 +16,10 @@ pub struct Scope {
     pub identifier: Range,
     /// range where the identifier is valid
     pub range: Range,
-    /// semantic token type (indexes into the legend)
-    #[expect(unused, reason = "not yet")]
-    pub token_type: u32,
+    /// range describing the java type
+    pub java_type: Option<Range>,
+    /// pattern that was matched
+    pub pattern_id: usize,
 }
 
 /// Returns a map of scopes keyed by identifier in the document
@@ -66,6 +68,8 @@ pub fn scopes(
             .next()
             .context("end capture should exist")?;
 
+        let type_node = hit.nodes_for_capture_index(*TYPE_CAPTURE).next();
+
         if pattern.flow {
             let mut node = tree.root_node();
             while let Some(child) = node.child_with_descendant(var_node) {
@@ -83,7 +87,8 @@ pub fn scopes(
         let end_range = end_node.range();
         value.push(Scope {
             identifier: var_node.range(),
-            token_type: pattern.token_type,
+            pattern_id: hit.pattern_index,
+            java_type: type_node.map(|node| node.range()),
             range: if pattern.start_inclusive {
                 Range {
                     start_byte: start_range.start_byte,
@@ -106,15 +111,35 @@ pub fn scopes(
 
 /// single compiled pattern
 pub struct Pattern {
-    /// semantic token type (indexes into the legend)
-    pub token_type: u32,
+    /// identifier type
+    pub kind: Kind,
     /// whether the start capture is inclusive or exclusive
     pub start_inclusive: bool,
     /// whether scope is based on control flow rather than lexical
     pub flow: bool,
 }
 
-/// Look up rule by pattern index
+/// Classifies the scope entry
+#[derive(Copy, Clone)]
+pub enum Kind {
+    Variable,
+    Parameter,
+    Property,
+    TypeParameter,
+}
+
+impl Display for Kind {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Variable => write!(f, "local variable"),
+            Self::Parameter => write!(f, "parameter"),
+            Self::Property => write!(f, "field"),
+            Self::TypeParameter => write!(f, "type parameter"),
+        }
+    }
+}
+
+/// Look up metadata by pattern index
 #[must_use]
 pub fn pattern(index: usize) -> &'static Pattern {
     PATTERNS.get(index).expect("pattern should exist")
@@ -137,7 +162,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     let count = QUERY.pattern_count();
     let mut patterns = Vec::with_capacity(count);
     for index in 0..count {
-        let mut token_type = None;
+        let mut kind = None;
         let mut start_inclusive = true;
         let mut flow = false;
         let props = QUERY.property_settings(index);
@@ -149,12 +174,15 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                     let value = value.expect("analysis.flow should have a value");
                     flow = value.parse::<bool>().expect("valid boolean");
                 }
-                "analysis.type" => {
+                "analysis.kind" => {
                     let value = value.expect("analysis.type should have a value");
-                    token_type = super::semantic_tokens::TOKEN_TYPES
-                        .binary_search(&value)
-                        .ok();
-                    assert!(token_type.is_some(), "unknown token type: {value}");
+                    kind = Some(match value {
+                        "parameter" => Kind::Parameter,
+                        "property" => Kind::Property,
+                        "typeParameter" => Kind::TypeParameter,
+                        "variable" => Kind::Variable,
+                        _ => panic!("unknown kind: {value}"),
+                    });
                 }
                 "analysis.start.inclusive" => {
                     let value = value.expect("analysis.start.inclusive should have a value");
@@ -164,10 +192,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
             }
         }
         patterns.push(Pattern {
-            token_type: token_type
-                .expect("analysis.type should be set")
-                .try_into()
-                .expect("should be u32"),
+            kind: kind.expect("analysis.kind should be set"),
             start_inclusive,
             flow,
         });
@@ -183,3 +208,6 @@ static START_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "start
 
 /// index of the `@end` capture
 static END_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "end"));
+
+/// index of the `@type` capture
+static TYPE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "type"));

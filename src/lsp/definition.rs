@@ -57,10 +57,6 @@ pub fn request(
             continue;
         }
         let pattern = pattern(hit.pattern_index);
-        if pattern.bail {
-            eprintln!("bailing");
-            return Ok(None);
-        }
         // check if it is a true match, we must be inside the selection capture
         let selection = hit
             .nodes_for_capture_index(*SELECTION_CAPTURE)
@@ -71,6 +67,10 @@ pub fn request(
             || source_position > selection_range.end_byte
         {
             continue;
+        }
+
+        if pattern.bail {
+            return Ok(None);
         }
 
         let target = hit
