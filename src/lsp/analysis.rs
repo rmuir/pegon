@@ -27,11 +27,11 @@ pub struct Scope {
 /// # Errors
 ///
 /// This function will return an error if rules are misconfigured.
-pub fn scopes(
+pub fn scopes<'data>(
     tree: &Tree,
-    data: &[u8],
+    data: &'data [u8],
     cancel_token: &Arc<AtomicBool>,
-) -> Result<FxHashMap<String, Vec<Scope>>, Error> {
+) -> Result<FxHashMap<&'data str, Vec<Scope>>, Error> {
     let mut scopes = FxHashMap::default();
     let mut cursor = QueryCursor::new();
 
@@ -81,7 +81,7 @@ pub fn scopes(
             }
         }
 
-        let key = var_node.utf8_text(data)?.to_owned();
+        let key = var_node.utf8_text(data)?;
         let value = scopes.entry(key).or_insert_with(|| Vec::with_capacity(4));
         let start_range = start_node.range();
         let end_range = end_node.range();
