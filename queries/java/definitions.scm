@@ -95,6 +95,12 @@
   field: (identifier) @range @selection)
   (#set! definition.bail true))
 
+; and not these yet
+((method_invocation
+  object: (_)
+  name: (identifier) @range @selection)
+  (#set! definition.bail true))
+
 ; declarations
 (module_declaration
   name: [

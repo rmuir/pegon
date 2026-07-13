@@ -12,6 +12,12 @@
       name: (identifier) @definition))) @start @end
   (#set! analysis.kind "property"))
 
+((class_body
+  (method_declaration
+    type: (_) @type
+    name: (identifier) @definition)) @start @end
+  (#set! analysis.kind "method"))
+
 ; local variables can only be accessed after they are declared. they may shadow fields
 ((block
   (local_variable_declaration

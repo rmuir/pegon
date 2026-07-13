@@ -294,3 +294,8 @@
 ((field_access
   field: (identifier) @range)
   (#set! hover.kind "bail"))
+
+((method_invocation
+  object: (_)
+  name: (identifier) @range)
+  (#set! hover.kind "bail"))
