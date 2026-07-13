@@ -284,7 +284,10 @@
   (#set! hover.spec.reference "14.20.3.2"))
 
 ; identifiers
-((identifier) @range
+([
+  (identifier)
+  (type_identifier)
+] @range
   (#set! hover.kind "reference"))
 
 ; but not these yet

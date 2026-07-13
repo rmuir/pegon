@@ -1,3 +1,11 @@
+((program
+  (import_declaration
+    "import"
+    .
+    (scoped_identifier
+      name: (identifier) @definition @start) @type)) @end
+  (#set! analysis.kind "importedType"))
+
 ((class_body
   (field_declaration
     type: (_) @type

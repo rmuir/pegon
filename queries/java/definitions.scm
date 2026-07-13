@@ -84,7 +84,10 @@
   "try" @selection) @range
 
 ; identifiers
-((identifier) @range @selection
+([
+  (identifier)
+  (type_identifier)
+] @range @selection
   (#set! definition.scoped true))
 
 ; but not these yet
