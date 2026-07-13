@@ -65,7 +65,7 @@ annotate-snippets = { version = "0.12.16", features = ["simd"] }
 anstream = "1.0.0"
 # Error handling
 anyhow = "1.0.103"
-# Hashing
+# Generation of LSP result_id
 blake3 = { version = "1.8.5", default-features = false, features = [] }
 # CLI argument processing
 clap = { version = "4.6.1", features = ["derive"] }
