@@ -304,6 +304,14 @@
   (#set! token.type "method")
   (#set! token.modifiers "definition"))
 
+((method_declaration
+  (modifiers
+    (modifier
+      "static"))
+  name: (identifier) @range)
+  (#set! token.type "method")
+  (#set! token.modifiers "static"))
+
 ((method_invocation
   name: (identifier) @range)
   (#set! token.type "method"))
