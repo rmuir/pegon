@@ -103,7 +103,7 @@ pub fn lint(
             label,
             visible,
             context,
-            top_context: top_context(&node),
+            top_context: top_context(tree.root_node(), node),
         });
         // stop linting the document at the first ERROR or MISSING node
         // alerts to the issue, but prevents annoying cascade
@@ -176,10 +176,13 @@ pub fn rule(index: usize) -> &'static Rule {
 ///     │         ━━━━━━━━━━━
 ///     ╰╴
 /// ```
-fn top_context(error_node: &Node) -> Option<Range> {
-    let mut parent = error_node.parent();
-    while let Some(node) = parent {
-        match node.kind() {
+fn top_context(root: Node, error_node: Node) -> Option<Range> {
+    let mut range = None;
+    let mut node = root;
+    while let Some(child) = node.child_with_descendant(error_node)
+        && child.id() != error_node.id()
+    {
+        match child.kind() {
             "method_declaration"
             | "variable_declarator"
             | "constructor_declaration"
@@ -187,18 +190,17 @@ fn top_context(error_node: &Node) -> Option<Range> {
             | "interface_declaration"
             | "enum_declaration"
             | "record_declaration" => {
-                // keep traversing upwards until we find a node not on the same line.
-                if let Some(name) = node.child_by_field_name("name")
+                if let Some(name) = child.child_by_field_name("name")
                     && name.start_position().row != error_node.start_position().row
                 {
-                    return Some(name.range());
+                    range = Some(name.range());
                 }
             }
             _ => {}
         }
-        parent = node.parent();
+        node = child;
     }
-    None
+    range
 }
 
 /// compiled query that matches all lint rules
