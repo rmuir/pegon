@@ -214,6 +214,13 @@ impl Client {
         self.pull_diagnostics().is_some()
     }
 
+    /// Does the client support markdown-formatted diagnostics?
+    ///
+    /// Seems to only be supported for pull diagnostics?
+    pub fn supports_markup_messages(&self, push: bool) -> bool {
+        !push && (|| -> _ { self.pull_diagnostics()?.markup_message_support })().unwrap_or_default()
+    }
+
     /// Does the client support receiving additional ranges
     /// with related information ("context")?
     pub fn supports_related_information(&self, push: bool) -> bool {

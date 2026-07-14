@@ -5,7 +5,8 @@ use anyhow::{Context as _, Result};
 use gen_lsp_types::{
     Code, CodeDescription, DiagnosticRelatedInformation, DiagnosticSeverity,
     DocumentDiagnosticParams, DocumentDiagnosticReport, FullDocumentDiagnosticReport, Location,
-    Message, PublishDiagnosticsParams, RelatedFullDocumentDiagnosticReport, Uri,
+    MarkupContent, MarkupKind, Message, PublishDiagnosticsParams,
+    RelatedFullDocumentDiagnosticReport, Uri,
 };
 use line_index::LineIndex;
 
@@ -105,6 +106,14 @@ fn encode(
                 location: Location::new(uri.clone(), range),
                 message: diagnostic.help.clone(),
             });
+            let message = if client.supports_markup_messages(push) {
+                Message::MarkupContent(MarkupContent {
+                    kind: MarkupKind::Markdown,
+                    value: diagnostic.title.clone(),
+                })
+            } else {
+                Message::String(diagnostic.title.clone())
+            };
             Ok(gen_lsp_types::Diagnostic {
                 range,
                 severity: Some(lsp_severity),
@@ -113,7 +122,7 @@ fn encode(
                     .supports_code_description(push)
                     .then_some(CodeDescription::new(rule.url.clone().into())),
                 source: Some("pegon".into()),
-                message: Message::String(diagnostic.title.clone()),
+                message,
                 related_information: client
                     .supports_related_information(push)
                     .then_some(related_information),
@@ -133,10 +142,11 @@ mod tests {
         DidChangeTextDocumentParams, DidCloseTextDocumentNotification, DidCloseTextDocumentParams,
         DidOpenTextDocumentNotification, DidOpenTextDocumentParams, DocumentDiagnosticParams,
         DocumentDiagnosticReport, DocumentDiagnosticRequest, InitializeParams, Location,
-        PartialResultParams, Position, PublishDiagnosticsClientCapabilities,
-        PublishDiagnosticsNotification, Range, TextDocumentClientCapabilities,
-        TextDocumentContentChangeEvent, TextDocumentContentChangePartial, TextDocumentIdentifier,
-        TextDocumentItem, TextDocumentSyncClientCapabilities, VersionedTextDocumentIdentifier,
+        MarkupContent, MarkupKind, Message, PartialResultParams, Position,
+        PublishDiagnosticsClientCapabilities, PublishDiagnosticsNotification, Range,
+        TextDocumentClientCapabilities, TextDocumentContentChangeEvent,
+        TextDocumentContentChangePartial, TextDocumentIdentifier, TextDocumentItem,
+        TextDocumentSyncClientCapabilities, VersionedTextDocumentIdentifier,
         WorkDoneProgressParams,
     };
     use indoc::indoc;
@@ -283,7 +293,10 @@ mod tests {
                 severity: Some(DiagnosticSeverity::Warning),
                 code: Some(Code::String("lowercase-class".into())),
                 source: Some(env!("CARGO_PKG_NAME").into()),
-                message: "Lowercase class: `foo`".into(),
+                message: Message::MarkupContent(MarkupContent {
+                    kind: MarkupKind::Markdown,
+                    value: "Lowercase class: `foo`".into(),
+                }),
                 code_description: Some(CodeDescription {
                     href: "https://github.com/rmuir/pegon/wiki/diagnostics#lowercase-class".into()
                 }),
