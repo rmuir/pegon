@@ -131,7 +131,7 @@ pub struct Rule {
     /// Describes context ranges (applied to first one)
     pub context_label: Option<String>,
     /// Optional automatic fix
-    pub fix: Option<String>,
+    pub fix: Option<Fix>,
 }
 
 /// rule severity
@@ -145,6 +145,11 @@ pub enum Severity {
     Info,
     /// Nitpick that can be automatically fixed
     Hint,
+}
+
+/// rule fix types
+pub enum Fix {
+    Static(String),
 }
 
 /// Look up rule by pattern index
@@ -219,7 +224,8 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
         let mut help: Option<&str> = None;
         let mut label: Option<&str> = None;
         let mut context_label: Option<&str> = None;
-        let mut fix: Option<&str> = None;
+        let mut fix_arg: Option<&str> = None;
+        let mut fix_kind: Option<&str> = None;
         let props = QUERY.property_settings(index);
         for prop in props {
             let key = prop.key.as_ref();
@@ -251,24 +257,34 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
                 "diagnostic.context.label" => {
                     context_label = value;
                 }
-                "diagnostic.fix" => {
-                    fix = value;
+                "diagnostic.fix.kind" => {
+                    fix_kind = value;
+                }
+                "diagnostic.fix.arg" => {
+                    fix_arg = value;
                 }
                 _ => panic!("{key}: unknown metadata key"),
             }
         }
+        let fix = match fix_kind {
+            Some("static") => Some(Fix::Static(
+                fix_arg.expect("static fix should have an arg").into(),
+            )),
+            Some(other) => panic!("{other}: unknown fix type"),
+            None => None,
+        };
         rules.push(Rule {
-            name: name.expect("pattern should have a name").to_owned(),
-            title: title.expect("pattern should have a title").to_owned(),
+            name: name.expect("pattern should have a name").into(),
+            title: title.expect("pattern should have a title").into(),
             severity: severity.expect("pattern should have a severity"),
-            help: help.expect("pattern should have a help").to_owned(),
+            help: help.expect("pattern should have a help").into(),
             label: label.map(str::to_owned),
             context_label: context_label.map(str::to_owned),
-            fix: fix.map(str::to_owned),
             url: format!(
                 "https://github.com/rmuir/pegon/wiki/diagnostics#{}",
                 name.expect("pattern should have a name")
             ),
+            fix,
         });
     }
     rules

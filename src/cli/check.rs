@@ -16,7 +16,7 @@ use std::{
 };
 use tree_sitter::Parser;
 
-use crate::support::diagnostics::{self, Diagnostic, Severity, rule};
+use crate::support::diagnostics::{self, Diagnostic, Fix, Severity, rule};
 
 /// grey color used for context and line numbers
 static GREY: Style = Ansi256Color(247).on_default();
@@ -109,22 +109,21 @@ fn render(path: &Path, data: &[u8], errors: Vec<Diagnostic>, concise: bool) -> R
                         .annotations(annotations),
                 ),
         );
-        if let Some(fix) = &rule.fix {
-            report.push(
+        match &rule.fix {
+            Some(Fix::Static(replacement)) => report.push(
                 Level::NOTE
                     .with_name("help")
                     .secondary_title(diagnostic.help)
                     .element(Snippet::source(source).patch(Patch::new(
                         diagnostic.range.start_byte..diagnostic.range.end_byte,
-                        fix,
+                        replacement,
                     ))),
-            );
-        } else {
-            report.push(Group::with_title(
+            ),
+            _ => report.push(Group::with_title(
                 Level::NOTE
                     .with_name("help")
                     .secondary_title(diagnostic.help),
-            ));
+            )),
         }
         if concise {
             anstream::println!("{}", CONCISE.render(&report));

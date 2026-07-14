@@ -61,7 +61,8 @@
   (#set! diagnostic.title "Octal backspace escape: `{node.text}`")
   (#set! diagnostic.label "Backspace")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\b`")
-  (#set! diagnostic.fix "\\b")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\b")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex backspace escape instead of `\b`
@@ -72,7 +73,8 @@
   (#set! diagnostic.title "Hexadecimal backspace escape: `{node.text}`")
   (#set! diagnostic.label "Backspace")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\b`")
-  (#set! diagnostic.fix "\\b")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\b")
   (#set! diagnostic.severity "hint"))
 
 ; Octal tab escape instead of `\t`
@@ -83,7 +85,8 @@
   (#set! diagnostic.title "Octal tab escape: `{node.text}`")
   (#set! diagnostic.label "Tab")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\t`")
-  (#set! diagnostic.fix "\\t")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\t")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex tab escape instead of `\t`
@@ -94,7 +97,8 @@
   (#set! diagnostic.title "Hexadecimal tab escape: `{node.text}`")
   (#set! diagnostic.label "Tab")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\t`")
-  (#set! diagnostic.fix "\\t")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\t")
   (#set! diagnostic.severity "hint"))
 
 ; Octal newline escape instead of `\n`
@@ -105,7 +109,8 @@
   (#set! diagnostic.title "Octal newline escape: `{node.text}`")
   (#set! diagnostic.label "Newline")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\n`")
-  (#set! diagnostic.fix "\\n")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\n")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex newline escape instead of `\n`
@@ -116,7 +121,8 @@
   (#set! diagnostic.title "Hexadecimal newline escape: `{node.text}`")
   (#set! diagnostic.label "Newline")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\n`")
-  (#set! diagnostic.fix "\\n")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\n")
   (#set! diagnostic.severity "hint"))
 
 ; Octal form feed escape instead of `\f`
@@ -127,7 +133,8 @@
   (#set! diagnostic.title "Octal form feed escape: `{node.text}`")
   (#set! diagnostic.label "Form feed")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\f`")
-  (#set! diagnostic.fix "\\f")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\f")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex form feed escape instead of `\f`
@@ -138,7 +145,8 @@
   (#set! diagnostic.title "Hexadecimal form feed escape: `{node.text}`")
   (#set! diagnostic.label "Form feed")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\f`")
-  (#set! diagnostic.fix "\\f")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\f")
   (#set! diagnostic.severity "hint"))
 
 ; Octal carriage return escape instead of `\r`
@@ -149,7 +157,8 @@
   (#set! diagnostic.title "Octal carriage return escape: `{node.text}`")
   (#set! diagnostic.label "Carriage return")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\r`")
-  (#set! diagnostic.fix "\\r")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\r")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex carriage return escape instead of `\r`
@@ -160,7 +169,8 @@
   (#set! diagnostic.title "Hexadecimal carriage return escape: `{node.text}`")
   (#set! diagnostic.label "Carriage return")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\r`")
-  (#set! diagnostic.fix "\\r")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\r")
   (#set! diagnostic.severity "hint"))
 
 ; Octal double-quote escape instead of `\"`
@@ -171,7 +181,8 @@
   (#set! diagnostic.title "Octal double quote escape: `{node.text}`")
   (#set! diagnostic.label "Double quote")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\"`")
-  (#set! diagnostic.fix "\\\"")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\\"")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex double-quote escape instead of `\"`
@@ -182,7 +193,8 @@
   (#set! diagnostic.title "Hexadecimal double quote escape: `{node.text}`")
   (#set! diagnostic.label "Double quote")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\"`")
-  (#set! diagnostic.fix "\\\"")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\\"")
   (#set! diagnostic.severity "hint"))
 
 ; Octal single-quote escape instead of `\'`
@@ -193,7 +205,8 @@
   (#set! diagnostic.title "Octal single quote escape: `{node.text}`")
   (#set! diagnostic.label "Single quote")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\'`")
-  (#set! diagnostic.fix "\\'")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\'")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex single-quote escape instead of `\'`
@@ -204,7 +217,8 @@
   (#set! diagnostic.title "Hexadecimal single quote escape: `{node.text}`")
   (#set! diagnostic.label "Single quote")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\'`")
-  (#set! diagnostic.fix "\\'")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\'")
   (#set! diagnostic.severity "hint"))
 
 ; Octal backslash escape instead of `\\`
@@ -215,7 +229,8 @@
   (#set! diagnostic.title "Octal backslash escape: `{node.text}`")
   (#set! diagnostic.label "Backslash")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\\`")
-  (#set! diagnostic.fix "\\\\")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\\\")
   (#set! diagnostic.severity "hint"))
 
 ; Unicode hex backslash escape instead of `\\`
@@ -226,7 +241,8 @@
   (#set! diagnostic.title "Hexadecimal backslash escape: `{node.text}`")
   (#set! diagnostic.label "Backslash")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\\`")
-  (#set! diagnostic.fix "\\\\")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "\\\\")
   (#set! diagnostic.severity "hint"))
 
 ; Line-wrapped package declaration
@@ -806,7 +822,8 @@
   (#set! diagnostic.name "swallowed-exception")
   (#set! diagnostic.title "Unhandled caught exception: `{node.text}`")
   (#set! diagnostic.help "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
-  (#set! diagnostic.fix "_")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "_")
   (#set! diagnostic.severity "info")) @visible ; body is small (empty)
 
 ; Finalizers: not used
