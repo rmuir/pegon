@@ -36,7 +36,7 @@
 ; TS parsing error
 ((MISSING) @error
   (#set! diagnostic.name "syntax-missing")
-  (#set! diagnostic.title "Missing {node.kind}")
+  (#set! diagnostic.title "Missing `{node.kind}`")
   (#set! diagnostic.help "Suppressed any further diagnostics for this file")
   (#set! diagnostic.severity "error"))
 
