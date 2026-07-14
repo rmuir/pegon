@@ -22,7 +22,7 @@ pub fn request(
     let position = params.text_document_position_params.position;
     let bytes = doc.text.as_bytes();
     // TODO: do this lazily
-    let scopes = super::analysis::scopes(&doc.tree, bytes, cancel_token)?;
+    let scopes = super::locals::scopes(&doc.tree, bytes, cancel_token)?;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client

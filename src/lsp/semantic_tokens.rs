@@ -74,7 +74,7 @@ pub fn tokens(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<Vec<SemanticToken>> {
     let data = doc.text.as_bytes();
-    let scopes = super::analysis::scopes(&doc.tree, data, cancel_token)?;
+    let scopes = super::locals::scopes(&doc.tree, data, cancel_token)?;
     let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     if let Some(byte_range) = byte_range {
@@ -122,7 +122,7 @@ pub fn tokens(
             if let Some(stack) = scopes.get(text) {
                 for scope in stack.iter().rev() {
                     if scope.contains(node_range.start) {
-                        token_type = scope.semantic_token_type();
+                        token_type = scope.token_type;
                         break;
                     }
                 }

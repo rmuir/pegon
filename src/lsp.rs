@@ -7,7 +7,6 @@ use lsp_server::Connection;
 use client::Client;
 use server::Server;
 
-mod analysis;
 mod client;
 mod code_action;
 mod definition;
@@ -18,6 +17,7 @@ mod folding_range;
 mod hover;
 mod initialize;
 mod inlay_hints;
+mod locals;
 mod selection_range;
 mod semantic_cache;
 mod semantic_tokens;

@@ -23,7 +23,7 @@ pub fn request(
     let markdown = client.prefers_hover_markdown();
     let bytes = doc.text.as_bytes();
     // TODO: do this lazily
-    let scopes = super::analysis::scopes(&doc.tree, bytes, cancel_token)?;
+    let scopes = super::locals::scopes(&doc.tree, bytes, cancel_token)?;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client
@@ -77,16 +77,10 @@ pub fn request(
                 if let Some(stack) = scopes.get(text) {
                     for scope in stack.iter().rev() {
                         if scope.contains(node_range.start_byte) {
-                            let java_type = if let Some(java_type) = scope.java_type {
-                                str::from_utf8(
-                                    bytes
-                                        .get(java_type.start_byte..java_type.end_byte)
-                                        .context("valid slice")?,
-                                )?
-                            } else {
-                                "var"
-                            };
-                            let kind = super::analysis::pattern(scope.pattern_id).kind;
+                            let kind = super::semantic_tokens::TOKEN_TYPES
+                                .get(scope.token_type as usize)
+                                .context("valid token type")?;
+                            let java_type = "var";
                             reference = if markdown {
                                 Some(formatdoc! {"
                                     ```java

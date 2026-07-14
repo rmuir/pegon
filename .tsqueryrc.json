@@ -16,12 +16,6 @@
     "java": "java-orchard"
   },
   "valid_captures": {
-    "analysis": {
-      "definition": "identifier that becomes valid within scope",
-      "start": "beginning of the scope range",
-      "end": "end of the scope range",
-      "type": "java type of the symbol"
-    },
     "definitions": {
       "range": "full range of the symbol",
       "selection": "identifier of the symbol, must be within @range"
@@ -49,6 +43,11 @@
     "injections": {
       "injection.content": "indicates that the captured node should have its contents re-parsed using another language",
       "injection.language": "indicates that the captured node\u2019s text may contain the name of a language that should be used to re-parse the `@injection.content`"
+    },
+    "locals": {
+      "definition": "identifier that becomes valid within scope",
+      "start": "beginning of the scope range",
+      "end": "end of the scope range"
     },
     "symbols": {
       "range": "full range of the symbol",
@@ -144,9 +143,6 @@
           "arity": "required",
           "constraint": {
             "enum": [
-              "analysis.flow",
-              "analysis.kind",
-              "analysis.start.inclusive",
               "definition.bail",
               "definition.scoped",
               "diagnostic.context.label",
@@ -168,6 +164,9 @@
               "hover.spec.reference",
               "hover.spec.summary",
               "highlight.kind",
+              "local.flow",
+              "local.type",
+              "local.start.inclusive",
               "symbol.kind",
               "token.type",
               "token.modifiers",
