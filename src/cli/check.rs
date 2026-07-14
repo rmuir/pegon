@@ -7,7 +7,7 @@ use anyhow::{Context as _, Error, bail};
 use core::fmt::{Display, Formatter};
 use core::sync::atomic::AtomicBool;
 
-use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
+use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -267,21 +267,15 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
     typesbuilder.add("java", "*.java")?;
     typesbuilder.select("java");
     let matcher = typesbuilder.build()?;
-    let mut overrides = OverrideBuilder::new("/home/rmuir/workspace/lucene");
-    // JFlex-generated code with escaped DFA
-    overrides.add("!**/ClassicTokenizerImpl.java")?;
-    overrides.add("!**/HTMLStripCharFilter.java")?;
-    overrides.add("!**/TestJapaneseAnalyzer.java")?;
-    overrides.add("!**/StandardTokenizerImpl.java")?;
-    overrides.add("!**/UAX29URLEmailTokenizerImpl.java")?;
-    overrides.add("!**/WikipediaTokenizerImpl.java")?;
-    overrides.add("!**/WordBreakTestUnicode_12_1_0.java")?;
-    let mut builder = WalkBuilder::new(paths.pop().unwrap_or_else(|| PathBuf::from(".")));
+    let first_path = paths.pop().unwrap_or_else(|| PathBuf::from("."));
+    let mut builder = WalkBuilder::new(first_path.as_path());
     for remaining in paths {
         builder.add(remaining);
     }
     builder.types(matcher);
-    builder.overrides(overrides.build()?);
+    if let Some(overrides) = super::generated::generated_files(first_path.as_path())? {
+        builder.overrides(overrides);
+    }
 
     let (tx, rx) = std::sync::mpsc::channel();
     builder.build_parallel().run(|| {

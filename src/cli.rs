@@ -3,6 +3,7 @@
 use core::net::Ipv4Addr;
 
 mod check;
+mod generated;
 mod parser;
 
 use anyhow::Error;
