@@ -247,7 +247,9 @@
 
 ; Line-wrapped package declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s3.2-package-declaration
-((package_declaration) @error
+((package_declaration
+  . ; don't check ones with annotations for now
+  "package") @error
   (#match? @error "\n")
   (#set! diagnostic.name "wrapped-package")
   (#set! diagnostic.title "Line-wrapped package declaration: `{node.text}`")
