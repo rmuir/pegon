@@ -38,7 +38,7 @@ export async function activate(_context: ExtensionContext) {
 
   client = new LanguageClient(
     'pegon',
-    "A slightly fast Java linter and code formatter, written in Rust.",
+    "Fast Java language server",
     serverOptions,
     clientOptions,
   );

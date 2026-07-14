@@ -23,7 +23,6 @@ pub fn main() -> Result<(), Error> {
         Commands::Check {
             files,
             output_format,
-            ..
         } => check::check(files, *output_format == OutputFormat::Concise),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();

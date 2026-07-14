@@ -7,9 +7,7 @@ use clap::{
     builder::styling::{AnsiColor, Styles},
 };
 
-/// Fast linter for the Google Java Style.
-///
-/// More information
+/// Fast Java language server
 #[derive(Parser)]
 #[command(version)]
 #[command(arg_required_else_help = true)]
@@ -22,18 +20,12 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Run pegon on the given files or directories.
-    ///
-    /// More information
+    /// Run checks on the given files or directories.
     Check {
         /// List of files or directories to check
         ///
         /// Use `-` for standard input. [default: CWD]
         files: Vec<PathBuf>,
-
-        /// Apply fixes to resolve lint violations.
-        #[arg(long)]
-        fix: bool,
 
         /// Diagnostic error format
         #[arg(long, value_enum, id = "FMT", default_value_t = OutputFormat::Full)]
