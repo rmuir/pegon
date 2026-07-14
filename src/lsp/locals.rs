@@ -4,22 +4,30 @@ use core::sync::atomic::{AtomicBool, Ordering};
 use rustc_hash::FxHashMap;
 use std::sync::{Arc, LazyLock};
 use tree_sitter::{
-    Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _, Tree,
+    Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
+    Tree,
 };
 
 use crate::support::queries::capture_id;
 
+pub struct Scopes<'data, 'tree> {
+    pub locals: FxHashMap<&'data str, Vec<LocalScope<'tree>>>,
+    // pub types (should be useful for qualification)
+}
+
 /// Single variable scope entry
-pub struct Scope {
+pub struct LocalScope<'tree> {
     /// range of the identifier declaration
     pub identifier: Range,
     /// range where the identifier is valid
     pub range: Range,
     /// semantic token type
     pub token_type: u32,
+    /// java unqualified type
+    pub java_type: Option<Node<'tree>>,
 }
 
-impl Scope {
+impl LocalScope<'_> {
     /// true if the scope contains specified position
     pub const fn contains(&self, position: usize) -> bool {
         (self.range.start_byte <= position && self.range.end_byte >= position)
@@ -32,12 +40,12 @@ impl Scope {
 /// # Errors
 ///
 /// This function will return an error if rules are misconfigured.
-pub fn scopes<'data>(
-    tree: &Tree,
+pub fn scopes<'tree, 'data>(
+    tree: &'tree Tree,
     data: &'data [u8],
     cancel_token: &Arc<AtomicBool>,
-) -> Result<FxHashMap<&'data str, Vec<Scope>>, Error> {
-    let mut scopes = FxHashMap::default();
+) -> Result<Scopes<'data, 'tree>, Error> {
+    let mut locals = FxHashMap::default();
     let mut cursor = QueryCursor::new();
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
@@ -73,6 +81,8 @@ pub fn scopes<'data>(
             .next()
             .context("end capture should exist")?;
 
+        let type_node = hit.nodes_for_capture_index(*TYPE_CAPTURE).next();
+
         if pattern.flow {
             let mut node = tree.root_node();
             while let Some(child) = node.child_with_descendant(var_node) {
@@ -85,12 +95,13 @@ pub fn scopes<'data>(
         }
 
         let key = var_node.utf8_text(data)?;
-        let value = scopes.entry(key).or_insert_with(|| Vec::with_capacity(4));
+        let value = locals.entry(key).or_insert_with(|| Vec::with_capacity(4));
         let start_range = start_node.range();
         let end_range = end_node.range();
-        value.push(Scope {
+        value.push(LocalScope {
             identifier: var_node.range(),
             token_type: pattern.token_type,
+            java_type: type_node,
             range: if pattern.start_inclusive {
                 Range {
                     start_byte: start_range.start_byte,
@@ -108,7 +119,7 @@ pub fn scopes<'data>(
             },
         });
     }
-    Ok(scopes)
+    Ok(Scopes { locals })
 }
 
 /// single compiled pattern
@@ -190,3 +201,6 @@ static START_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "start
 
 /// index of the `@end` capture
 static END_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "end"));
+
+/// index of the `@type` capture
+static TYPE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "type"));

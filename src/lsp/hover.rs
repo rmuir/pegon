@@ -23,7 +23,7 @@ pub fn request(
     let markdown = client.prefers_hover_markdown();
     let bytes = doc.text.as_bytes();
     // TODO: do this lazily
-    let scopes = super::locals::scopes(&doc.tree, bytes, cancel_token)?;
+    let locals = super::locals::scopes(&doc.tree, bytes, cancel_token)?.locals;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client
@@ -74,13 +74,17 @@ pub fn request(
             Pattern::Bail => None,
             Pattern::Reference => {
                 let mut reference: Option<String> = None;
-                if let Some(stack) = scopes.get(text) {
+                if let Some(stack) = locals.get(text) {
                     for scope in stack.iter().rev() {
                         if scope.contains(node_range.start_byte) {
                             let kind = super::semantic_tokens::TOKEN_TYPES
                                 .get(scope.token_type as usize)
                                 .context("valid token type")?;
-                            let java_type = "var";
+                            let java_type = if let Some(java_type) = scope.java_type {
+                                java_type.utf8_text(bytes)?
+                            } else {
+                                "var"
+                            };
                             reference = if markdown {
                                 Some(formatdoc! {"
                                     ```java

@@ -1,6 +1,7 @@
 ; local variables can only be accessed after they are declared. they may shadow fields
 ((block
   (local_variable_declaration
+    type: (_) @type
     declarator: (variable_declarator
       name: (identifier) @definition)) @start
   "}" @end)
@@ -9,6 +10,7 @@
 
 ((for_statement
   init: (local_variable_declaration
+    type: (_) @type
     declarator: (variable_declarator
       name: (identifier) @definition)) @start
   body: (statement) @end)
@@ -16,18 +18,21 @@
   (#set! local.start.inclusive false))
 
 ((enhanced_for_statement
+  type: (_) @type
   name: (identifier) @definition @start)
   (#set! local.type "variable")) @end
 
 ((try_with_resources_statement
   resources: (resource_specification
     (resource
+      type: (_) @type
       name: (identifier) @definition) @start)
   body: (block) @end)
   (#set! local.type "variable"))
 
 ; JEP 394
 ((instanceof_expression
+  right: (_) @type
   name: (identifier) @definition @start @end)
   (#set! local.type "variable")
   (#set! local.flow true))
@@ -37,6 +42,8 @@
   pattern: (record_pattern
     (record_pattern_body
       (record_pattern_component
+        (_) @type
+        .
         (identifier) @definition @start @end .))))
   (#set! local.type "variable")
   (#set! local.flow true))
@@ -46,6 +53,8 @@
   (switch_label
     (pattern
       (type_pattern
+        (_) @type
+        .
         (identifier) @definition @start .)))) @end
   (#set! local.type "variable"))
 
@@ -55,6 +64,7 @@
     (identifier) @definition
     (formal_parameters
       (formal_parameter
+        type: (_) @type
         name: (identifier) @definition))
     (inferred_parameters
       (identifier) @definition)
@@ -69,8 +79,10 @@
   parameters: (formal_parameters
     [
       (formal_parameter
+        type: (_) @type
         name: (identifier) @definition)
       (spread_parameter
+        type: (_) @type
         (variable_declarator
           name: (identifier) @definition))
     ])
@@ -80,6 +92,7 @@
 ((record_declaration
   parameters: (formal_parameters
     (formal_parameter
+      type: (_) @type
       name: (identifier) @definition))
   body: (class_body) @start @end)
   (#set! local.type "property"))
@@ -88,8 +101,10 @@
   parameters: (formal_parameters
     [
       (formal_parameter
+        type: (_) @type
         name: (identifier) @definition)
       (spread_parameter
+        type: (_) @type
         (variable_declarator
           name: (identifier) @definition))
     ])
@@ -98,11 +113,13 @@
 
 ((catch_clause
   (catch_formal_parameter
+    (catch_type) @type
     name: (identifier) @definition)
   body: (block) @start @end)
   (#set! local.type "parameter"))
 
 ; type parameter scopes
+; TODO: support optional type bounds as @type?
 ((class_declaration
   type_parameters: (type_parameters
     (type_parameter

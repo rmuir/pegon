@@ -22,7 +22,7 @@ pub fn request(
     let position = params.text_document_position_params.position;
     let bytes = doc.text.as_bytes();
     // TODO: do this lazily
-    let scopes = super::locals::scopes(&doc.tree, bytes, cancel_token)?;
+    let locals = super::locals::scopes(&doc.tree, bytes, cancel_token)?.locals;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client
@@ -82,7 +82,7 @@ pub fn request(
         if pattern.scoped {
             let text = selection.utf8_text(bytes)?;
             let mut found = false;
-            if let Some(stack) = scopes.get(text) {
+            if let Some(stack) = locals.get(text) {
                 for scope in stack.iter().rev() {
                     if scope.contains(selection_range.start_byte) {
                         target_range = scope.identifier;

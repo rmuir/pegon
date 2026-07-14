@@ -46,6 +46,7 @@
     },
     "locals": {
       "definition": "identifier that becomes valid within scope",
+      "type": "unqualified type",
       "start": "beginning of the scope range",
       "end": "end of the scope range"
     },
