@@ -10,6 +10,7 @@ use core::sync::atomic::AtomicBool;
 use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
     fs,
+    io::{BufWriter, Write as _},
     path::{Path, PathBuf},
     sync::{Arc, mpsc::Sender},
     time::Instant,
@@ -60,6 +61,8 @@ fn render(path: &Path, data: &[u8], errors: Vec<Diagnostic>, concise: bool) -> R
         return Ok(());
     }
     let source = str::from_utf8(data)?;
+    let lock = anstream::stdout().lock();
+    let mut writer = BufWriter::new(lock);
     for diagnostic in errors {
         let mut annotations: Vec<Annotation> = Vec::new();
         let rule = rule(diagnostic.rule_id);
@@ -126,11 +129,12 @@ fn render(path: &Path, data: &[u8], errors: Vec<Diagnostic>, concise: bool) -> R
             )),
         }
         if concise {
-            anstream::println!("{}", CONCISE.render(&report));
+            writeln!(writer, "{}", CONCISE.render(&report))?;
         } else {
-            anstream::println!("{}\n", FULL.render(&report));
+            writeln!(writer, "{}\n", FULL.render(&report))?;
         }
     }
+    writer.flush()?;
     Ok(())
 }
 
