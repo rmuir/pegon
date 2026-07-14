@@ -255,6 +255,23 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// Does the client support preserving data between diagnostics
+    /// and code actions?
+    pub fn supports_data(&self, push: bool) -> bool {
+        (|| -> _ {
+            if push {
+                self.push_diagnostics()?
+                    .diagnostics_capabilities
+                    .data_support
+            } else {
+                self.pull_diagnostics()?
+                    .diagnostics_capabilities
+                    .data_support
+            }
+        })()
+        .unwrap_or_default()
+    }
+
     /// Does the client support locationlink for definition?
     pub fn supports_links(&self) -> bool {
         (|| -> _ { self.definition()?.link_support })().unwrap_or_default()

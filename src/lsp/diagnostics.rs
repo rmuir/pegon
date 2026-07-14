@@ -8,11 +8,22 @@ use gen_lsp_types::{
     MarkupContent, MarkupKind, Message, PublishDiagnosticsParams,
     RelatedFullDocumentDiagnosticReport, Uri,
 };
-use line_index::LineIndex;
+use serde::{Deserialize, Serialize};
 
 use crate::support::diagnostics::{Diagnostic, Severity, lint, rule};
 
 use super::{Client, server::Document};
+
+/// version of the document we had when we made the diagnosis
+///
+/// for paranoia / safety purposes
+#[derive(Serialize, Deserialize)]
+pub struct CustomData {
+    /// The version after a didChange where we pushed the diagnostic,
+    /// or under the pull model, its the version of the last didChange
+    /// before the editor issued a textDocument/diagnostic request.
+    pub version: i32,
+}
 
 impl From<Severity> for DiagnosticSeverity {
     fn from(value: Severity) -> Self {
@@ -40,13 +51,7 @@ pub fn pull(
             RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
                 full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                    items: encode(
-                        client,
-                        &params.text_document.uri,
-                        &doc.line_index,
-                        false,
-                        &results,
-                    )?,
+                    items: encode(client, &params.text_document.uri, doc, false, &results)?,
                     result_id: None, // don't attempt to cache, bugs such as neovim/neovim#32247
                 },
             },
@@ -59,7 +64,7 @@ pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnos
     let bytes = doc.text.as_bytes();
     let results = lint(&doc.tree, bytes, &Arc::new(AtomicBool::new(false)), false)?;
     Ok(PublishDiagnosticsParams {
-        diagnostics: encode(client, uri, &doc.line_index, true, &results)?,
+        diagnostics: encode(client, uri, doc, true, &results)?,
         uri: uri.clone(),
         version: client.supports_version().then_some(doc.version),
     })
@@ -69,7 +74,7 @@ pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnos
 fn encode(
     client: &Client,
     uri: &Uri,
-    line_index: &LineIndex,
+    doc: &Document,
     push: bool,
     results: &[Diagnostic],
 ) -> Result<Vec<gen_lsp_types::Diagnostic>> {
@@ -78,7 +83,7 @@ fn encode(
         .map(|diagnostic| {
             let rule = rule(diagnostic.rule_id);
             let range = client
-                .encode_range(&diagnostic.range, line_index)
+                .encode_range(&diagnostic.range, &doc.line_index)
                 .context("invalid range")?;
             let lsp_severity = rule.severity.into();
             let mut related_information: Vec<DiagnosticRelatedInformation> = Vec::with_capacity(3);
@@ -88,7 +93,7 @@ fn encode(
                     location: Location {
                         uri: uri.clone(),
                         range: client
-                            .encode_range(related, line_index)
+                            .encode_range(related, &doc.line_index)
                             .context("invalid range")?,
                     },
                     message: rule.context_label.clone().unwrap_or_default(),
@@ -114,6 +119,9 @@ fn encode(
             } else {
                 Message::String(diagnostic.title.clone())
             };
+            let custom_data = serde_json::to_value(CustomData {
+                version: doc.version,
+            })?;
             Ok(gen_lsp_types::Diagnostic {
                 range,
                 severity: Some(lsp_severity),
@@ -127,7 +135,7 @@ fn encode(
                     .supports_related_information(push)
                     .then_some(related_information),
                 tags: None,
-                data: None,
+                data: client.supports_data(push).then_some(custom_data),
             })
         })
         .collect()
@@ -150,6 +158,7 @@ mod tests {
         WorkDoneProgressParams,
     };
     use indoc::indoc;
+    use serde_json::json;
 
     use crate::lsp::test_client::TestClient;
 
@@ -300,6 +309,7 @@ mod tests {
                 code_description: Some(CodeDescription {
                     href: "https://github.com/rmuir/pegon/wiki/diagnostics#lowercase-class".into()
                 }),
+                data: Some(json!({ "version": 0 })),
                 related_information: Some(vec![DiagnosticRelatedInformation {
                     location: Location {
                         uri: "file:///Foo.java".into(),
