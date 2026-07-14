@@ -41,6 +41,7 @@ pub fn lint(
     tree: &Tree,
     data: &[u8],
     cancel_token: &Arc<AtomicBool>,
+    extras: bool,
 ) -> Result<Vec<Diagnostic>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
@@ -83,17 +84,27 @@ pub fn lint(
             .as_ref()
             .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
 
-        // explicitly marked visible in the query
-        let visible = hit
-            .nodes_for_capture_index(*VISIBLE_CAPTURE)
-            .map(|item| item.range())
-            .next();
-
         // explicitly marked context in the query
         let context = hit
             .nodes_for_capture_index(*CONTEXT_CAPTURE)
             .map(|item| item.range())
             .next();
+
+        // explicitly marked visible in the query
+        let visible = if extras {
+            hit.nodes_for_capture_index(*VISIBLE_CAPTURE)
+                .map(|item| item.range())
+                .next()
+        } else {
+            None
+        };
+
+        // computed top context
+        let top_context = if extras {
+            top_context(tree.root_node(), node)
+        } else {
+            None
+        };
 
         lints.push(Diagnostic {
             rule_id: hit.pattern_index,
@@ -103,7 +114,7 @@ pub fn lint(
             label,
             visible,
             context,
-            top_context: top_context(tree.root_node(), node),
+            top_context,
         });
         // stop linting the document at the first ERROR or MISSING node
         // alerts to the issue, but prevents annoying cascade

@@ -32,7 +32,7 @@ pub fn pull(
     cancel_token: &Arc<AtomicBool>,
 ) -> Result<DocumentDiagnosticReport> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes, cancel_token)?;
+    let results = lint(&doc.tree, bytes, cancel_token, false)?;
 
     Ok(
         DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
@@ -56,7 +56,7 @@ pub fn pull(
 /// publish diagnostics (push)
 pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnosticsParams> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes, &Arc::new(AtomicBool::new(false)))?;
+    let results = lint(&doc.tree, bytes, &Arc::new(AtomicBool::new(false)), false)?;
     Ok(PublishDiagnosticsParams {
         diagnostics: encode(client, uri, &doc.line_index, true, &results)?,
         uri: uri.clone(),
