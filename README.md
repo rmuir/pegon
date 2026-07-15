@@ -37,66 +37,6 @@ return {
 vim.lsp.enable({ 'pegon' })
 ```
 
-## Architecture
-
-* Parser: [tree-sitter-java-orchard](https://crates.io/crates/tree-sitter-java-orchard) for modern Java syntax support
-* LSP: [lsp-server](https://crates.io/crates/lsp-server) from rust-analyzer, with [gen-lsp-types](https://crates.io/crates/gen-lsp-types)
-* CLI: [clap](https://crates.io/crates/clap) with [annotate-snippets](https://crates.io/crates/annotate-snippets) for diagnostics
-
-## LSP Support
-
-### LSP Language features
-
-| Method                                   | Notes                                                |
-|----------------------------------------- | ---------------------------------------------------- |
-| `textDocument/codeAction`                | quick fix, organize imports                          |
-| `codeAction/resolve`                     | defers logic for fast "light bulb"                   |
-| `textDocument/definition`                | inlay hint interaction                               |
-| `textDocument/diagnostic`                | syntax errors, style deviations, related information |
-| `textDocument/documentHighlight`         | related syntax elements                              |
-| `textDocument/documentSymbol`            | signature info, detailed type info, deprecations     |
-| `textDocument/foldingRange`              | regions, imports, comments, javadoc handling         |
-| `textDocument/hover`                     | operators, JLS links                                 |
-| `textDocument/inlayHint`                 | closing braces, generic types                        |
-| `inlayHint/resolve`                      | defers data for faster hints                         |
-| `textDocument/selectionRange`            | incremental selection of tree nodes                  |
-| `textDocument/semanticTokens/full`       | highlighting                                         |
-| `textDocument/semanticTokens/full/delta` | highlighting                                         |
-| `textDocument/semanticTokens/range`      | highlighting                                         |
-
-### LSP lifecycle methods
-
-| Method                                   | Notes                                                |
-|----------------------------------------- | ---------------------------------------------------- |
-| `initialize`                             | negotiates client encoding for best performance      |
-| `shutdown`                               | will always actually shut down, not leak processes   |
-| `client/registerCapability`              | dynamic registration scoped to `Java` files          |
-| `textDocument/didOpen`                   | graceful errors on non-`Java` files                  |
-| `textDocument/didChange`                 | incremental updates, incremental parsing             |
-| `textDocument/didClose`                  | clears any pushed diagnostics per spec               |
-| `window/logMessage`                      | notification errors reported to client               |
-| `$/cancelRequest`                        | queue + threadpool for requests with cancellation    |
-
-## Background
-
-Historically, Java developers have used sophisticated IDEs to cope with the verbosity of the language.
-It is possible to harness this in your text editor, thanks to [Eclipse JDTLS](https://github.com/eclipse-jdtls/eclipse.jdt.ls).
-JDTLS is very powerful, but there are some challenges:
-
-* Notoriously difficult for users to configure and get working
-* Requires custom LSP client code such as [nvim-jdtls](https://github.com/mfussenegger/nvim-jdtls) for full functionality
-* High consumption of CPU, memory and disk resources.
-* Slow startup: must compile all of the code.
-* Slow response time/lag on large Java source files.
-* Many moving parts: LSP configuration, additional editor plugins, JVM, Gradle/Maven
-* Formats code to a standard nobody wants.
-
-Other Java tooling for formatting and linting have similar problems, as they must compile the code.
-These tools slowly hook into the compiler (usually invasively!), and sometimes require the user to
-wrestle with maven, gradle, `JAVA_HOME`, `CLASSPATH`, etc.
-
-The intent of `pegon` is not to rewrite this same situation in Rust, but instead to provide an alternative.
-
 ## FAQ
 
 **Q. This code looks like AI slop!**
@@ -113,11 +53,11 @@ A. Google Style supports high-performance Java development, and most developers 
 
 **Q. Where's completion / go-to-definition? I can't live without it!**
 
-A. These features are planned, continue to use `ctags` for now.
+A. These features are coming, continue to use `ctags` for now.
 
 **Q. Where's workspace symbol search? I can't live without it!**
 
-A. This feature is inherently slow, I recommend a good fuzzy finder or `ctags` instead.
+A. This feature is coming, I recommend a good fuzzy finder or `ctags` for now.
 
 **Q. What about running tests from my editor? This is essential for TDD!**
 
