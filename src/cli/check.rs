@@ -1,6 +1,6 @@
 //! CLI "check" command
 use annotate_snippets::{
-    Annotation, AnnotationKind, Group, Level, Patch, Renderer, Snippet,
+    AnnotationKind, Group, Level, Patch, Renderer, Snippet,
     renderer::{Ansi256Color, DecorStyle, Style},
 };
 use anyhow::{Context as _, Error, bail};
@@ -31,18 +31,6 @@ static FULL: Renderer = Renderer::styled()
 /// gcc-style output
 static CONCISE: Renderer = Renderer::plain().short_message(true);
 
-/// display severity levels
-impl Display for Severity {
-    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-        match *self {
-            Self::Error => write!(f, "error"),
-            Self::Warn => write!(f, "warn"),
-            Self::Info => write!(f, "info"),
-            Self::Hint => write!(f, "hint"),
-        }
-    }
-}
-
 /// map severity levels to annotate-snippets severities
 impl From<Severity> for Level<'_> {
     fn from(value: Severity) -> Self {
@@ -55,79 +43,73 @@ impl From<Severity> for Level<'_> {
     }
 }
 
-/// Render any diagnostics to the console
-fn render(path: &Path, data: &[u8], errors: Vec<Diagnostic>, concise: bool) -> Result<(), Error> {
-    if errors.is_empty() {
-        return Ok(());
-    }
+/// Render some diagnostics to the console
+fn render(path: &Path, data: &[u8], errors: &[Diagnostic], concise: bool) -> Result<(), Error> {
+    let filename = path.to_str();
     let source = str::from_utf8(data)?;
     let lock = anstream::stdout().lock();
     let mut writer = BufWriter::new(lock);
     for diagnostic in errors {
-        let mut annotations: Vec<Annotation> = Vec::new();
         let rule = rule(diagnostic.rule_id);
-
-        let label = if concise { None } else { diagnostic.label };
         let id_url = if concise { "" } else { &rule.url };
+        let label = if concise {
+            None
+        } else {
+            diagnostic.label.as_ref()
+        };
 
-        // primary error annotation: as precise of a range as possible
-        annotations.push(
-            AnnotationKind::Primary
-                .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
-                .label(label)
-                .highlight_source(true),
-        );
-
-        // explicitly marked context in the query
-        if let Some(context) = diagnostic.context {
-            annotations.push(
+        let annotations = [
+            // primary error annotation: as precise of a range as possible
+            Some(
+                AnnotationKind::Primary
+                    .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
+                    .label(label)
+                    .highlight_source(true),
+            ),
+            // explicitly marked context in the query
+            diagnostic.context.map(|context| {
                 AnnotationKind::Context
                     .span(context.start_byte..context.end_byte)
-                    .label(rule.context_label.clone()),
-            );
-        }
-
-        // explicitly marked visible in the query
-        if let Some(visible) = diagnostic.visible {
-            annotations.push(AnnotationKind::Visible.span(visible.start_byte..visible.end_byte));
-        }
-
-        // top context: e.g. what function are you in
-        if let Some(ctx) = diagnostic.top_context {
-            annotations.push(AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte));
-        }
+                    .label(rule.context_label.as_ref())
+            }),
+            // explicitly marked visible in the query
+            diagnostic
+                .visible
+                .map(|visible| AnnotationKind::Visible.span(visible.start_byte..visible.end_byte)),
+            // top context: e.g. what function are you in
+            diagnostic
+                .top_context
+                .map(|ctx| AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte)),
+        ];
 
         let level: Level = rule.severity.into();
 
-        let mut report = Vec::new();
-        report.push(
+        let report = [
             level
-                .with_name(rule.severity.to_string())
-                .primary_title(diagnostic.title)
+                .with_name(rule.severity.as_str())
+                .primary_title(&diagnostic.title)
                 .id(&rule.name)
                 .id_url(id_url)
                 .element(
                     Snippet::source(source)
-                        .path(path.to_str())
-                        .annotations(annotations),
+                        .path(filename)
+                        .annotations(annotations.into_iter().flatten()),
                 ),
-        );
-        match &rule.fix {
-            Some(Fix::Static(replacement)) => report.push(
-                Level::NOTE
+            match &rule.fix {
+                Some(Fix::Static(replacement)) => Level::NOTE
                     .with_name("help")
-                    .secondary_title(diagnostic.help)
+                    .secondary_title(&diagnostic.help)
                     .element(Snippet::source(source).patch(Patch::new(
                         diagnostic.range.start_byte..diagnostic.range.end_byte,
                         replacement,
                     ))),
-            ),
-            _ => report.push(Group::with_title(
-                Level::NOTE
-                    .with_name("help")
-                    .secondary_title(diagnostic.help),
-            )),
-        }
+                _ => Group::with_title(
+                    Level::NOTE
+                        .with_name("help")
+                        .secondary_title(&diagnostic.help),
+                ),
+            },
+        ];
         if concise {
             writeln!(writer, "{}", CONCISE.render(&report))?;
         } else {
@@ -244,7 +226,7 @@ impl Worker {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);
             }
-            render(path, &data, result, self.concise)?;
+            render(path, &data, &result, self.concise)?;
         }
         self.stats.add_file(1);
         Ok(())

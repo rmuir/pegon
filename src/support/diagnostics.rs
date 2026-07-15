@@ -158,6 +158,17 @@ pub enum Severity {
     Hint,
 }
 
+impl Severity {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Error => "error",
+            Self::Warn => "warn",
+            Self::Info => "info",
+            Self::Hint => "hint",
+        }
+    }
+}
+
 /// rule fix types
 pub enum Fix {
     Static(String),
