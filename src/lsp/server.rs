@@ -253,7 +253,7 @@ impl Server {
                         &cancel,
                         &in_flight,
                         id.clone(),
-                        match super::code_action::request(&client, &doc, &params, &cancel) {
+                        match super::code_action::request(&client, &doc, &params) {
                             Ok(result) => response::<CodeActionRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
