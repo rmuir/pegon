@@ -59,6 +59,10 @@ fn render(path: &Path, data: &[u8], errors: &[Diagnostic], concise: bool) -> Res
         };
 
         let annotations = [
+            // top context: e.g. what function are you in
+            diagnostic
+                .top_context
+                .map(|ctx| AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte)),
             // primary error annotation: as precise of a range as possible
             Some(
                 AnnotationKind::Primary
@@ -76,10 +80,6 @@ fn render(path: &Path, data: &[u8], errors: &[Diagnostic], concise: bool) -> Res
             diagnostic
                 .visible
                 .map(|visible| AnnotationKind::Visible.span(visible.start_byte..visible.end_byte)),
-            // top context: e.g. what function are you in
-            diagnostic
-                .top_context
-                .map(|ctx| AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte)),
         ];
 
         let level: Level = rule.severity.into();
