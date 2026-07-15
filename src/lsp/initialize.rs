@@ -36,22 +36,29 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             }),
         )]),
     };
-    let work_done_progress_options = WorkDoneProgressOptions::default();
+    let work_done_progress_options = WorkDoneProgressOptions {
+        work_done_progress: None,
+    };
     let diagnostic_options = DiagnosticRegistrationOptions {
         diagnostic_options: DiagnosticOptions {
             identifier: Some(env!("CARGO_PKG_NAME").into()),
-            ..DiagnosticOptions::default()
+            inter_file_dependencies: false,
+            workspace_diagnostics: false,
+            work_done_progress_options,
         },
         text_document_registration_options: text_document_registration_options.clone(),
-        ..DiagnosticRegistrationOptions::default()
+        static_registration_options: StaticRegistrationOptions {
+            id: Some(DocumentDiagnosticRequest::METHOD.into()),
+        },
     };
     let code_action_options = CodeActionOptions {
         code_action_kinds: Some(vec![
             CodeActionKind::QuickFix,
-            CodeActionKind::new("source.organizeImports"),
+            CodeActionKind::SourceOrganizeImports,
         ]),
         resolve_provider: Some(true),
-        ..CodeActionOptions::default()
+        documentation: None,
+        work_done_progress_options,
     };
     let definition_options = DefinitionOptions {
         work_done_progress_options,
@@ -64,7 +71,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         work_done_progress_options,
     };
     let folding_range_options = FoldingRangeRegistrationOptions {
-        folding_range_options: FoldingRangeOptions::new(WorkDoneProgressOptions::default()),
+        folding_range_options: FoldingRangeOptions::new(work_done_progress_options),
         static_registration_options: StaticRegistrationOptions {
             id: Some(FoldingRangeRequest::METHOD.into()),
         },
@@ -84,7 +91,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         text_document_registration_options: text_document_registration_options.clone(),
     };
     let selection_range_options = SelectionRangeRegistrationOptions {
-        selection_range_options: SelectionRangeOptions::default(),
+        selection_range_options: SelectionRangeOptions {
+            work_done_progress_options,
+        },
         static_registration_options: StaticRegistrationOptions {
             id: Some(SelectionRangeRequest::METHOD.into()),
         },
@@ -168,7 +177,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 .then_some(TextDocumentSync::Options(TextDocumentSyncOptions {
                     open_close: Some(true),
                     change: Some(TextDocumentSyncKind::Incremental),
-                    ..TextDocumentSyncOptions::default()
+                    save: None,
+                    will_save: None,
+                    will_save_wait_until: None,
                 })),
             // we don't care about classpaths or anything on disk, so advertise
             // the workspace support for better client-side reuse of the server.

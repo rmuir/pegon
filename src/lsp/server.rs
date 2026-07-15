@@ -39,8 +39,6 @@ use rustc_hash::FxHashMap;
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
-use crate::lsp::inlay_hints::CustomData;
-
 use super::client::Client;
 
 /// A Language Server Protocol Server
@@ -162,8 +160,8 @@ impl Server {
     /// main thread LSP server loop
     ///
     /// main thread pulls off new requests and notifications.
-    /// notifications are handled by the main thread directly, since they cause a state change
-    /// requests are dispatched to the thread pool
+    /// notifications are handled by the main thread directly, since they cause a state change.
+    /// requests are dispatched to the thread pool.
     pub fn main_loop(&self, client: &Arc<Client>) -> Result<(), Error> {
         let mut state = State::new()?;
 
@@ -182,6 +180,8 @@ impl Server {
                     match self.handle_request(client, &req, &state.docs, &cancel_token) {
                         Ok(()) => {}
                         Err(err) => {
+                            // error during dispatch (e.g. parsing params or something)
+                            // finalize the request since it didn't make it to threadpool.
                             self.connection.sender.send(finish_request(
                                 &cancel_token,
                                 &self.in_flight,
@@ -198,6 +198,7 @@ impl Server {
                             self.connection.sender.send(push)?;
                         }
                         Err(err) => {
+                            // error processing notification! communicate it to the editor...
                             self.connection
                                 .sender
                                 .send(log_error(&method, &format!("{err:#}")))?;
@@ -215,6 +216,18 @@ impl Server {
     /// Handle an incoming request
     ///
     /// This function returns quickly, it queues the processing to happen on the threadpool.
+    /// Each handler has a certain structure, which only differs slightly for annoying reasons
+    /// and special cases in the protocol:
+    ///
+    /// 1. deserialize parameters. at least enough to know document's URI.
+    /// 2. retrieve document, handling errors such as not-open document, non-java document, etc.
+    /// 3. enqueue job on threadpool
+    ///
+    /// Once on the threadpool, worker "owns" the request and does these basic steps:
+    ///
+    /// 1. check if request has been cancelled: it could have been sitting on the queue for a bit.
+    /// 2. invoke handler, passing cancellation token for periodic checks / early termination.
+    /// 3. finalize request: send response, `RequestFailed`, or `RequestCancelled`.
     fn handle_request(
         &self,
         client: &Arc<Client>,
@@ -230,7 +243,7 @@ impl Server {
         match req.method.as_str() {
             "textDocument/codeAction" => {
                 let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-                let _doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(docs, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel_token, &in_flight, &id) {
                         drop(sender.send(response));
@@ -240,7 +253,48 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        response::<CodeActionRequest>(id, Some(vec![])),
+                        match super::code_action::request(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                            &cancel_token,
+                        ) {
+                            Ok(result) => response::<CodeActionRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "codeAction/resolve" => {
+                let params: CodeAction = serde_json::from_value(req.params.clone())?;
+                let data: super::code_action::CustomData = serde_json::from_value(
+                    params
+                        .data
+                        .as_ref()
+                        .context("data should be preserved")?
+                        .clone(),
+                )?;
+                let doc = java_document(docs, &data.uri)?;
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&cancel_token, &in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &cancel_token,
+                        &in_flight,
+                        id.clone(),
+                        match super::code_action::resolve(
+                            client.as_ref(),
+                            doc.as_ref(),
+                            &params,
+                            &data,
+                            &cancel_token,
+                        ) {
+                            Ok(result) => response::<CodeActionResolveRequest>(id, result),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
                     );
                     drop(sender.send(response));
                 })
@@ -267,23 +321,6 @@ impl Server {
                             Ok(result) => response::<DefinitionRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
-                    );
-                    drop(sender.send(response));
-                })
-            }
-            "codeAction/resolve" => {
-                // TODO: deserialize 'data' and process
-                let params: CodeAction = serde_json::from_value(req.params.clone())?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel_token, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel_token,
-                        &in_flight,
-                        id.clone(),
-                        response::<CodeActionResolveRequest>(id, params),
                     );
                     drop(sender.send(response));
                 })
@@ -442,7 +479,7 @@ impl Server {
             }
             "inlayHint/resolve" => {
                 let params: InlayHint = serde_json::from_value(req.params.clone())?;
-                let data: CustomData = serde_json::from_value(
+                let data: super::inlay_hints::CustomData = serde_json::from_value(
                     params
                         .data
                         .as_ref()

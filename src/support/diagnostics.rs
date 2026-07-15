@@ -2,6 +2,7 @@ use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::{Context as _, Error};
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
+use rustc_hash::FxHashMap;
 use std::sync::{Arc, LazyLock};
 use tree_sitter::{
     Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
@@ -180,6 +181,12 @@ pub fn rule(index: usize) -> &'static Rule {
     RULES.get(index).expect("rule should exist")
 }
 
+/// Lookup rule by name
+#[must_use]
+pub fn rule_by_name(name: &str) -> Option<&'static Rule> {
+    RULES_BY_NAME.get(name).map(|index| rule(*index))
+}
+
 /// Returns optional range of "top context" for the node.
 /// This is typically the containing method or class declaration.
 ///
@@ -312,6 +319,14 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
         });
     }
     rules
+});
+
+static RULES_BY_NAME: LazyLock<FxHashMap<&str, usize>> = LazyLock::new(|| {
+    RULES
+        .iter()
+        .enumerate()
+        .map(|(index, item)| (item.name.as_str(), index))
+        .collect()
 });
 
 /// index of the `@error` capture

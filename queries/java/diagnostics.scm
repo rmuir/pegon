@@ -823,7 +823,7 @@
   (#not-match? @_block "[a-zA-Z0-9_]")
   (#set! diagnostic.name "swallowed-exception")
   (#set! diagnostic.title "Unhandled caught exception: `{node.text}`")
-  (#set! diagnostic.help "Handle `{node.text}`, add a comment, or indicate via unnamed variable `_`")
+  (#set! diagnostic.help "Indicate ignored exception with unnamed variable `_`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "_")
   (#set! diagnostic.severity "info")) @visible ; body is small (empty)

@@ -300,13 +300,11 @@ impl Client {
     }
 
     /// Does the client preserve code action data between request and resolve?
-    #[expect(dead_code, reason = "TODO")]
-    pub fn supports_code_action_resolve_data(&self) -> bool {
+    pub fn supports_code_action_data(&self) -> bool {
         (|| -> _ { self.code_actions()?.data_support })().unwrap_or_default()
     }
 
     /// Does client support resolving workspace edits on code actions?
-    #[expect(dead_code, reason = "TODO")]
     pub fn supports_code_action_resolve_edit(&self) -> bool {
         (|| -> _ {
             Some(
