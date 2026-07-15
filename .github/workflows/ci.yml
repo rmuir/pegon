@@ -4,9 +4,11 @@ name: CI
 
 permissions: {}
 
+# nothing tree-sitter-related plays well with dependabot :)
 env:
-  # currently not bumped by dependabot
   TS_QUERY_LS_VERSION: "v3.15.1"
+  TREE_SITTER_VERSION: "v0.26.9"
+  TREE_SITTER_JAVA_ORCHARD_VERSION: "v0.5.8"
 
 on:
   workflow_dispatch:
@@ -28,13 +30,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
+      # Has no package so we cache the binary
       - name: Cache ts_query_ls binary
         id: cache-ts-query-ls
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.local/bin/ts_query_ls
           key: ts_query_ls-${{ env.TS_QUERY_LS_VERSION }}-${{ runner.os }}-${{ runner.arch }}
@@ -50,8 +53,48 @@ jobs:
       - name: Add ts_query_ls to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
+      # Has no wasm, so we must build it. Cache the built library.
+      - name: Cache tree-sitter-java-orchard library
+        id: cache-tree-sitter-java-orchard
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.local/lib/java-orchard.so
+          key: java-orchard-${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Clone parser
+        if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
+        run: |
+          git clone --branch "${BRANCH}" --depth 1 https://codeberg.org/grammar-orchard/tree-sitter-java-orchard.git
+        env:
+          BRANCH: ${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}
+        working-directory: ${{ runner.temp }}
+
+      # Mutates tags, so just track master.
+      - name: Set up tree-sitter
+        if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
+        uses: tree-sitter/setup-action/cli@eeb902ac2f1be576edc296309872cf476a209b7f # master
+        with:
+          tree-sitter-ref: ${{ env.TREE_SITTER_VERSION }}
+
+      - name: Generate parser
+        if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
+        run: tree-sitter generate
+        working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
+
+      - name: Build parser
+        if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
+        run: tree-sitter build
+        working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
+
+      - name: Install parser
+        if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p ~/.local/lib
+          cp java-orchard.so ~/.local/lib
+        working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
+
       - name: Setup uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           enable-cache: true
           prune-cache: false
