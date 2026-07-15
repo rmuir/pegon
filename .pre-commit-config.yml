@@ -38,9 +38,6 @@ repos:
         require_serial: true
         args: ["--autofix", "--no-sort-keys"]
         types: [json]
-        exclude:
-          glob:
-            - "**/package-lock.json"
 
       - id: check-toml
         name: Check TOML files
