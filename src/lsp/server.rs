@@ -193,7 +193,7 @@ impl Server {
                 }
                 Message::Notification(note) => {
                     let method = note.method.clone();
-                    match self.handle_notification(client.as_ref(), note, &mut state) {
+                    match self.handle_notification(client, note, &mut state) {
                         Ok(Some(push)) => {
                             self.connection.sender.send(push)?;
                         }
@@ -253,12 +253,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::code_action::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                            &cancel_token,
-                        ) {
+                        match super::code_action::request(&client, &doc, &params, &cancel_token) {
                             Ok(result) => response::<CodeActionRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -286,8 +281,8 @@ impl Server {
                         &in_flight,
                         id.clone(),
                         match super::code_action::resolve(
-                            client.as_ref(),
-                            doc.as_ref(),
+                            &client,
+                            &doc,
                             &params,
                             &data,
                             &cancel_token,
@@ -312,12 +307,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::definition::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                            &cancel_token,
-                        ) {
+                        match super::definition::request(&client, &doc, &params, &cancel_token) {
                             Ok(result) => response::<DefinitionRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -337,12 +327,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::diagnostics::pull(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                            &cancel_token,
-                        ) {
+                        match super::diagnostics::pull(&client, &doc, &params, &cancel_token) {
                             Ok(result) => response::<DocumentDiagnosticRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -364,8 +349,8 @@ impl Server {
                         &in_flight,
                         id.clone(),
                         match super::document_highlight::request(
-                            client.as_ref(),
-                            doc.as_ref(),
+                            &client,
+                            &doc,
                             &params,
                             &cancel_token,
                         ) {
@@ -389,8 +374,8 @@ impl Server {
                         &in_flight,
                         id.clone(),
                         match super::document_symbols::request(
-                            client.as_ref(),
-                            doc.as_ref(),
+                            &client,
+                            &doc,
                             &params,
                             &cancel_token,
                         ) {
@@ -413,11 +398,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::folding_range::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &cancel_token,
-                        ) {
+                        match super::folding_range::request(&client, &doc, &cancel_token) {
                             Ok(result) => response::<FoldingRangeRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -439,12 +420,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::hover::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            position,
-                            &cancel_token,
-                        ) {
+                        match super::hover::request(&client, &doc, position, &cancel_token) {
                             Ok(result) => response::<HoverRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -464,12 +440,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::inlay_hints::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                            &cancel_token,
-                        ) {
+                        match super::inlay_hints::request(&client, &doc, &params, &cancel_token) {
                             Ok(result) => response::<InlayHintRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -497,8 +468,8 @@ impl Server {
                         &in_flight,
                         id.clone(),
                         match super::inlay_hints::resolve(
-                            client.as_ref(),
-                            doc.as_ref(),
+                            &client,
+                            &doc,
                             &params,
                             &data,
                             &cancel_token,
@@ -522,11 +493,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::selection_range::request(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                        ) {
+                        match super::selection_range::request(&client, &doc, &params) {
                             Ok(result) => response::<SelectionRangeRequest>(id, result),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
@@ -548,8 +515,8 @@ impl Server {
                         &in_flight,
                         id.clone(),
                         match super::semantic_tokens::full(
-                            client.as_ref(),
-                            doc.as_ref(),
+                            &client,
+                            &doc,
                             &params,
                             &cancel_token,
                             &cache,
@@ -575,8 +542,8 @@ impl Server {
                         &in_flight,
                         id.clone(),
                         match super::semantic_tokens::delta(
-                            client.as_ref(),
-                            doc.as_ref(),
+                            &client,
+                            &doc,
                             &params,
                             &cancel_token,
                             &cache,
@@ -600,12 +567,7 @@ impl Server {
                         &cancel_token,
                         &in_flight,
                         id.clone(),
-                        match super::semantic_tokens::range(
-                            client.as_ref(),
-                            doc.as_ref(),
-                            &params,
-                            &cancel_token,
-                        ) {
+                        match super::semantic_tokens::range(&client, &doc, &params, &cancel_token) {
                             Ok(result) => response::<SemanticTokensRangeRequest>(id, Some(result)),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
