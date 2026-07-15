@@ -14,7 +14,7 @@ use core::convert::From;
 
 use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DefinitionClientCapabilities,
-    DiagnosticClientCapabilities, DocumentHighlightClientCapabilities,
+    DiagnosticClientCapabilities, DiagnosticsCapabilities, DocumentHighlightClientCapabilities,
     DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
     InitializeParams, InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
@@ -50,6 +50,7 @@ impl Client {
     /// initialize request.
     pub fn new(init_params: InitializeParams) -> Self {
         let encoding = Encoding::preferred(&init_params.capabilities);
+
         Self {
             init_params,
             encoding,
@@ -216,7 +217,7 @@ impl Client {
 
     /// Does the client support markdown-formatted diagnostics?
     ///
-    /// Seems to only be supported for pull diagnostics?
+    /// Only supported for pull diagnostics
     pub fn supports_markup_messages(&self, push: bool) -> bool {
         !push && (|| -> _ { self.pull_diagnostics()?.markup_message_support })().unwrap_or_default()
     }
@@ -224,63 +225,33 @@ impl Client {
     /// Does the client support receiving additional ranges
     /// with related information ("context")?
     pub fn supports_related_information(&self, push: bool) -> bool {
-        (|| -> _ {
-            if push {
-                self.push_diagnostics()?
-                    .diagnostics_capabilities
-                    .related_information
-            } else {
-                self.pull_diagnostics()?
-                    .diagnostics_capabilities
-                    .related_information
-            }
-        })()
-        .unwrap_or_default()
+        (|| self.diagnostics_capabilities(push)?.related_information)().unwrap_or_default()
     }
 
     /// Does the client support receiving URLs for more information
     /// on the diagnostic code?
     pub fn supports_code_description(&self, push: bool) -> bool {
-        (|| -> _ {
-            if push {
-                self.push_diagnostics()?
-                    .diagnostics_capabilities
-                    .code_description_support
-            } else {
-                self.pull_diagnostics()?
-                    .diagnostics_capabilities
-                    .code_description_support
-            }
+        (|| {
+            self.diagnostics_capabilities(push)?
+                .code_description_support
         })()
         .unwrap_or_default()
     }
 
     /// Does the client support preserving data between diagnostics
     /// and code actions?
-    #[expect(unused, reason = "debugging vscode!")]
     pub fn supports_data(&self, push: bool) -> bool {
-        (|| -> _ {
-            if push {
-                self.push_diagnostics()?
-                    .diagnostics_capabilities
-                    .data_support
-            } else {
-                self.pull_diagnostics()?
-                    .diagnostics_capabilities
-                    .data_support
-            }
-        })()
-        .unwrap_or_default()
+        (|| self.diagnostics_capabilities(push)?.data_support)().unwrap_or_default()
     }
 
     /// Does the client support locationlink for definition?
     pub fn supports_links(&self) -> bool {
-        (|| -> _ { self.definition()?.link_support })().unwrap_or_default()
+        (|| self.definition()?.link_support)().unwrap_or_default()
     }
 
     /// Does the client support hierarchical document symbols?
     pub fn supports_hierarchical_symbols(&self) -> bool {
-        (|| -> _ {
+        (|| {
             self.document_symbols()?
                 .hierarchical_document_symbol_support
         })()
@@ -289,7 +260,7 @@ impl Client {
 
     /// Does the client support tags on flat document symbols?
     pub fn supports_tags(&self) -> bool {
-        (|| -> _ { self.document_symbols()?.tag_support.as_ref() })().is_some()
+        (|| self.document_symbols()?.tag_support.as_ref())().is_some()
     }
 
     /// Does client supports receiving the document version
@@ -297,17 +268,17 @@ impl Client {
     ///
     /// Not relevant to pull diagnostics where the version is implicit.
     pub fn supports_version(&self) -> bool {
-        (|| -> _ { self.push_diagnostics()?.version_support })().unwrap_or_default()
+        (|| self.push_diagnostics()?.version_support)().unwrap_or_default()
     }
 
     /// Does the client preserve code action data between request and resolve?
     pub fn supports_code_action_data(&self) -> bool {
-        (|| -> _ { self.code_actions()?.data_support })().unwrap_or_default()
+        (|| self.code_actions()?.data_support)().unwrap_or_default()
     }
 
     /// Does client support resolving workspace edits on code actions?
     pub fn supports_code_action_resolve_edit(&self) -> bool {
-        (|| -> _ {
+        (|| {
             Some(
                 self.code_actions()?
                     .resolve_support
@@ -321,22 +292,13 @@ impl Client {
 
     /// Does the client prefer markdown format for hover documentation?
     pub fn prefers_hover_markdown(&self) -> bool {
-        (|| -> _ {
-            Some(
-                *self
-                    .hover()?
-                    .content_format
-                    .as_ref()?
-                    .first()?
-                    == MarkupKind::Markdown,
-            )
-        })()
-        .unwrap_or_default()
+        (|| Some(*self.hover()?.content_format.as_ref()?.first()? == MarkupKind::Markdown))()
+            .unwrap_or_default()
     }
 
     /// Does the client support resolving inlay hint textedits?
     pub fn supports_inlay_hint_resolve_edit(&self) -> bool {
-        (|| -> _ {
+        (|| {
             Some(
                 self.inlay_hints()?
                     .resolve_support
@@ -350,7 +312,7 @@ impl Client {
 
     /// Does the client support resolving inlay hint locations?
     pub fn supports_inlay_hint_resolve_label_location(&self) -> bool {
-        (|| -> _ {
+        (|| {
             Some(
                 self.inlay_hints()?
                     .resolve_support
@@ -366,7 +328,7 @@ impl Client {
     ///
     /// TODO: neovim not following standard, fix it there
     pub fn supports_inlay_hint_resolve_neovim_location(&self) -> bool {
-        (|| -> _ {
+        (|| {
             Some(
                 self.inlay_hints()?
                     .resolve_support
@@ -385,7 +347,7 @@ impl Client {
 
     /// Does the client support dynamic registration of document synchronization?
     pub fn registers_sync(&self) -> bool {
-        (|| -> _ {
+        (|| {
             self.text_document()?
                 .synchronization
                 .as_ref()?
@@ -446,6 +408,30 @@ impl Client {
 
     const fn text_document(&self) -> Option<&TextDocumentClientCapabilities> {
         self.init_params.capabilities.text_document.as_ref()
+    }
+
+    /// Client's name, to detect when vscode violates its own protocol
+    const fn client_name(&self) -> &str {
+        if let Some(client_info) = self.init_params.client_info.as_ref() {
+            return client_info.name.as_str();
+        }
+        "<unknown>"
+    }
+
+    /// Hacks around buggy vscode client
+    ///
+    /// It doesn't populate `DiagnosticsCapability` inherited fields for pulls, only for pushes.
+    fn diagnostics_capabilities(&self, push: bool) -> Option<&DiagnosticsCapabilities> {
+        Some(match self.client_name() {
+            "Visual Studio Code" => &self.push_diagnostics()?.diagnostics_capabilities,
+            _ => {
+                if push {
+                    &self.push_diagnostics()?.diagnostics_capabilities
+                } else {
+                    &self.pull_diagnostics()?.diagnostics_capabilities
+                }
+            }
+        })
     }
 
     fn pull_diagnostics(&self) -> Option<&DiagnosticClientCapabilities> {
