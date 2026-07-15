@@ -83,6 +83,7 @@ repos:
         # run across all actions if any are touched
         require_serial: true
         pass_filenames: false
+        types: [yaml]
         files:
           glob:
             - .github/**/*.yml
@@ -98,7 +99,7 @@ repos:
         types: [yaml]
         files:
           glob:
-            - ".github/dependabot.yml"
+            - .github/dependabot.yml
 
       - id: jsonschema-release
         name: Check Release Schema
@@ -111,7 +112,7 @@ repos:
         types: [yaml]
         files:
           glob:
-            - ".github/release.yml"
+            - .github/release.yml
 
       - id: jsonschema-github-workflows
         name: Check Workflows Schema
@@ -125,7 +126,7 @@ repos:
         types: [yaml]
         files:
           glob:
-            - ".github/workflows/*.{yml,yaml}"
+            - .github/workflows/*.{yml,yaml}
 
       - id: jsonschema-github-workflow-timeouts
         name: Check Workflows Timeouts
@@ -139,7 +140,7 @@ repos:
         types: [yaml]
         files:
           glob:
-            - ".github/workflows/*.{yml,yaml}"
+            - .github/workflows/*.{yml,yaml}
 
       - id: zizmor
         name: Check Workflows Security
@@ -152,6 +153,7 @@ repos:
         # run across all actions if any are touched
         require_serial: true
         pass_filenames: false
+        types: [yaml]
         files:
           glob:
             - .github/**/*.yml
@@ -165,6 +167,7 @@ repos:
         env:
           UV_FROZEN: "1"
         require_serial: true
+        types: [toml]
         files:
           glob:
             - pyproject.toml
@@ -188,7 +191,7 @@ repos:
         env:
           UV_FROZEN: "1"
         require_serial: true
-        types: ["toml"]
+        types: [toml]
 
       - id: tombi-format
         name: Fix TOML formatting
@@ -198,7 +201,7 @@ repos:
         env:
           UV_FROZEN: "1"
         require_serial: true
-        types: ["toml"]
+        types: [toml]
         exclude:
           glob:
             - "**/uv.lock"
@@ -213,7 +216,7 @@ repos:
         env:
           UV_FROZEN: "1"
         require_serial: true
-        types: ["yaml"]
+        types: [yaml]
 
       - id: rumdl
         name: Fix Markdown
@@ -223,7 +226,7 @@ repos:
         env:
           UV_FROZEN: "1"
         require_serial: true
-        types: ["markdown"]
+        types: [markdown]
 
       - id: yamlfmt
         name: Fix YAML formatting
@@ -233,7 +236,7 @@ repos:
         env:
           UV_FROZEN: "1"
         require_serial: true
-        types: ["yaml"]
+        types: [yaml]
 
       - id: cargo-check
         name: Check Rust compilation
@@ -336,7 +339,7 @@ repos:
         args: ["fix", "--allow-dirty", "--allow-staged"]
         env:
           CARGO_BUILD_WARNINGS: deny
-        types: ["rust"]
+        types: [rust]
 
       - id: cargo-fmt
         name: Fix Rust formatting

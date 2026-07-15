@@ -47,7 +47,7 @@ dev = [
   # git hooks and repository checks
   "prek==0.4.9",
   # markdown
-  "rumdl==0.2.32",
+  "rumdl==0.2.34",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml
@@ -59,7 +59,7 @@ dev = [
   # yaml linting
   "yamllint==1.38.0",
   # github actions
-  "zizmor==1.26.1",
+  "zizmor==1.27.0",
 ]
 
 [build-system]
