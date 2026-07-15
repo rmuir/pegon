@@ -103,6 +103,6 @@ fn quickfix(_client: &Client, _doc: &Document, params: &CodeAction) -> Result<Te
     };
     Ok(match &rule.fix {
         Some(Fix::Static(replacement)) => TextEdit::new(*range, replacement.clone()),
-        _ => bail!("invalid or missing code"),
+        None => bail!("invalid code"),
     })
 }
