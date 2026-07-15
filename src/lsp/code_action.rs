@@ -4,8 +4,9 @@ use std::sync::Arc;
 
 use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
-    Code, CodeAction, CodeActionKind, CodeActionParams, CodeActionResponse, TextEdit, Uri,
-    WorkspaceEdit,
+    Code, CodeAction, CodeActionKind, CodeActionParams, CodeActionResponse, DocumentChange, Edit,
+    OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextDocumentIdentifier, TextEdit,
+    Uri, WorkspaceEdit,
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +46,10 @@ pub fn request(
             }
         }
         // TODO: make this a quick fix, and if returned already, don't return here
-        if only.is_none_or(|only| only.contains(&CodeActionKind::SourceOrganizeImports)) {
+        if only.is_none_or(|only| {
+            only.contains(&CodeActionKind::Source)
+                || only.contains(&CodeActionKind::SourceOrganizeImports)
+        }) {
             result.push(CodeActionResponse::CodeAction(CodeAction {
                 title: "Organize Imports".into(),
                 kind: Some(CodeActionKind::SourceOrganizeImports),
@@ -84,10 +88,24 @@ pub fn resolve(
         Some(CodeActionKind::SourceOrganizeImports) => bail!("not just yet"),
         _ => bail!("invalid or missing kind"),
     }?;
-    result.edit = Some(WorkspaceEdit {
-        changes: Some(HashMap::from([(data.uri.clone(), vec![edit])])),
-        document_changes: None, // TODO! check capability and use this way to send version
-        change_annotations: None,
+    result.edit = Some(if client.supports_document_changes() {
+        WorkspaceEdit {
+            changes: None,
+            document_changes: Some(vec![DocumentChange::TextDocumentEdit(TextDocumentEdit {
+                text_document: OptionalVersionedTextDocumentIdentifier {
+                    version: Some(doc.version),
+                    text_document_identifier: TextDocumentIdentifier::new(data.uri.clone()),
+                },
+                edits: vec![Edit::TextEdit(edit)],
+            })]),
+            change_annotations: None,
+        }
+    } else {
+        WorkspaceEdit {
+            changes: Some(HashMap::from([(data.uri.clone(), vec![edit])])),
+            document_changes: None,
+            change_annotations: None,
+        }
     });
     Ok(result)
 }

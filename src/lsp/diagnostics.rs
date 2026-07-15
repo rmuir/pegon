@@ -115,7 +115,11 @@ fn encode(
             } else {
                 Message::String(diagnostic.title.clone())
             };
-            let data = (client.supports_data(push) && rule.fix.is_some())
+            // TODO: something up with vscode here and capability check
+            // (client.supports_data(push) && rule.fix.is_some())
+            let data = rule
+                .fix
+                .is_some()
                 .then(|| {
                     serde_json::to_value(CustomData {
                         fix: diagnostic.help.clone(),

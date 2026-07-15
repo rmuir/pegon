@@ -38,7 +38,7 @@ export async function activate(_context: ExtensionContext) {
 
   client = new LanguageClient(
     'pegon',
-    "Fast Java language server",
+    "Pegon",
     serverOptions,
     clientOptions,
   );

@@ -19,7 +19,7 @@ use gen_lsp_types::{
     InitializeParams, InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     SemanticTokensClientCapabilities, TextDocumentClientCapabilities,
-    TextDocumentContentChangeEvent,
+    TextDocumentContentChangeEvent, WorkspaceClientCapabilities, WorkspaceEditClientCapabilities,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -257,6 +257,7 @@ impl Client {
 
     /// Does the client support preserving data between diagnostics
     /// and code actions?
+    #[expect(unused, reason = "debugging vscode!")]
     pub fn supports_data(&self, push: bool) -> bool {
         (|| -> _ {
             if push {
@@ -377,6 +378,11 @@ impl Client {
         .unwrap_or_default()
     }
 
+    /// Does the client support versioned document changes?
+    pub fn supports_document_changes(&self) -> bool {
+        (|| self.workspace_edit()?.document_changes)().unwrap_or_default()
+    }
+
     /// Does the client support dynamic registration of document synchronization?
     pub fn registers_sync(&self) -> bool {
         (|| -> _ {
@@ -484,6 +490,14 @@ impl Client {
 
     fn semantic_tokens(&self) -> Option<&SemanticTokensClientCapabilities> {
         self.text_document()?.semantic_tokens.as_ref()
+    }
+
+    const fn workspace(&self) -> Option<&WorkspaceClientCapabilities> {
+        self.init_params.capabilities.workspace.as_ref()
+    }
+
+    fn workspace_edit(&self) -> Option<&WorkspaceEditClientCapabilities> {
+        self.workspace()?.workspace_edit.as_ref()
     }
 }
 
