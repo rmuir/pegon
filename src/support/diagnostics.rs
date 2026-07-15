@@ -41,7 +41,7 @@ pub struct Diagnostic {
 pub fn lint(
     tree: &Tree,
     data: &[u8],
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
     extras: bool,
 ) -> Result<Vec<Diagnostic>, Error> {
     let mut lints = Vec::new();
@@ -49,7 +49,7 @@ pub fn lint(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

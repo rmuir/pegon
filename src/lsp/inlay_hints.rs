@@ -19,7 +19,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &InlayHintParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<InlayHint>> {
     let range = client
         .decode_range(&params.range, &doc.line_index)
@@ -35,7 +35,7 @@ pub fn request(
         &params.text_document.uri,
         range.start_byte..range.end_byte,
         !can_resolve,
-        cancel_token,
+        cancel,
     )
 }
 
@@ -44,7 +44,7 @@ pub fn resolve(
     doc: &Document,
     params: &InlayHint,
     data: &CustomData,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<InlayHint> {
     let position = client
         .decode_pos(params.position, &doc.line_index)
@@ -60,7 +60,7 @@ pub fn resolve(
         &data.uri,
         offset.saturating_sub(1)..offset,
         true,
-        cancel_token,
+        cancel,
     )?;
     hints.pop().context("matching inlay hint")
 }
@@ -77,7 +77,7 @@ pub fn hints(
     uri: &Uri,
     range: Range<usize>,
     populate: bool,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<InlayHint>> {
     let data = doc.text.as_bytes();
     let mut result = Vec::with_capacity(64);
@@ -86,7 +86,7 @@ pub fn hints(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

@@ -21,10 +21,10 @@ pub fn full(
     client: &Client,
     doc: &Document,
     _params: &SemanticTokensParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
     cache: &Arc<Cache>,
 ) -> Result<SemanticTokens> {
-    let tokens = tokens(client, doc, None, cancel_token)?;
+    let tokens = tokens(client, doc, None, cancel)?;
     let result_id = cache.push(&tokens);
     Ok(SemanticTokens::new(Some(result_id), tokens))
 }
@@ -33,13 +33,13 @@ pub fn range(
     client: &Client,
     doc: &Document,
     params: &SemanticTokensRangeParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<SemanticTokens> {
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
     let byte_range = Some(&(range.start_byte..range.end_byte));
-    let tokens = tokens(client, doc, byte_range, cancel_token)?;
+    let tokens = tokens(client, doc, byte_range, cancel)?;
     Ok(SemanticTokens::new(None, tokens))
 }
 
@@ -47,10 +47,10 @@ pub fn delta(
     client: &Client,
     doc: &Document,
     params: &SemanticTokensDeltaParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
     cache: &Arc<Cache>,
 ) -> Result<SemanticTokensDeltaResponse> {
-    let tokens = tokens(client, doc, None, cancel_token)?;
+    let tokens = tokens(client, doc, None, cancel)?;
     let diff = cache.delta(&params.previous_result_id, &tokens);
     let result_id = cache.push(&tokens);
     if let Some(diff) = diff {
@@ -71,10 +71,10 @@ pub fn tokens(
     client: &Client,
     doc: &Document,
     byte_range: Option<&Range<usize>>,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<SemanticToken>> {
     let data = doc.text.as_bytes();
-    let locals = super::locals::scopes(&doc.tree, data, cancel_token)?.locals;
+    let locals = super::locals::scopes(&doc.tree, data, cancel)?.locals;
     let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     if let Some(byte_range) = byte_range {
@@ -83,7 +83,7 @@ pub fn tokens(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

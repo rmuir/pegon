@@ -37,10 +37,10 @@ pub fn pull(
     client: &Client,
     doc: &Document,
     params: &DocumentDiagnosticParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<DocumentDiagnosticReport> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes, cancel_token, false)?;
+    let results = lint(&doc.tree, bytes, cancel, false)?;
 
     Ok(
         DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(

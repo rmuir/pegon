@@ -20,9 +20,9 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &DocumentSymbolParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<DocumentSymbolResponse> {
-    let symbols = nested(client, doc, cancel_token)?;
+    let symbols = nested(client, doc, cancel)?;
     if client.supports_hierarchical_symbols() {
         Ok(DocumentSymbolResponse::DocumentSymbolList(symbols))
     } else {
@@ -117,7 +117,7 @@ impl Symbol {
 fn nested(
     client: &Client,
     doc: &Document,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<DocumentSymbol>> {
     let bytes = doc.text.as_bytes();
     let mut symbols = Vec::new();
@@ -127,7 +127,7 @@ fn nested(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

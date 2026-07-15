@@ -16,7 +16,7 @@ use super::{Client, server::Document};
 pub fn request(
     client: &Client,
     doc: &Document,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<FoldingRange>> {
     let bytes = doc.text.as_bytes();
     let mut result = Vec::new();
@@ -24,7 +24,7 @@ pub fn request(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

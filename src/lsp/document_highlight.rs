@@ -20,7 +20,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &DocumentHighlightParams,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<DocumentHighlight>> {
     let bytes = doc.text.as_bytes();
     let position = params.text_document_position_params.position;
@@ -38,7 +38,7 @@ pub fn request(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

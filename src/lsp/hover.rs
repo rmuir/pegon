@@ -18,12 +18,12 @@ pub fn request(
     client: &Client,
     doc: &Document,
     position: Position,
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Option<Hover>> {
     let markdown = client.prefers_hover_markdown();
     let bytes = doc.text.as_bytes();
     // TODO: do this lazily
-    let locals = super::locals::scopes(&doc.tree, bytes, cancel_token)?.locals;
+    let locals = super::locals::scopes(&doc.tree, bytes, cancel)?.locals;
     let mut result = None;
     let mut cursor = QueryCursor::new();
     let linecol = client
@@ -38,7 +38,7 @@ pub fn request(
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

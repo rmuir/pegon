@@ -43,14 +43,14 @@ impl LocalScope<'_> {
 pub fn scopes<'tree, 'data>(
     tree: &'tree Tree,
     data: &'data [u8],
-    cancel_token: &Arc<AtomicBool>,
+    cancel: &Arc<AtomicBool>,
 ) -> Result<Scopes<'data, 'tree>, Error> {
     let mut locals = FxHashMap::default();
     let mut cursor = QueryCursor::new();
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
-        if cancel_token.load(Ordering::Relaxed) {
+        if cancel.load(Ordering::Relaxed) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())

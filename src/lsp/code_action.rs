@@ -17,7 +17,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &CodeActionParams,
-    _cancel_token: &Arc<AtomicBool>,
+    _cancel: &Arc<AtomicBool>,
 ) -> Result<Vec<CodeActionResponse>> {
     if client.supports_code_action_data() && client.supports_code_action_resolve_edit() {
         let mut result = Vec::with_capacity(params.context.diagnostics.len().saturating_add(1));
@@ -77,7 +77,7 @@ pub fn resolve(
     doc: &Document,
     params: &CodeAction,
     data: &CustomData,
-    _cancel_token: &Arc<AtomicBool>,
+    _cancel: &Arc<AtomicBool>,
 ) -> Result<CodeAction> {
     let mut result = params.clone();
     let edit = match params.kind {
