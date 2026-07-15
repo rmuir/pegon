@@ -1,3 +1,10 @@
+; Document highlighting
+;
+; For example, when hovering over a catch block, related try and finally are highlighted.
+; The feature can help when there is deep nesting (which is common in java)
+;
+; TBD: locals make a lot of sense to use here
+; ---
 ; if-else
 ((if_statement
   "if" @range @reference

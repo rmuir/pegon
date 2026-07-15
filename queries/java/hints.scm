@@ -1,3 +1,19 @@
+; Inlay hints
+;
+; This feature is not heavily developed yet, but can aid readability and
+; even navigation.
+;
+; * clangd/rust-analyzer style "closing brace" hints
+; * small easy type-inference cases
+;
+; textedits, locations, etc are supported. for example, for an inlay
+; hint at the end of a function:
+;
+;   } // foobar()
+;
+; the hint links to function's name so you can quickly navigate to the start.
+; same goes with other forms of blocks such as if, try-catch, etc.
+; ---
 ; synchronized block start/end
 ((synchronized_statement
   "synchronized" @label @location

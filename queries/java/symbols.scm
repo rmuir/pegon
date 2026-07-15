@@ -1,3 +1,9 @@
+; Document symbols
+;
+; These queries capture all that should be displayed to give nice rich Document symbols.
+; These include the "type" of variable/function as "detail", which is not yet supported in neovim AFAIK.
+; In the processing we also look for @Deprecated marker annotation to tag symbol as deprecated.
+; ---
 ; anonymous class
 ; kind=19 (Object fallback to Class)
 (object_creation_expression

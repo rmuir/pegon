@@ -1,3 +1,11 @@
+; supports Go-to-definition
+;
+; Currently supports go-to-definition only on a subset of things.
+; Local variables, function/catch/lambda parameters work.
+; Keywords work (which isn't redundant and enables some navigation e.g. via inlay hints)
+; Keep ctags as a fallback for now.
+;
+; ---
 ; keywords
 [
   "abstract"

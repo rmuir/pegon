@@ -1,3 +1,14 @@
+; Hover documentation
+; The first two patterns are basically a big TODO list.
+;
+; For example, rather than have "try" as generic keyword, it has been expanded
+; into various patterns (try-with-resources, extended try-with-resources, etc) that line
+; up to the JLS.
+;
+; This can make the hover documentation useful to beginners and experienced devs.
+;
+; Locals are minimally supported: local variables, method parameters, lambda parameters, etc.
+; ---
 ; always a keyword
 ([
   "case"

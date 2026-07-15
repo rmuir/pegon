@@ -1,4 +1,25 @@
-; local variables can only be accessed after they are declared. they may shadow fields
+; Solves the same problem tree-sitter locals tries to solve, but works differently.
+;
+; In java, class's member field can be declared at the very bottom of the file but accessed
+; by a method at the very top. Also for some pattern-matching functionality, they've
+; abandoned lexical scoping entirely in favor of "flow" scoping. These things require
+; special handling.
+;
+; On the other hand, local variables, parameters, catch parameters, lambda parameters, etc
+; aren't allowed to be shadowed. This is nice since it allows for efficient processing, e.g.
+; for those, we can build a hash with a list of scope ranges, and you just search backwards.
+; We have to still take care of some java peculiarities so that idioms such as following work:
+;
+;   int x = x; // assign to local from member
+;   this.x = x; // assign to member from parameter
+;
+; To solve that, two ranges are captured, one for the definition, and a start/end for the scope.
+;
+; There are also some problems with "tree-sitter-highlight" crate that uses the locals.
+; The biggest hurdle is that it doesn't support incremental parsing.
+; So it seems best to simply run this query before subsequent query that uses it.
+; For big files, doing a full reparse hurts under heavy editing.
+; ---
 ((block
   (local_variable_declaration
     type: (_) @type
