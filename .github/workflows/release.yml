@@ -36,7 +36,7 @@ jobs:
   pypi-linux:
     name: Create PyPI linux wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 300
+    timeout-minutes: 60
     strategy:
       matrix:
         platform:
@@ -75,7 +75,7 @@ jobs:
   pypi-musllinux:
     name: Create PyPI musllinux wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 300
+    timeout-minutes: 60
     strategy:
       matrix:
         platform:
@@ -110,7 +110,7 @@ jobs:
   pypi-windows:
     name: Create PyPI windows wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 300
+    timeout-minutes: 60
     strategy:
       matrix:
         platform:
@@ -145,7 +145,7 @@ jobs:
   pypi-macos:
     name: Create PyPI macos wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 300
+    timeout-minutes: 60
     strategy:
       matrix:
         platform:
