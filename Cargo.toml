@@ -1,6 +1,6 @@
 [package]
 name = "pegon"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2024"
 description = "Fast Java language server"
 readme = "README.md"
