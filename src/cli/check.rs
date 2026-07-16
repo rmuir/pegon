@@ -6,13 +6,14 @@ use annotate_snippets::{
 use anyhow::{Context as _, Error, bail};
 use core::fmt::{Display, Formatter};
 use core::sync::atomic::AtomicBool;
+use crossbeam_channel::Sender;
 
 use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
     fs,
     io::{BufWriter, Write as _},
     path::{Path, PathBuf},
-    sync::{Arc, mpsc::Sender},
+    sync::Arc,
     time::Instant,
 };
 use tree_sitter::Parser;
@@ -41,83 +42,6 @@ impl From<Severity> for Level<'_> {
             Severity::Hint => Self::HELP,
         }
     }
-}
-
-/// Render some diagnostics to the console
-fn render(path: &Path, data: &[u8], errors: &[Diagnostic], concise: bool) -> Result<(), Error> {
-    let filename = path.to_str();
-    let source = str::from_utf8(data)?;
-    let lock = anstream::stdout().lock();
-    let mut writer = BufWriter::new(lock);
-    for diagnostic in errors {
-        let rule = rule(diagnostic.rule_id);
-        let id_url = if concise { "" } else { &rule.url };
-        let label = if concise {
-            None
-        } else {
-            diagnostic.label.as_ref()
-        };
-
-        let annotations = [
-            // top context: e.g. what function are you in
-            diagnostic
-                .top_context
-                .map(|ctx| AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte)),
-            // primary error annotation: as precise of a range as possible
-            Some(
-                AnnotationKind::Primary
-                    .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
-                    .label(label)
-                    .highlight_source(true),
-            ),
-            // explicitly marked context in the query
-            diagnostic.context.map(|context| {
-                AnnotationKind::Context
-                    .span(context.start_byte..context.end_byte)
-                    .label(rule.context_label.as_ref())
-            }),
-            // explicitly marked visible in the query
-            diagnostic
-                .visible
-                .map(|visible| AnnotationKind::Visible.span(visible.start_byte..visible.end_byte)),
-        ];
-
-        let level: Level = rule.severity.into();
-
-        let report = [
-            level
-                .with_name(rule.severity.as_str())
-                .primary_title(&diagnostic.title)
-                .id(&rule.name)
-                .id_url(id_url)
-                .element(
-                    Snippet::source(source)
-                        .path(filename)
-                        .annotations(annotations.into_iter().flatten()),
-                ),
-            match &rule.fix {
-                Some(Fix::Static(replacement)) => Level::NOTE
-                    .with_name("help")
-                    .secondary_title(&diagnostic.help)
-                    .element(Snippet::source(source).patch(Patch::new(
-                        diagnostic.range.start_byte..diagnostic.range.end_byte,
-                        replacement,
-                    ))),
-                _ => Group::with_title(
-                    Level::NOTE
-                        .with_name("help")
-                        .secondary_title(&diagnostic.help),
-                ),
-            },
-        ];
-        if concise {
-            writeln!(writer, "{}", CONCISE.render(&report))?;
-        } else {
-            writeln!(writer, "{}\n", FULL.render(&report))?;
-        }
-    }
-    writer.flush()?;
-    Ok(())
 }
 
 #[derive(Clone, Copy, Default)]
@@ -170,12 +94,13 @@ impl Display for Stats {
 struct Worker {
     concise: bool,
     parser: Parser,
-    sender: Sender<Stats>,
+    sender: Sender<String>,
+    stats_sender: Sender<Stats>,
     stats: Stats,
 }
 
 impl Worker {
-    fn new(concise: bool, sender: Sender<Stats>) -> Self {
+    fn new(concise: bool, sender: Sender<String>, stats_sender: Sender<Stats>) -> Self {
         let mut parser = Parser::new();
         parser
             .set_language(&crate::support::language())
@@ -184,6 +109,7 @@ impl Worker {
             concise,
             parser,
             sender,
+            stats_sender,
             stats: Stats::default(),
         }
     }
@@ -231,16 +157,91 @@ impl Worker {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);
             }
-            render(path, &data, &result, self.concise)?;
+            self.render(path, &data, &result)?;
         }
         self.stats.add_file(1);
+        Ok(())
+    }
+
+    /// Render some diagnostics to the console
+    fn render(&self, path: &Path, data: &[u8], errors: &[Diagnostic]) -> Result<(), Error> {
+        let filename = path.to_str();
+        let source = str::from_utf8(data)?;
+        for diagnostic in errors {
+            let rule = rule(diagnostic.rule_id);
+            let id_url = if self.concise { "" } else { &rule.url };
+            let label = if self.concise {
+                None
+            } else {
+                diagnostic.label.as_ref()
+            };
+
+            let annotations = [
+                // top context: e.g. what function are you in
+                diagnostic
+                    .top_context
+                    .map(|ctx| AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte)),
+                // primary error annotation: as precise of a range as possible
+                Some(
+                    AnnotationKind::Primary
+                        .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
+                        .label(label)
+                        .highlight_source(true),
+                ),
+                // explicitly marked context in the query
+                diagnostic.context.map(|context| {
+                    AnnotationKind::Context
+                        .span(context.start_byte..context.end_byte)
+                        .label(rule.context_label.as_ref())
+                }),
+                // explicitly marked visible in the query
+                diagnostic.visible.map(|visible| {
+                    AnnotationKind::Visible.span(visible.start_byte..visible.end_byte)
+                }),
+            ];
+
+            let level: Level = rule.severity.into();
+
+            let report = [
+                level
+                    .with_name(rule.severity.as_str())
+                    .primary_title(&diagnostic.title)
+                    .id(&rule.name)
+                    .id_url(id_url)
+                    .element(
+                        Snippet::source(source)
+                            .path(filename)
+                            .annotations(annotations.into_iter().flatten()),
+                    ),
+                match &rule.fix {
+                    Some(Fix::Static(replacement)) => Level::NOTE
+                        .with_name("help")
+                        .secondary_title(&diagnostic.help)
+                        .element(Snippet::source(source).patch(Patch::new(
+                            diagnostic.range.start_byte..diagnostic.range.end_byte,
+                            replacement,
+                        ))),
+                    _ => Group::with_title(
+                        Level::NOTE
+                            .with_name("help")
+                            .secondary_title(&diagnostic.help),
+                    ),
+                },
+            ];
+            let message = if self.concise {
+                format!("{}\n", CONCISE.render(&report))
+            } else {
+                format!("{}\n\n", FULL.render(&report))
+            };
+            self.sender.send(message)?;
+        }
         Ok(())
     }
 }
 
 impl Drop for Worker {
     fn drop(&mut self) {
-        _ = self.sender.send(self.stats);
+        _ = self.stats_sender.send(self.stats);
     }
 }
 
@@ -260,9 +261,14 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
 
     // create overrides to ignore generated files
     // paths passed on cmdline (e.g. pre-commit) must be explicitly filtered with it.
-    let cwd = PathBuf::from(".");
-    let overrides = super::generated::generated_files(inputs.first().unwrap_or(&cwd))?;
-    let mut builder = WalkBuilder::from_iter(inputs.iter().filter(|item| {
+    let default_roots = [PathBuf::from(".")];
+    let roots = if inputs.is_empty() {
+        &default_roots
+    } else {
+        inputs
+    };
+    let overrides = super::generated::generated_files(roots.first().context("not empty")?)?;
+    let mut builder = WalkBuilder::from_iter(roots.iter().filter(|item| {
         overrides.as_ref().is_none_or(|overrides| {
             !matches!(
                 overrides.matched(item, item.is_dir()),
@@ -275,15 +281,33 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
         builder.overrides(overrides);
     }
 
-    let (tx, rx) = std::sync::mpsc::channel();
+    // buffer diagnostics with crossbeam so the threads don't lock each other on printing
+    let (tx, rx) = crossbeam_channel::bounded::<String>(1024);
+    let messages = std::thread::spawn(move || -> Result<(), Error> {
+        let mut writer = BufWriter::new(anstream::stdout().lock());
+        for diagnostic in rx {
+            writer.write_all(diagnostic.as_bytes())?;
+        }
+        Ok(())
+    });
+
+    let (stats_tx, stats_rx) = crossbeam_channel::unbounded();
     builder.build_parallel().run(|| {
-        let mut worker = Worker::new(concise, tx.clone());
+        let mut worker = Worker::new(concise, tx.clone(), stats_tx.clone());
         Box::new(move |result| worker.visit(result))
     });
-    drop(tx);
 
+    // finish writing diagnostics
+    drop(tx);
+    messages.join().map_err(|err| {
+        drop(err); // not worth the trouble
+        anyhow::anyhow!("message thread panicked")
+    })??;
+
+    // write stats
+    drop(stats_tx);
     let mut stats = Stats::default();
-    for result in rx {
+    for result in stats_rx {
         stats.add(result);
     }
 
