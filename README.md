@@ -12,6 +12,26 @@ Fast Java language server
 
 ## Install
 
+### Binaries
+
+Pegon is available on [pypi](https://pypi.org/project/pegon/).
+
+Use `uvx` to run a one-off lint check on your Java code:
+
+```sh
+uvx pegon check
+```
+
+Or install with `uv`, `pip`, or `pipx`:
+
+```text
+uv tool install pegon@latest
+pip install pegon
+pix install pegon
+```
+
+### Install from Source
+
 ```sh
 cargo install pegon
 ```
