@@ -251,20 +251,27 @@ impl Drop for Worker {
 /// Returns an error if any files had problems, or if internal errors were encountered.
 pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
     let start_time = Instant::now();
-    let mut paths = inputs.to_vec();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
     // i guess we could format those?
     typesbuilder.add("java", "*.java")?;
     typesbuilder.select("java");
     let matcher = typesbuilder.build()?;
-    let first_path = paths.pop().unwrap_or_else(|| PathBuf::from("."));
-    let mut builder = WalkBuilder::new(first_path.as_path());
-    for remaining in paths {
-        builder.add(remaining);
-    }
+
+    // create overrides to ignore generated files
+    // paths passed on cmdline (e.g. pre-commit) must be explicitly filtered with it.
+    let cwd = PathBuf::from(".");
+    let overrides = super::generated::generated_files(inputs.first().unwrap_or(&cwd))?;
+    let mut builder = WalkBuilder::from_iter(inputs.iter().filter(|item| {
+        overrides.as_ref().is_none_or(|overrides| {
+            !matches!(
+                overrides.matched(item, item.is_dir()),
+                ignore::Match::Ignore(_)
+            )
+        })
+    }));
     builder.types(matcher);
-    if let Some(overrides) = super::generated::generated_files(first_path.as_path())? {
+    if let Some(overrides) = overrides {
         builder.overrides(overrides);
     }
 
