@@ -221,7 +221,12 @@ impl Worker {
             .parser
             .parse(&data, None)
             .context("parser should be setup")?;
-        let result = diagnostics::lint(&tree, &data, &Arc::new(AtomicBool::new(false)), true)?;
+        let result = diagnostics::lint(
+            &tree,
+            &data,
+            &Arc::new(AtomicBool::new(false)),
+            !self.concise,
+        )?;
         if !result.is_empty() {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);
