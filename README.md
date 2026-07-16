@@ -13,7 +13,7 @@ Fast Java language server
 ## Install
 
 ```sh
-cargo install --git https://github.com/rmuir/pegon
+cargo install pegon
 ```
 
 ## Editor Setup
