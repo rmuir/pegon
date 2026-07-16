@@ -9,7 +9,7 @@ repository = "https://github.com/rmuir/pegon"
 license = "Apache-2.0"
 keywords = ["java", "language-server", "linter", "static-analysis"]
 categories = ["command-line-utilities", "development-tools", "text-editors"]
-exclude = [".*", "Makefile", "client", "pyproject.toml", "uv.lock"]
+exclude = [".*", "Makefile", "docs", "pyproject.toml", "uv.lock"]
 
 [workspace.lints.clippy]
 cargo = { level = "warn", priority = -1 }

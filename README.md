@@ -58,6 +58,10 @@ return {
 vim.lsp.enable({ 'pegon' })
 ```
 
+## Docs
+
+* [Linter](docs/linter.md)
+
 ## FAQ
 
 **Q. This code looks like AI slop!**
