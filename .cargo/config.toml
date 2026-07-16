@@ -1,3 +1,0 @@
-[env]
-# faster performance than gcc
-CC = "clang"
