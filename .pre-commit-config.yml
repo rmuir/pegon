@@ -62,6 +62,7 @@ repos:
         priority: 0
         require_serial: true
         types: [text]
+        exclude_types: [markdown]
 
       - id: detect-private-key
         name: Check for private keys

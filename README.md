@@ -60,7 +60,7 @@ vim.lsp.enable({ 'pegon' })
 
 ## Docs
 
-* [Linter](docs/linter.md)
+* [Linter](https://github.com/rmuir/pegon/tree/main/docs/linter.md)
 
 ## FAQ
 
