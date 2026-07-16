@@ -24,7 +24,7 @@ uvx pegon check
 
 Or install with `uv` or `pip`:
 
-```text
+```sh
 # with uv
 uv tool install pegon@latest
 # with pip
