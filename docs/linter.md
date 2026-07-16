@@ -36,7 +36,7 @@ jobs:
   pegon:
     env:
       # renovate: datasource=pypi depName=pegon
-      PEGON_VERSION: "1.0.2"
+      PEGON_VERSION: "1.0.3"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -65,3 +65,26 @@ uv add --dev pegon
 ```
 
 Then you can use `uv run pegon check` to run pinned version.
+
+## Pre-Commit
+
+To use with prek or pre-commit, use the `pypi` package with a local hook.
+You don't want users compiling rust or anything.
+
+Example:
+
+```yaml
+- repo: local
+  hooks:
+    - id: pegon
+      name: Check Java style
+      require_serial: true
+      language: python
+      additional_dependencies: ["pegon"]
+      entry: pegon
+      args: ['check']
+      types: ['java']
+```
+
+Alternatively, consider adding to a `pyproject.toml` and using a `system`
+hook that invokes `uv run`, same as described above for github actions.
