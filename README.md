@@ -22,12 +22,13 @@ Use `uvx` to run a one-off lint check on your Java code:
 uvx pegon check
 ```
 
-Or install with `uv`, `pip`, or `pipx`:
+Or install with `uv` or `pip`:
 
 ```text
+# with uv
 uv tool install pegon@latest
+# with pip
 pip install pegon
-pix install pegon
 ```
 
 ### Install from Source
