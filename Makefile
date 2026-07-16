@@ -40,6 +40,16 @@ test: ## Run tests with coverage report
 	cargo llvm-cov --text
 	cargo llvm-cov report --summary-only
 
+version: ## Bump version to VERSION
+	# check that VERSION is set
+	test -n "${VERSION}"
+	# bump toml files
+	uvx --from toml-cli toml set --toml-path Cargo.toml package.version ${VERSION}
+	uvx --from toml-cli toml set --toml-path pyproject.toml project.version ${VERSION}
+	# regenerate lock files
+	cargo update pegon
+	uv lock -P pegon
+
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
