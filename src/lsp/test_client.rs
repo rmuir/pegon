@@ -11,7 +11,7 @@ use gen_lsp_types::{
     ExitNotification, InitializeParams, InitializeRequest, InitializeResult,
     InitializedNotification, InitializedParams, ShutdownRequest,
 };
-use lsp_server::{Connection, Message, Request, Response, ResponseKind};
+use lsp_server::{Connection, Message, Request, Response};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -125,11 +125,9 @@ impl TestClient {
                 Message::Notification(_) => (),
                 Message::Response(res) => {
                     assert_eq!(res.id, id);
-                    return match res.response_kind {
-                        ResponseKind::Ok { result } => result,
-                        ResponseKind::Err { error } => {
-                            serde_json::to_value(error).expect("should serialize")
-                        }
+                    return match res.response_result {
+                        Ok(result) => result,
+                        Err(error) => serde_json::to_value(error).expect("should serialize"),
                     };
                 }
             }
