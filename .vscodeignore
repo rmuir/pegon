@@ -1,9 +1,11 @@
 **
 
-!out/extension.js
+!bin/**
+!dist/extension.js
 !package.json
 !README.md
 !LICENSE.txt
+!vscode/icon.png
 
 !node_modules/**
 node_modules/@oxlint*/**

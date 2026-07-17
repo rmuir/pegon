@@ -3,6 +3,7 @@
   "displayName": "pegon",
   "description": "Fast Java language server",
   "author": "Robert Muir",
+  "icon": "vscode/icon.png",
   "license": "Apache-2.0",
   "version": "1.0.3",
   "publisher": "rmuir",
