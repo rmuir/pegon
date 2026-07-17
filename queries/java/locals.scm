@@ -29,6 +29,18 @@
   (#set! local.type "variable")
   (#set! local.start.inclusive false))
 
+; when declared in a switch block label, variable's scope
+; extends to the remainder of the switch block, it "falls thru"
+((switch_block
+  (switch_block_statement_group
+    (local_variable_declaration
+      type: (_) @type
+      declarator: (variable_declarator
+        name: (identifier) @definition)) @start)
+  "}" @end)
+  (#set! local.type "variable")
+  (#set! local.start.inclusive false))
+
 ((for_statement
   init: (local_variable_declaration
     type: (_) @type
