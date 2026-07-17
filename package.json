@@ -1,6 +1,6 @@
 {
-  "name": "pegon",
-  "displayName": "pegon",
+  "name": "pegon-vscode",
+  "displayName": "Pegon Java support",
   "description": "Fast Java language server",
   "author": "Robert Muir",
   "icon": "vscode/icon.png",
