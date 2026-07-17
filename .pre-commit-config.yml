@@ -321,6 +321,21 @@ repos:
             - Cargo.lock
             - deny.toml
 
+      - id: extension-checks
+        name: Check VSCode extension
+        priority: 0
+        language: system
+        entry: npm
+        args: ["run", "ci"]
+        # runs across all files if any are touched
+        require_serial: true
+        pass_filenames: false
+        files:
+          glob:
+            - package.json
+            - package-lock.json
+            - "**/*.ts"
+
       - id: query-check
         name: Check Queries
         priority: 0
