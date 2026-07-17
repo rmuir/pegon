@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "**/*",
+    "!/vscode/**/*"
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true,
+    "denyWarnings": true
+  },
+  "env": {
+    "node": true
+  },
+  "categories": {
+    "correctness": "error",
+    "pedantic": "warn",
+    "perf": "warn",
+    "restriction": "warn",
+    "style": "warn",
+    "suspicious": "warn",
+    "nursery": "warn"
+  },
+  "rules": {
+    "init-declarations": [
+      "off"
+    ],
+    "func-style": [
+      "warn",
+      "declaration"
+    ],
+    "no-ternary": [
+      "off"
+    ],
+    "oxc/no-async-await": [
+      "off"
+    ],
+    "oxc/no-optional-chaining": [
+      "off"
+    ],
+    "prefer-readonly-parameter-types": [
+      "off"
+    ]
+  }
+}

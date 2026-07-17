@@ -1,4 +1,6 @@
 target
+dist
+node_modules
 perf.data
 perf.data.old
 tree-sitter-java.wasm

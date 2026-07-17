@@ -1,0 +1,11 @@
+**
+
+!out/extension.js
+!package.json
+!README.md
+!LICENSE.txt
+
+!node_modules/**
+node_modules/@oxlint*/**
+node_modules/@types/**
+node_modules/@typescript/**
