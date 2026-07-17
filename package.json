@@ -1,0 +1,72 @@
+{
+  "name": "pegon",
+  "displayName": "pegon",
+  "description": "Fast Java language server",
+  "author": "Robert Muir",
+  "license": "Apache-2.0",
+  "version": "1.0.3",
+  "publisher": "rmuir",
+  "homepage": "https://github.com/rmuir/pegon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rmuir/pegon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rmuir/pegon/issues"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "tsc": "tsc --noEmit",
+    "lint": "oxlint",
+    "check": "npm run tsc && npm run lint",
+    "ci": "npm ci && npm run check"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "java",
+    "language server",
+    "linting",
+    "treesitter"
+  ],
+  "engines": {
+    "vscode": "^1.125.0"
+  },
+  "activationEvents": [
+    "onLanguage:java"
+  ],
+  "main": "./dist/extension.js",
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/vscode": "1.125.0",
+    "typescript": "7.0.2",
+    "oxlint": "1.74.0",
+    "oxlint-tsgolint": "0.25.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.0"
+  },
+  "contributes": {
+    "semanticTokenScopes": [
+      {
+        "language": "java",
+        "scopes": {
+          "property.readonly": [
+            "constant.numeric"
+          ],
+          "property": [
+            "support.variable",
+            "support.type.object.dom"
+          ],
+          "parameter": [
+            "token.variable.parameter.java",
+            "variable.parameter"
+          ]
+        }
+      }
+    ]
+  }
+}

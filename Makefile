@@ -46,6 +46,7 @@ version: ## Bump version to VERSION
 	# bump toml files
 	uvx --from toml-cli toml set --toml-path Cargo.toml package.version ${VERSION}
 	uvx --from toml-cli toml set --toml-path pyproject.toml project.version ${VERSION}
+	npm version ${VERSION} --no-git-tag-version
 	# regenerate lock files
 	cargo update pegon
 	uv lock -P pegon
