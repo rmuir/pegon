@@ -58,9 +58,13 @@ return {
 vim.lsp.enable({ 'pegon' })
 ```
 
-## VSCode
+### VSCode
 
-Published on Open VSX as [rmuir.pegon](https://open-vsx.org/extension/rmuir/pegon).
+Install [rmuir.pegon-vscode](https://marketplace.visualstudio.com/items?itemName=rmuir.pegon-vscode) from the marketplace.
+
+### VSCodium, Cursor, etc
+
+Install [rmuir.pegon-vscode](https://open-vsx.org/extension/rmuir/pegon-vscode) from Open VSX.
 
 ## Docs
 
