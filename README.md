@@ -58,6 +58,10 @@ return {
 vim.lsp.enable({ 'pegon' })
 ```
 
+## VSCode
+
+Published on Open VSX as [rmuir.pegon](https://open-vsx.org/extension/rmuir/pegon).
+
 ## Docs
 
 * [Linter](https://github.com/rmuir/pegon/tree/main/docs/linter.md)
