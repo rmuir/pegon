@@ -51,6 +51,40 @@ version: ## Bump version to VERSION
 	cargo update pegon
 	uv lock -P pegon
 
+VSCE := npx @vscode/vsce package --target
+
+.PHONY: vscode-packages
+.NOTPARALLEL: vscode-packages
+vscode-packages: win-x64 win-arm64 linux-x64 linux-arm64 alpine-x64 alpine-arm64 darwin-x64 darwin-arm64
+
+win-%:
+	rm -rf bin && mkdir bin
+	unzip -p wheels-windows-*/*_$(subst x64,amd64,$*).whl "*/pegon.exe" > bin/pegon.exe
+	chmod +x bin/pegon.exe
+	mkdir -p dist
+	$(VSCE) win32-$* -o dist/win32-$*.vsix
+
+linux-%:
+	rm -rf bin && mkdir bin
+	unzip -p wheels-linux-*/*_$(subst x64,x86_64,$(subst arm64,aarch64,$*)).whl "*/pegon" > bin/pegon
+	chmod +x bin/pegon
+	mkdir -p dist
+	$(VSCE) $@ -o dist/$@.vsix
+
+alpine-%:
+	rm -rf bin && mkdir bin
+	unzip -p wheels-musllinux-*/*_$(subst x64,x86_64,$(subst arm64,aarch64,$*)).whl "*/pegon" > bin/pegon
+	chmod +x bin/pegon
+	mkdir -p dist
+	$(VSCE) $@ -o dist/$@.vsix
+
+darwin-%:
+	rm -rf bin && mkdir bin
+	unzip -p wheels-macos-*/*_$(subst x64,x86_64,$*).whl "*/pegon" > bin/pegon
+	chmod +x bin/pegon
+	mkdir -p dist
+	$(VSCE) $@ -o dist/$@.vsix
+
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-z.A-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
