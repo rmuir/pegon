@@ -20,6 +20,7 @@ use gen_lsp_types::{
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     SemanticTokensClientCapabilities, TextDocumentClientCapabilities,
     TextDocumentContentChangeEvent, WorkspaceClientCapabilities, WorkspaceEditClientCapabilities,
+    WorkspaceFolder, WorkspaceFolders,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -484,6 +485,29 @@ impl Client {
 
     fn workspace_edit(&self) -> Option<&WorkspaceEditClientCapabilities> {
         self.workspace()?.workspace_edit.as_ref()
+    }
+
+    pub fn workspace_folders(&self) -> Vec<WorkspaceFolder> {
+        // first look for workspace folders
+        if let Some(WorkspaceFolders::WorkspaceFolderList(folders)) = self
+            .init_params
+            .workspace_folders_initialize_params
+            .workspace_folders
+            .as_ref()
+        {
+            return folders.clone();
+        }
+        // fall back to root_uri
+        #[expect(deprecated, reason = "unavoidable")]
+        if let Some(root_uri) = self.init_params.root_uri.as_ref() {
+            return vec![WorkspaceFolder {
+                uri: root_uri.clone(),
+                name: "root_uri".into(),
+            }];
+        }
+        // there's no workspace folders, standalone document, or ancient root_path
+        // we're not dragging in some crazy URL crates for this.
+        vec![]
     }
 }
 

@@ -19,8 +19,10 @@ use std::{
 
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
+use gen_lsp_types::DidChangeWorkspaceFoldersParams;
 use gen_lsp_types::SemanticTokensDeltaParams;
 use gen_lsp_types::SemanticTokensDeltaRequest;
+use gen_lsp_types::WorkspaceFolder;
 use gen_lsp_types::{
     CancelParams, CodeAction, CodeActionParams, CodeActionRequest, CodeActionResolveRequest,
     DefinitionParams, DefinitionRequest, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
@@ -80,20 +82,41 @@ pub struct Document {
     pub line_index: LineIndex,
 }
 
+/// A workspace folder
+pub struct Workspace {
+    #[expect(dead_code, reason = "not yet")]
+    pub root: Uri,
+}
+
 /// LSP state, only accessed by the main thread
 pub struct State {
     /// Map of documents currently opened by the editor, keyed by URI
     pub docs: FxHashMap<String, Resource>,
     /// Treesitter parser used for parsing opened/modified documents
     pub parser: Parser,
+    /// List of workspace folders, keyed by name
+    pub workspaces: FxHashMap<String, Workspace>,
 }
 
 impl State {
-    fn new() -> Result<Self> {
-        let docs: FxHashMap<String, Resource> = FxHashMap::default();
+    fn new(folders: &[WorkspaceFolder]) -> Result<Self> {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(&crate::support::language())?;
-        Ok(Self { docs, parser })
+        Ok(Self {
+            parser,
+            docs: FxHashMap::default(),
+            workspaces: folders
+                .iter()
+                .map(|folder| {
+                    (
+                        folder.name.clone(),
+                        Workspace {
+                            root: folder.uri.clone(),
+                        },
+                    )
+                })
+                .collect(),
+        })
     }
 }
 
@@ -163,7 +186,7 @@ impl Server {
     /// notifications are handled by the main thread directly, since they cause a state change.
     /// requests are dispatched to the thread pool.
     pub fn main_loop(&self, client: &Arc<Client>) -> Result<(), Error> {
-        let mut state = State::new()?;
+        let mut state = State::new(&client.workspace_folders())?;
 
         for msg in &self.connection.receiver {
             match msg {
@@ -584,6 +607,24 @@ impl Server {
                 let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
                 let uri = params.text_document.uri.clone();
                 super::sync::did_close(client, params, state).context(uri.to_string())?
+            }
+            "workspace/didChangeWorkspaceFolders" => {
+                let params: DidChangeWorkspaceFoldersParams = serde_json::from_value(note.params)?;
+                for folder in params.event.removed {
+                    if state.workspaces.remove(&folder.name).is_none() {
+                        bail!("removed nonexistent workspace folder");
+                    }
+                }
+                for folder in params.event.added {
+                    if state
+                        .workspaces
+                        .insert(folder.name, Workspace { root: folder.uri })
+                        .is_some()
+                    {
+                        bail!("added existing workspace folder");
+                    }
+                }
+                None
             }
             "$/cancelRequest" => {
                 let params: CancelParams = serde_json::from_value(note.params)?;

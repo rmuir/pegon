@@ -181,12 +181,10 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                     will_save: None,
                     will_save_wait_until: None,
                 })),
-            // we don't care about classpaths or anything on disk, so advertise
-            // the workspace support for better client-side reuse of the server.
             workspace: Some(WorkspaceOptions {
                 workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                     supported: Some(true),
-                    change_notifications: Some(ChangeNotifications::Bool(false)),
+                    change_notifications: Some(ChangeNotifications::Bool(true)),
                 }),
                 file_operations: None,
                 text_document_content: None, // TODO!
