@@ -18,8 +18,11 @@ use regex_automata::{
 };
 use rustc_hash::FxHashMap;
 
-/// fully qualified name -> path name
-type Index = FxHashMap<String, String>;
+#[derive(Default)]
+pub struct Index {
+    /// fully qualified name -> path name
+    names: FxHashMap<String, String>,
+}
 
 /// per thread worker
 struct Worker<'scope> {
@@ -78,7 +81,7 @@ impl<'scope> Worker<'scope> {
                     .context("should be a file")?
                     .to_string_lossy();
                 let path = path.to_string_lossy().into_owned();
-                self.index.insert(format!("{package}.{class}"), path);
+                self.index.names.insert(format!("{package}.{class}"), path);
                 break; // currently, we don't want anything else from this file
             }
         }
@@ -127,8 +130,8 @@ pub fn index(inputs: &[PathBuf]) -> Result<Index, Error> {
 
     drop(tx);
     let mut index = Index::default();
-    for result in rx {
-        index.extend(result);
+    for shard in rx {
+        index.names.extend(shard.names);
     }
     Ok(index)
 }

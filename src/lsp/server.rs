@@ -41,6 +41,8 @@ use rustc_hash::FxHashMap;
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
 
+use crate::support::index::Index;
+
 use super::client::Client;
 
 /// A Language Server Protocol Server
@@ -80,12 +82,16 @@ pub struct Document {
     pub tree: Tree,
     /// Index of newlines
     pub line_index: LineIndex,
+    /// Workspace associated with this document
+    pub workspace: Option<Arc<Workspace>>,
 }
 
 /// A workspace folder
 pub struct Workspace {
-    #[expect(dead_code, reason = "not yet")]
     pub root: Uri,
+    /// index of files in the workspace
+    #[expect(dead_code, reason = "not yet")]
+    pub index: Option<Index>,
 }
 
 /// LSP state, only accessed by the main thread
@@ -95,7 +101,7 @@ pub struct State {
     /// Treesitter parser used for parsing opened/modified documents
     pub parser: Parser,
     /// List of workspace folders, keyed by name
-    pub workspaces: FxHashMap<String, Workspace>,
+    pub workspaces: FxHashMap<String, Arc<Workspace>>,
 }
 
 impl State {
@@ -110,13 +116,22 @@ impl State {
                 .map(|folder| {
                     (
                         folder.name.clone(),
-                        Workspace {
+                        Arc::new(Workspace {
                             root: folder.uri.clone(),
-                        },
+                            index: None,
+                        }),
                     )
                 })
                 .collect(),
         })
+    }
+
+    /// computes the workspace associated with the document
+    pub fn workspace(&self, uri: &Uri) -> Option<Arc<Workspace>> {
+        self.workspaces
+            .values()
+            .find(|workspace| workspace.root.0.starts_with(&uri.0))
+            .cloned()
     }
 }
 
@@ -618,7 +633,13 @@ impl Server {
                 for folder in params.event.added {
                     if state
                         .workspaces
-                        .insert(folder.name, Workspace { root: folder.uri })
+                        .insert(
+                            folder.name,
+                            Arc::new(Workspace {
+                                root: folder.uri,
+                                index: None,
+                            }),
+                        )
                         .is_some()
                     {
                         bail!("added existing workspace folder");

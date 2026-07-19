@@ -41,6 +41,7 @@ pub fn did_open(
         version: params.text_document.version,
         tree,
         line_index,
+        workspace: state.workspace(&uri),
     };
     let push = if client.supports_pull_diagnostics() {
         None
@@ -116,6 +117,7 @@ pub fn did_change(
         version: params.text_document.version,
         tree,
         line_index,
+        workspace: doc.workspace.clone(),
     };
 
     let push = if client.supports_pull_diagnostics() {
