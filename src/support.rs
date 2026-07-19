@@ -1,6 +1,7 @@
 //! Shared support code
 
 pub mod diagnostics;
+pub mod index;
 pub mod queries;
 
 /// Tree-sitter grammar in use

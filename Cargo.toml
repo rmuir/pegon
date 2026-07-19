@@ -67,6 +67,8 @@ anstream = "=1.0.0"
 anyhow = "=1.0.103"
 # Generation of LSP result_id
 blake3 = { version = "=1.8.5" }
+# indexing support
+bstr = "=1.13.0"
 # CLI argument processing
 clap = { version = "=4.6.2", features = ["derive"] }
 # threading support
@@ -81,6 +83,8 @@ indoc = "=2.0.7"
 line-index = "=0.1.2"
 # LSP support
 lsp-server = "=0.10.0"
+# indexing files
+regex-automata = "=0.4.16"
 # faster hashing for symbols, etc
 rustc-hash = "=2.1.3"
 # serialization
