@@ -8,7 +8,7 @@ permissions: {}
 env:
   TS_QUERY_LS_VERSION: "v3.15.1"
   TREE_SITTER_VERSION: "v0.26.9"
-  TREE_SITTER_JAVA_ORCHARD_VERSION: "v0.5.9"
+  TREE_SITTER_JAVA_ORCHARD_VERSION: "v0.5.10"
 
 on:
   workflow_dispatch:
