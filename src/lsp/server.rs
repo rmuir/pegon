@@ -12,6 +12,7 @@
 use core::num::NonZero;
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering;
+use std::path::PathBuf;
 use std::{
     sync::{Arc, Mutex},
     thread,
@@ -20,9 +21,19 @@ use std::{
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
 use gen_lsp_types::DidChangeWorkspaceFoldersParams;
+use gen_lsp_types::ProgressNotification;
+use gen_lsp_types::ProgressParams;
+use gen_lsp_types::ProgressToken;
 use gen_lsp_types::SemanticTokensDeltaParams;
 use gen_lsp_types::SemanticTokensDeltaRequest;
+use gen_lsp_types::WorkDoneProgressBegin;
+use gen_lsp_types::WorkDoneProgressCreateParams;
+use gen_lsp_types::WorkDoneProgressCreateRequest;
+use gen_lsp_types::WorkDoneProgressEnd;
 use gen_lsp_types::WorkspaceFolder;
+use gen_lsp_types::WorkspaceSymbolParams;
+use gen_lsp_types::WorkspaceSymbolRequest;
+use gen_lsp_types::WorkspaceSymbolResponse;
 use gen_lsp_types::{
     CancelParams, CodeAction, CodeActionParams, CodeActionRequest, CodeActionResolveRequest,
     DefinitionParams, DefinitionRequest, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
@@ -37,6 +48,7 @@ use gen_lsp_types::{
 };
 use line_index::LineIndex;
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
+use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, percent_encode};
 use rustc_hash::FxHashMap;
 use serde::Serialize;
 use tree_sitter::{Parser, Tree};
@@ -83,16 +95,18 @@ pub struct Document {
     /// Index of newlines
     pub line_index: LineIndex,
     /// Workspace associated with this document
-    pub workspace: Option<Arc<Workspace>>,
+    pub workspace_name: Option<String>,
 }
 
 /// A workspace folder
 pub struct Workspace {
     pub root: Uri,
     /// index of files in the workspace
-    #[expect(dead_code, reason = "not yet")]
-    pub index: Option<Index>,
+    pub index: Option<Arc<Index>>,
 }
+
+/// Workspace symbol search doesn't allow to specify a workspace!
+pub type AllWorkspaces = Vec<(String, Arc<Index>)>;
 
 /// LSP state, only accessed by the main thread
 pub struct State {
@@ -101,7 +115,9 @@ pub struct State {
     /// Treesitter parser used for parsing opened/modified documents
     pub parser: Parser,
     /// List of workspace folders, keyed by name
-    pub workspaces: FxHashMap<String, Arc<Workspace>>,
+    pub workspaces: FxHashMap<String, Workspace>,
+    /// Hands out request ids
+    pub request_counter: i32,
 }
 
 impl State {
@@ -116,21 +132,23 @@ impl State {
                 .map(|folder| {
                     (
                         folder.name.clone(),
-                        Arc::new(Workspace {
+                        Workspace {
                             root: folder.uri.clone(),
                             index: None,
-                        }),
+                        },
                     )
                 })
                 .collect(),
+            request_counter: 0,
         })
     }
 
     /// computes the workspace associated with the document
-    pub fn workspace(&self, uri: &Uri) -> Option<Arc<Workspace>> {
+    pub fn workspace(&self, uri: &Uri) -> Option<String> {
         self.workspaces
-            .values()
-            .find(|workspace| workspace.root.0.starts_with(&uri.0))
+            .iter()
+            .find(|(_, workspace)| uri.0.starts_with(&workspace.root.0))
+            .map(|(name, _)| name)
             .cloned()
     }
 }
@@ -215,7 +233,7 @@ impl Server {
                         .lock()
                         .map_err(|err| anyhow!("poisoned: {err}"))?
                         .insert(req.id.clone(), Arc::clone(&cancel));
-                    match self.handle_request(client, &req, &state.docs, &cancel) {
+                    match self.handle_request(client, &req, &state, &cancel) {
                         Ok(()) => {}
                         Err(err) => {
                             // error during dispatch (e.g. parsing params or something)
@@ -270,7 +288,7 @@ impl Server {
         &self,
         client: &Arc<Client>,
         req: &Request,
-        docs: &FxHashMap<String, Resource>,
+        state: &State,
         cancel: &Arc<AtomicBool>,
     ) -> Result<()> {
         let id = req.id.clone();
@@ -281,7 +299,7 @@ impl Server {
         match req.method.as_str() {
             "textDocument/codeAction" => {
                 let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -308,7 +326,7 @@ impl Server {
                         .context("data should be preserved")?
                         .clone(),
                 )?;
-                let doc = java_document(docs, &data.uri)?;
+                let doc = java_document(state, &data.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -329,7 +347,7 @@ impl Server {
             "textDocument/definition" => {
                 let params: DefinitionParams = serde_json::from_value(req.params.clone())?;
                 let uri = &params.text_document_position_params.text_document.uri;
-                let doc = java_document(docs, uri)?;
+                let doc = java_document(state, uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -349,7 +367,7 @@ impl Server {
             }
             "textDocument/diagnostic" => {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -370,7 +388,7 @@ impl Server {
             "textDocument/documentHighlight" => {
                 let params: DocumentHighlightParams = serde_json::from_value(req.params.clone())?;
                 let uri = &params.text_document_position_params.text_document.uri;
-                let doc = java_document(docs, uri)?;
+                let doc = java_document(state, uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -390,7 +408,7 @@ impl Server {
             }
             "textDocument/documentSymbol" => {
                 let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -410,7 +428,7 @@ impl Server {
             }
             "textDocument/foldingRange" => {
                 let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -431,7 +449,7 @@ impl Server {
             "textDocument/hover" => {
                 let params: HoverParams = serde_json::from_value(req.params.clone())?;
                 let uri = &params.text_document_position_params.text_document.uri;
-                let doc = java_document(docs, uri)?;
+                let doc = java_document(state, uri)?;
                 let position = params.text_document_position_params.position;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
@@ -452,7 +470,7 @@ impl Server {
             }
             "textDocument/inlayHint" => {
                 let params: InlayHintParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -479,7 +497,7 @@ impl Server {
                         .context("data should be preserved")?
                         .clone(),
                 )?;
-                let doc = java_document(docs, &data.uri)?;
+                let doc = java_document(state, &data.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -499,7 +517,7 @@ impl Server {
             }
             "textDocument/selectionRange" => {
                 let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -519,7 +537,7 @@ impl Server {
             }
             "textDocument/semanticTokens/full" => {
                 let params: SemanticTokensParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
@@ -541,7 +559,7 @@ impl Server {
             }
             "textDocument/semanticTokens/full/delta" => {
                 let params: SemanticTokensDeltaParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
@@ -563,7 +581,7 @@ impl Server {
             }
             "textDocument/semanticTokens/range" => {
                 let params: SemanticTokensRangeParams = serde_json::from_value(req.params.clone())?;
-                let doc = java_document(docs, &params.text_document.uri)?;
+                let doc = java_document(state, &params.text_document.uri)?;
                 self.workers.execute(move || {
                     if let Some(response) = start_request(&cancel, &in_flight, &id) {
                         drop(sender.send(response));
@@ -575,6 +593,44 @@ impl Server {
                         id.clone(),
                         match super::semantic_tokens::range(&client, &doc, &params, &cancel) {
                             Ok(result) => response::<SemanticTokensRangeRequest>(id, Some(result)),
+                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                        },
+                    );
+                    drop(sender.send(response));
+                })
+            }
+            "workspace/symbol" => {
+                let params: WorkspaceSymbolParams = serde_json::from_value(req.params.clone())?;
+                // request doesn't specify anything except a key, search all indexed workspaces.
+                let workspaces: AllWorkspaces = state
+                    .workspaces
+                    .iter()
+                    .filter_map(|(name, workspace)| {
+                        workspace
+                            .index
+                            .as_ref()
+                            .map(|index| (name.clone(), Arc::clone(index)))
+                    })
+                    .collect();
+                self.workers.execute(move || {
+                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
+                        drop(sender.send(response));
+                        return;
+                    }
+                    let response = finish_request(
+                        &cancel,
+                        &in_flight,
+                        id.clone(),
+                        match super::workspace_symbols::request(
+                            &client,
+                            &workspaces,
+                            &params,
+                            &cancel,
+                        ) {
+                            Ok(result) => response::<WorkspaceSymbolRequest>(
+                                id,
+                                Some(WorkspaceSymbolResponse::WorkspaceSymbolList(result)),
+                            ),
                             Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
                         },
                     );
@@ -610,18 +666,17 @@ impl Server {
         let response = match note.method.as_str() {
             "textDocument/didOpen" => {
                 let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
-                let uri = params.text_document.uri.clone();
-                super::sync::did_open(client, params, state).context(uri.to_string())?
+                let uri = &params.text_document.uri;
+                self.ensure_indexed(client, uri, state)?;
+                super::sync::did_open(client, params, state)?
             }
             "textDocument/didChange" => {
                 let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
-                let uri = params.text_document.text_document_identifier.uri.clone();
-                super::sync::did_change(client, params, state).context(uri.to_string())?
+                super::sync::did_change(client, params, state)?
             }
             "textDocument/didClose" => {
                 let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
-                let uri = params.text_document.uri.clone();
-                super::sync::did_close(client, params, state).context(uri.to_string())?
+                super::sync::did_close(client, params, state)?
             }
             "workspace/didChangeWorkspaceFolders" => {
                 let params: DidChangeWorkspaceFoldersParams = serde_json::from_value(note.params)?;
@@ -635,10 +690,10 @@ impl Server {
                         .workspaces
                         .insert(
                             folder.name,
-                            Arc::new(Workspace {
+                            Workspace {
                                 root: folder.uri,
                                 index: None,
-                            }),
+                            },
                         )
                         .is_some()
                     {
@@ -670,6 +725,59 @@ impl Server {
         }
         .map(notification::<PublishDiagnosticsNotification>);
         Ok(response)
+    }
+
+    /// trigger workspace indexing
+    fn ensure_indexed(&self, client: &Client, uri: &Uri, state: &mut State) -> Result<()> {
+        // FIXME: currently this happens sync
+        if let Some(workspace_name) = state.workspace(uri)
+            && let Some(workspace) = state.workspaces.get_mut(&workspace_name)
+            && workspace.index.is_none()
+        {
+            // create a progress request with matching token
+            state.request_counter = state.request_counter.wrapping_add(1);
+            let id = state.request_counter;
+            let token = ProgressToken::Int(id);
+
+            if client.supports_progress() {
+                self.connection
+                    .sender
+                    .send(request::<WorkDoneProgressCreateRequest>(
+                        id.into(),
+                        WorkDoneProgressCreateParams::new(token.clone()),
+                    ))?;
+                self.connection
+                    .sender
+                    .send(notification::<ProgressNotification>(ProgressParams {
+                        token: token.clone(),
+                        value: serde_json::to_value(WorkDoneProgressBegin {
+                            title: "Indexing".into(),
+                            cancellable: None,
+                            message: None,
+                            percentage: None,
+                        })?,
+                    }))?;
+            }
+
+            let paths = [PathBuf::from(
+                uri_to_path(&workspace.root).context("valid workspace root")?,
+            )];
+            let index = crate::support::index::index(&paths)?;
+            let size = index.names.len();
+            workspace.index = Some(Arc::new(index));
+
+            if client.supports_progress() {
+                self.connection
+                    .sender
+                    .send(notification::<ProgressNotification>(ProgressParams {
+                        token,
+                        value: serde_json::to_value(WorkDoneProgressEnd {
+                            message: Some(format!("{size} files")),
+                        })?,
+                    }))?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -748,19 +856,80 @@ fn log_error(method: &String, message: &String) -> Message {
 }
 
 /// returns open java document from the editor, or an error
-fn java_document(docs: &FxHashMap<String, Resource>, uri: &Uri) -> Result<Arc<Document>> {
-    match docs.get(&uri.to_string()) {
+fn java_document(state: &State, uri: &Uri) -> Result<Arc<Document>> {
+    match state.docs.get(&uri.to_string()) {
         Some(Resource::Java(doc)) => Ok(Arc::clone(doc)),
         Some(Resource::Other) => bail!("non-java document: {uri}"),
         None => bail!("document not open: {uri}"),
     }
 }
 
+/// convert uri to path without a million crates
+pub fn uri_to_path(uri: &Uri) -> Option<String> {
+    let path = uri.0.strip_prefix("file://")?;
+    let decoded = percent_decode_str(path).decode_utf8().ok()?;
+    if decoded.contains(':') {
+        // windows drive
+        let clean = decoded.strip_prefix('/').unwrap_or(&decoded);
+        Some(clean.replace('/', "\\"))
+    } else if !decoded.starts_with('/') {
+        // windows unc
+        Some(format!(r"\\{}", decoded.replace('/', "\\")))
+    } else {
+        // everyone else who isn't insane
+        Some(decoded.into_owned())
+    }
+}
+
+/// convert path to uri without a million crates
+pub fn path_to_uri(path: &str) -> Uri {
+    let is_windows_drive = path.contains(':');
+    let prefix = if is_windows_drive {
+        "file:///"
+    } else {
+        "file://"
+    };
+    let clean = path.strip_prefix(r"\\").unwrap_or(path);
+    let escaped = clean.replace('\\', "/");
+    let encoded = percent_encode(escaped.as_bytes(), ENCODED_SET);
+    format!("{prefix}{encoded}").into()
+}
+
+/// Set of characters to percent-encode
+static ENCODED_SET: &AsciiSet = &CONTROLS
+    .add(b' ')
+    .add(b'!')
+    .add(b'"')
+    .add(b'#')
+    .add(b'$')
+    .add(b'%')
+    .add(b'&')
+    .add(b'\'')
+    .add(b'(')
+    .add(b')')
+    .add(b'*')
+    .add(b'+')
+    .add(b',')
+    .add(b';')
+    .add(b'<')
+    .add(b'=')
+    .add(b'>')
+    .add(b'?')
+    .add(b'@')
+    .add(b'[')
+    .add(b'\\')
+    .add(b']')
+    .add(b'^')
+    .add(b'`')
+    .add(b'{')
+    .add(b'|')
+    .add(b'}');
+
 #[cfg(test)]
 mod tests {
     use std::thread;
 
-    use crate::lsp::run_server;
+    use crate::lsp::{run_server, server::*};
     use lsp_server::Connection;
 
     /// make sure if the stream disconnects that the error makes it out
@@ -772,5 +941,42 @@ mod tests {
         drop(client);
         let err = server_thread.join().unwrap().unwrap_err();
         assert_eq!(err.to_string(), "disconnected channel");
+    }
+
+    #[test]
+    fn encode_uri() {
+        assert_eq!(Uri("file:///etc/hosts".into()), path_to_uri("/etc/hosts"));
+        assert_eq!(
+            Uri("file:///etc/sp%20ace".into()),
+            path_to_uri("/etc/sp ace")
+        );
+        assert_eq!(
+            Uri("file:///c:/Program%20Files/whatever".into()),
+            path_to_uri(r"c:\Program Files\whatever")
+        );
+        assert_eq!(
+            Uri("file://server/share/whatever".into()),
+            path_to_uri(r"\\server\share\whatever")
+        );
+    }
+
+    #[test]
+    fn decode_uri() {
+        assert_eq!(
+            uri_to_path(&Uri("file:///etc/hosts".into())),
+            Some("/etc/hosts".into())
+        );
+        assert_eq!(
+            uri_to_path(&Uri("file:///etc/sp%20ace".into())),
+            Some("/etc/sp ace".into())
+        );
+        assert_eq!(
+            uri_to_path(&Uri("file:///c:/Program%20Files/whatever".into())),
+            Some(r"c:\Program Files\whatever".into())
+        );
+        assert_eq!(
+            uri_to_path(&Uri("file://server/share/whatever".into())),
+            Some(r"\\server\share\whatever".into())
+        );
     }
 }

@@ -25,6 +25,7 @@ mod server;
 mod sync;
 #[cfg(test)]
 mod test_client;
+mod workspace_symbols;
 
 /// Run LSP server
 ///
