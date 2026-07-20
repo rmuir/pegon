@@ -29,7 +29,6 @@ pub fn did_open(
         state.docs.insert(uri.to_string(), Resource::Other);
         bail!("non-java language_id: {lang}");
     }
-
     state.parser.reset();
     let tree = state
         .parser
@@ -39,9 +38,9 @@ pub fn did_open(
     let doc = Document {
         text: params.text_document.text,
         version: params.text_document.version,
+        workspace_name: state.workspace(&uri),
         tree,
         line_index,
-        workspace: state.workspace(&uri),
     };
     let push = if client.supports_pull_diagnostics() {
         None
@@ -117,7 +116,7 @@ pub fn did_change(
         version: params.text_document.version,
         tree,
         line_index,
-        workspace: doc.workspace.clone(),
+        workspace_name: doc.workspace_name.clone(),
     };
 
     let push = if client.supports_pull_diagnostics() {

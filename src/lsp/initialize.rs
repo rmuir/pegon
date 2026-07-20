@@ -20,7 +20,7 @@ use gen_lsp_types::{
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
     TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceOptions,
+    WorkspaceOptions, WorkspaceSymbolOptions, WorkspaceSymbolProvider, WorkspaceSymbolRequest,
 };
 
 use super::client::Client;
@@ -122,6 +122,10 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         },
         text_document_registration_options: text_document_registration_options.clone(),
     };
+    let workspace_symbols_options = WorkspaceSymbolOptions {
+        resolve_provider: Some(false),
+        work_done_progress_options,
+    };
     // if the client supports dynamic registration of the capability, then we use that.
     // it makes the code very confusing, but this is just the pain of dynamic registration.
     // it allows pushing a filter for "java" language documents to the client, to avoid waste.
@@ -189,10 +193,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 file_operations: None,
                 text_document_content: None, // TODO!
             }),
+            workspace_symbol_provider: client.registers_workspace_symbols().not().then_some(
+                WorkspaceSymbolProvider::WorkspaceSymbolOptions(workspace_symbols_options),
+            ),
             ..ServerCapabilities::default()
         },
     };
-    let mut registrations: Vec<Registration> = Vec::with_capacity(12);
+    let mut registrations: Vec<Registration> = Vec::with_capacity(20);
     if client.registers_sync() {
         registrations.push(Registration {
             id: DidOpenTextDocumentNotification::METHOD.into(),
@@ -301,6 +308,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             id: SemanticTokensRequest::METHOD.into(),
             method: "textDocument/semanticTokens".into(), // must be this ID
             register_options: Some(serde_json::to_value(semantic_tokens_options)?),
+        });
+    }
+    if client.registers_workspace_symbols() {
+        registrations.push(Registration {
+            id: WorkspaceSymbolRequest::METHOD.into(),
+            method: WorkspaceSymbolRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(workspace_symbols_options)?),
         });
     }
     Ok((result, registrations))

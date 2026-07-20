@@ -19,8 +19,9 @@ use gen_lsp_types::{
     InitializeParams, InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     SemanticTokensClientCapabilities, TextDocumentClientCapabilities,
-    TextDocumentContentChangeEvent, WorkspaceClientCapabilities, WorkspaceEditClientCapabilities,
-    WorkspaceFolder, WorkspaceFolders,
+    TextDocumentContentChangeEvent, WindowClientCapabilities, WorkspaceClientCapabilities,
+    WorkspaceEditClientCapabilities, WorkspaceFolder, WorkspaceFolders,
+    WorkspaceSymbolClientCapabilities,
 };
 use line_index::{LineCol, LineIndex, TextSize, WideEncoding, WideLineCol};
 use tree_sitter::Point;
@@ -346,6 +347,11 @@ impl Client {
         (|| self.workspace_edit()?.document_changes)().unwrap_or_default()
     }
 
+    /// Does the client support work-done progress?
+    pub fn supports_progress(&self) -> bool {
+        (|| self.window()?.work_done_progress)().unwrap_or_default()
+    }
+
     /// Does the client support dynamic registration of document synchronization?
     pub fn registers_sync(&self) -> bool {
         (|| {
@@ -405,6 +411,11 @@ impl Client {
     /// Does the client support dynamic registration of semantic tokens?
     pub fn registers_semantic_tokens(&self) -> bool {
         (|| self.semantic_tokens()?.dynamic_registration)().unwrap_or_default()
+    }
+
+    /// Does the client support dynamic registration of workspace symbols?
+    pub fn registers_workspace_symbols(&self) -> bool {
+        (|| self.workspace_symbols()?.dynamic_registration)().unwrap_or_default()
     }
 
     const fn text_document(&self) -> Option<&TextDocumentClientCapabilities> {
@@ -479,12 +490,20 @@ impl Client {
         self.text_document()?.semantic_tokens.as_ref()
     }
 
+    const fn window(&self) -> Option<&WindowClientCapabilities> {
+        self.init_params.capabilities.window.as_ref()
+    }
+
     const fn workspace(&self) -> Option<&WorkspaceClientCapabilities> {
         self.init_params.capabilities.workspace.as_ref()
     }
 
     fn workspace_edit(&self) -> Option<&WorkspaceEditClientCapabilities> {
         self.workspace()?.workspace_edit.as_ref()
+    }
+
+    fn workspace_symbols(&self) -> Option<&WorkspaceSymbolClientCapabilities> {
+        self.workspace()?.symbol.as_ref()
     }
 
     pub fn workspace_folders(&self) -> Vec<WorkspaceFolder> {

@@ -21,7 +21,7 @@ use rustc_hash::FxHashMap;
 #[derive(Default)]
 pub struct Index {
     /// fully qualified name -> path name
-    names: FxHashMap<String, String>,
+    pub names: FxHashMap<String, String>,
 }
 
 /// per thread worker
@@ -105,7 +105,6 @@ const PACKAGE_DECLARATION: &str = r"(?-u)^\s*package\s+([a-zA-Z0-9_.]+)\s*;";
 /// index a workspace.
 ///
 /// it might have multiple paths if we parse .classpath or something
-#[expect(unused, reason = "not yet")]
 pub fn index(inputs: &[PathBuf]) -> Result<Index, Error> {
     let mut typesbuilder = TypesBuilder::new();
     typesbuilder.add("java", "*.java")?;

@@ -83,6 +83,8 @@ indoc = "=2.0.7"
 line-index = "=0.1.2"
 # LSP support
 lsp-server = "=0.10.0"
+# URL handling
+percent-encoding = "=2.3.2"
 # indexing files
 regex-automata = "=0.4.16"
 # faster hashing for symbols, etc
