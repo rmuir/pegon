@@ -70,13 +70,13 @@ blake3 = { version = "=1.8.5" }
 # indexing support
 bstr = "=1.13.0"
 # CLI argument processing
-clap = { version = "=4.6.2", features = ["derive"] }
+clap = { version = "=4.6.3", features = ["derive"] }
 # threading support
 crossbeam-channel = "=0.5.16"
 # LSP data structures
 gen-lsp-types = "=0.10.0"
 # Traversing directories, respecting ignore files
-ignore = "=0.4.30"
+ignore = "=0.4.31"
 # indented string literals
 indoc = "=2.0.7"
 # convert offsets <-> lsp positions
