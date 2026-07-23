@@ -31,13 +31,20 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-24.04
-            ts_query_ls_arch: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
           - runner: ubuntu-24.04-arm
-            ts_query_ls_arch: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
           - runner: macos-26-intel
-            ts_query_ls_arch: x86_64-apple-darwin
+            target: x86_64-apple-darwin
+            archive: tar.gz
           - runner: macos-26
-            ts_query_ls_arch: aarch64-apple-darwin
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - runner: windows-2022
+            target: pc-windows-msvc
+            archive: zip
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -57,9 +64,9 @@ jobs:
         if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p ~/.local/bin
-          curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin ts_query_ls
+          curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin
         env:
-          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.ts_query_ls_arch }}.tar.gz"
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.${{ matrix.archive }}"
 
       - name: Add ts_query_ls to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
@@ -71,6 +78,7 @@ jobs:
         with:
           path: |
             ~/.local/lib/java-orchard.so
+            ~/.local/lib/java-orchard.dll
             ~/.local/lib/java-orchard.dylib
           key: java-orchard-${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}-${{ runner.os }}-${{ runner.arch }}
 
@@ -103,7 +111,7 @@ jobs:
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p ~/.local/lib
-          cp java-orchard.so ~/.local/lib || cp java-orchard.dylib ~/.local/lib
+          cp java-orchard.so ~/.local/lib || cp java-orchard.dylib ~/.local/lib || cp java-orchard.dll ~/.local/lib
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Setup uv
