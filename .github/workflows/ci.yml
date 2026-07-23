@@ -65,6 +65,7 @@ jobs:
         run: |
           mkdir -p ~/.local/bin
           curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin
+        shell: bash
         env:
           TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.${{ matrix.archive }}"
 
@@ -86,6 +87,7 @@ jobs:
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: |
           git clone --branch "${BRANCH}" --depth 1 https://codeberg.org/grammar-orchard/tree-sitter-java-orchard.git
+        shell: bash
         env:
           BRANCH: ${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}
         working-directory: ${{ runner.temp }}
@@ -100,11 +102,13 @@ jobs:
       - name: Generate parser
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: tree-sitter generate
+        shell: bash
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Build parser
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: tree-sitter build
+        shell: bash
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Install parser
@@ -112,6 +116,7 @@ jobs:
         run: |
           mkdir -p ~/.local/lib
           cp java-orchard.so ~/.local/lib || cp java-orchard.dylib ~/.local/lib || cp java-orchard.dll ~/.local/lib
+        shell: bash
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Setup uv
@@ -134,6 +139,7 @@ jobs:
 
       - name: Run checks
         run: make lint
+        shell: bash
         env:
           CARGO_INCREMENTAL: 0
           CARGO_NET_RETRY: 10
