@@ -1,0 +1,6 @@
+---
+query-filters:
+  - exclude:
+      # Very noisy check which can also be accomplished via clippy
+      # See: https://codeql.github.com/codeql-query-help/rust/rust-unused-variable/
+      id: rust/unused-variable
