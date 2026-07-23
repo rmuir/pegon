@@ -32,19 +32,24 @@ jobs:
         include:
           - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
-            archive: tar.gz
+            archive: .tar.gz
+            executable: ""
           - runner: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-            archive: tar.gz
+            archive: .tar.gz
+            executable: ""
           - runner: macos-26-intel
             target: x86_64-apple-darwin
-            archive: tar.gz
+            archive: .tar.gz
+            executable: ""
           - runner: macos-26
             target: aarch64-apple-darwin
-            archive: tar.gz
+            archive: .tar.gz
+            executable: ""
           - runner: windows-2022
             target: x86_64-pc-windows-msvc
-            archive: zip
+            archive: .zip
+            executable: .exe
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -64,10 +69,11 @@ jobs:
         if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p ~/.local/bin
-          curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin
+          curl --fail --location "${TS_QUERY_LS_DIST}" | bsdtar -zxC ~/.local/bin "ts_query_ls${EXTENSION}"
         shell: bash
         env:
-          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.${{ matrix.archive }}"
+          EXTENSION: ${{ matrix.executable }}
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}${{ matrix.archive }}"
 
       - name: Add ts_query_ls to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
