@@ -121,4 +121,5 @@ jobs:
       - name: Run checks
         run: make lint
         env:
-          CARGO_INCREMENTAL: "0"
+          CARGO_INCREMENTAL: 0
+          CARGO_NET_RETRY: 10
