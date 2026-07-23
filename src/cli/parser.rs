@@ -32,6 +32,14 @@ pub enum Commands {
         output_format: OutputFormat,
     },
 
+    /// Analyze java code
+    Analyze {
+        /// List of files or directories to check
+        ///
+        /// Use `-` for standard input. [default: CWD]
+        files: Vec<PathBuf>,
+    },
+
     /// Run the language server
     #[group(required = false, multiple = false)]
     Server {

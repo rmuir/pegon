@@ -4,24 +4,28 @@
 //! Does not use tree-sitter parser, instead just parses minimally
 
 use std::{
+    ffi::OsStr,
+    fs::File,
     mem::take,
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context as _, Error};
+use anyhow::{Context as _, Error, bail};
 use bstr::ByteSlice as _;
 use crossbeam_channel::Sender;
-use ignore::{WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
+use ignore::{DirEntry, WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use regex_automata::{
     dfa::onepass::{Cache, DFA},
     util::captures::Captures,
 };
 use rustc_hash::FxHashMap;
+use serde::Serialize;
+use zip::ZipArchive;
 
-#[derive(Default)]
+#[derive(Default, Serialize)]
 pub struct Index {
     /// fully qualified name -> path name
-    pub names: FxHashMap<String, String>,
+    pub names: FxHashMap<String, PathBuf>,
 }
 
 /// per thread worker
@@ -49,9 +53,8 @@ impl<'scope> Worker<'scope> {
         match result {
             Ok(entry) => {
                 let shouldcheck = entry.file_type().is_none_or(|filetype| !filetype.is_dir());
-                let path = entry.path();
-                if shouldcheck && let Err(error) = self.analyze(path) {
-                    let filename = path.to_string_lossy();
+                if shouldcheck && let Err(error) = self.analyze(&entry) {
+                    let filename = entry.path().to_string_lossy();
                     eprintln!("internal error: {filename} {error}");
                 }
                 WalkState::Continue
@@ -63,10 +66,19 @@ impl<'scope> Worker<'scope> {
         }
     }
 
+    fn analyze(&mut self, entry: &DirEntry) -> Result<(), Error> {
+        let path = entry.path();
+        match path.extension().and_then(OsStr::to_str) {
+            Some("java") => self.analyze_java(path),
+            Some("jar") if entry.depth() == 0 => self.analyze_jar(path),
+            _ => bail!("unknown file type"),
+        }
+    }
+
     /// parse the package declaration and combine with the filename
     ///
     /// doesn't do anything for files without package declarations
-    fn analyze(&mut self, path: &Path) -> Result<(), Error> {
+    fn analyze_java(&mut self, path: &Path) -> Result<(), Error> {
         let bytes = std::fs::read(path)?;
         for line in bytes.lines() {
             self.parser
@@ -80,9 +92,28 @@ impl<'scope> Worker<'scope> {
                     .file_stem()
                     .context("should be a file")?
                     .to_string_lossy();
-                let path = path.to_string_lossy().into_owned();
-                self.index.names.insert(format!("{package}.{class}"), path);
+                self.index
+                    .names
+                    .insert(format!("{package}.{class}"), path.to_owned());
                 break; // currently, we don't want anything else from this file
+            }
+        }
+        Ok(())
+    }
+
+    /// analyze jar file and just list the filenames.
+    /// the package is implicit based upon the directory name
+    fn analyze_jar(&mut self, path: &Path) -> Result<(), Error> {
+        let file = File::open(path)?;
+        let zip = ZipArchive::new(file)?;
+        // TODO: we ignore static/inners for now...
+        for name in zip.file_names() {
+            if let Some(name) = name.strip_suffix(".class")
+                && !name.contains('$')
+                && name != "module-info"
+            {
+                let class = name.replace('/', ".");
+                self.index.names.insert(class, path.to_owned());
             }
         }
         Ok(())
@@ -114,6 +145,7 @@ pub fn index(inputs: &[PathBuf]) -> Result<Index, Error> {
     // though, if everyone consistently used them, this whole thing would be faster...
     let mut overridesbuilder = OverrideBuilder::new("/");
     overridesbuilder.add("!**/package-info.java")?;
+    overridesbuilder.add("!**/module-info.java")?;
 
     let mut builder = WalkBuilder::from_iter(inputs.iter());
     builder.types(typesbuilder.build()?);

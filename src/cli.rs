@@ -2,6 +2,7 @@
 
 use core::net::Ipv4Addr;
 
+mod analyze;
 mod check;
 mod generated;
 mod parser;
@@ -25,6 +26,7 @@ pub fn main() -> Result<(), Error> {
             files,
             output_format,
         } => check::check(files, *output_format == OutputFormat::Concise),
+        Commands::Analyze { files } => analyze::analyze(files),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
             let result = crate::lsp::run_server(connection);

@@ -32,7 +32,11 @@ pub fn request(
     let mut counter: u64 = 0;
     for (_name, index) in workspaces {
         for (symbol, path) in &index.names {
-            if let Some((package, class)) = symbol.rsplit_once('.') {
+            if path
+                .extension()
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("java"))
+                && let Some((package, class)) = symbol.rsplit_once('.')
+            {
                 counter = counter.wrapping_add(1);
                 if counter.is_multiple_of(128) && cancel.load(Ordering::Relaxed) {
                     return Ok(vec![]);
@@ -40,7 +44,7 @@ pub fn request(
                 if lsp_match(query, class) {
                     response.push(WorkspaceSymbol {
                         location: WorkspaceSymbolLocation::Location(Location {
-                            uri: super::server::path_to_uri(path),
+                            uri: super::server::path_to_uri(&path.to_string_lossy()),
                             range: Range {
                                 start: Position::new(0, 0),
                                 end: Position::new(0, 0),
