@@ -26,7 +26,14 @@ concurrency:
 jobs:
   check:
     name: CI checks
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            ts_query_ls_arch: x86_64-unknown-linux-gnu
+          - runner: ubuntu-24.04-arm
+            ts_query_ls_arch: aarch64-unknown-linux-gnu
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -48,7 +55,7 @@ jobs:
           mkdir -p ~/.local/bin
           curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin ts_query_ls
         env:
-          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-x86_64-unknown-linux-gnu.tar.gz"
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.ts_query_ls_arch }}.tar.gz"
 
       - name: Add ts_query_ls to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
