@@ -80,7 +80,9 @@ jobs:
           TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.zip"
 
       - name: Add ts_query_ls to PATH
-        run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+        run: |
+          TARGET_DIR="${HOME:-$USERPROFILE}"
+          echo "${TARGET_DIR}/.local/bin" >> "${GITHUB_PATH}"
         shell: bash
 
       # Has no wasm, so we must build it. Cache the built library.
