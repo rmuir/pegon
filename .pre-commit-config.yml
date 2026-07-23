@@ -241,7 +241,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["check", "--all-targets"]
+        args: ["check", "--locked", "--all-targets"]
         env:
           CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
@@ -258,7 +258,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["clippy", "--all-targets", "--", "-D", "warnings"]
+        args: ["clippy", "--locked", "--all-targets", "--", "-D", "warnings"]
         env:
           CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
@@ -275,7 +275,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["doc", "--no-deps", "--document-private-items", "--all-features"]
+        args: ["doc", "--locked", "--no-deps", "--document-private-items", "--all-features"]
         env:
           CARGO_BUILD_WARNINGS: deny
         # runs across all files if any are touched
@@ -292,7 +292,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["test"]
+        args: ["test", "--locked"]
         env:
           CARGO_BUILD_WARNINGS: deny
         # run across all files if any are touched
@@ -311,7 +311,7 @@ repos:
         priority: 0
         language: system
         entry: cargo
-        args: ["deny", "check", "--config", ".deny.toml"]
+        args: ["deny", "--locked", "check", "--config", ".deny.toml"]
         # runs across all files if any are touched
         require_serial: true
         pass_filenames: false
@@ -351,7 +351,7 @@ repos:
         pass_filenames: false
         require_serial: true
         entry: cargo
-        args: ["fix", "--allow-dirty", "--allow-staged"]
+        args: ["fix", "--locked", "--allow-dirty", "--allow-staged"]
         env:
           CARGO_BUILD_WARNINGS: deny
         types: [rust]
