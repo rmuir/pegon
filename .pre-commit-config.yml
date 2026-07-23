@@ -305,8 +305,6 @@ repos:
             - "**/*.rs"
 
       - id: cargo-deny
-        # until configured in CI
-        stages: ["manual"]
         name: Check Rust dependencies
         priority: 0
         language: system
