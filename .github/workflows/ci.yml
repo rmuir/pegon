@@ -32,24 +32,14 @@ jobs:
         include:
           - runner: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
-            archive: .tar.gz
-            executable: ""
           - runner: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-            archive: .tar.gz
-            executable: ""
           - runner: macos-26-intel
             target: x86_64-apple-darwin
-            archive: .tar.gz
-            executable: ""
           - runner: macos-26
             target: aarch64-apple-darwin
-            archive: .tar.gz
-            executable: ""
           - runner: windows-2022
             target: x86_64-pc-windows-msvc
-            archive: .zip
-            executable: .exe
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -62,18 +52,32 @@ jobs:
         id: cache-ts-query-ls
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.local/bin/ts_query_ls
+          path: |
+            ~/.local/bin/ts_query_ls
+            ~/.local/bin/ts_query_ls.exe
           key: ts_query_ls-${{ env.TS_QUERY_LS_VERSION }}-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Setup ts_query_ls
-        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' }}
+      - name: Setup ts_query_ls (unix)
+        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' && matrix.target != 'x86_64-pc-windows-msvc' }}
         run: |
           mkdir -p ~/.local/bin
-          curl --fail --location "${TS_QUERY_LS_DIST}" | bsdtar -zxC ~/.local/bin "ts_query_ls${EXTENSION}"
+          curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin ts_query_ls
         shell: bash
+        working-directory: ${{ runner.temp }}
         env:
-          EXTENSION: ${{ matrix.executable }}
-          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}${{ matrix.archive }}"
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.tar.gz"
+
+      - name: Setup ts_query_ls (windows)
+        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' && matrix.target == 'x86_64-pc-windows-msvc' }}
+        run: |
+          mkdir -p ~/.local/bin
+          curl --fail --location -o ts_query_ls.zip "${TS_QUERY_LS_DIST}"
+          unzip ts_query_ls.zip
+          cp ts_query_ls.exe ~/.local/bin
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        env:
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.zip"
 
       - name: Add ts_query_ls to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
