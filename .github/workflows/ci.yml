@@ -81,6 +81,7 @@ jobs:
 
       - name: Add ts_query_ls to PATH
         run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+        shell: bash
 
       # Has no wasm, so we must build it. Cache the built library.
       - name: Cache tree-sitter-java-orchard library
