@@ -34,6 +34,10 @@ jobs:
             ts_query_ls_arch: x86_64-unknown-linux-gnu
           - runner: ubuntu-24.04-arm
             ts_query_ls_arch: aarch64-unknown-linux-gnu
+          - runner: macos-26-intel
+            ts_query_ls_arch: x86_64-apple-darwin
+          - runner: macos-26
+            ts_query_ls_arch: aarch64-apple-darwin
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -65,7 +69,9 @@ jobs:
         id: cache-tree-sitter-java-orchard
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.local/lib/java-orchard.so
+          path: |
+            ~/.local/lib/java-orchard.so
+            ~/.local/lib/java-orchard.dylib
           key: java-orchard-${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}-${{ runner.os }}-${{ runner.arch }}
 
       - name: Clone parser
@@ -97,7 +103,7 @@ jobs:
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p ~/.local/lib
-          cp java-orchard.so ~/.local/lib
+          cp java-orchard.so ~/.local/lib || cp java-orchard.dylib ~/.local/lib
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Setup uv
