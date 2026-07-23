@@ -31,13 +31,15 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-24.04
-            ts_query_ls_arch: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-gnu
           - runner: ubuntu-24.04-arm
-            ts_query_ls_arch: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-gnu
           - runner: macos-26-intel
-            ts_query_ls_arch: x86_64-apple-darwin
+            target: x86_64-apple-darwin
           - runner: macos-26
-            ts_query_ls_arch: aarch64-apple-darwin
+            target: aarch64-apple-darwin
+          - runner: windows-2022
+            target: x86_64-pc-windows-msvc
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -50,19 +52,45 @@ jobs:
         id: cache-ts-query-ls
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.local/bin/ts_query_ls
+          path: |
+            ~/.local/bin/ts_query_ls
+            ~/.local/bin/ts_query_ls.exe
           key: ts_query_ls-${{ env.TS_QUERY_LS_VERSION }}-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Setup ts_query_ls
-        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' }}
+      - name: Setup ts_query_ls (unix)
+        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' && matrix.target != 'x86_64-pc-windows-msvc' }}
         run: |
           mkdir -p ~/.local/bin
           curl --fail --location "${TS_QUERY_LS_DIST}" | tar -zxC ~/.local/bin ts_query_ls
+        shell: bash
+        working-directory: ${{ runner.temp }}
         env:
-          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.ts_query_ls_arch }}.tar.gz"
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.tar.gz"
 
-      - name: Add ts_query_ls to PATH
-        run: echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+      - name: Setup ts_query_ls (windows)
+        if: ${{ steps.cache-ts-query-ls.outputs.cache-hit != 'true' && matrix.target == 'x86_64-pc-windows-msvc' }}
+        run: |
+          mkdir -p ~/.local/bin
+          curl --fail --location -o ts_query_ls.zip "${TS_QUERY_LS_DIST}"
+          unzip ts_query_ls.zip
+          cp ts_query_ls.exe ~/.local/bin
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        env:
+          TS_QUERY_LS_DIST: "https://github.com/ribru17/ts_query_ls/releases/download/${{ env.TS_QUERY_LS_VERSION }}/ts_query_ls-${{ matrix.target }}.zip"
+
+      - name: Add ts_query_ls to PATH (unix)
+        if: ${{ matrix.target != 'x86_64-pc-windows-msvc' }}
+        run: |
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+        shell: bash
+
+      - name: Add ts_query_ls to PATH (windows)
+        if: ${{ matrix.target == 'x86_64-pc-windows-msvc' }}
+        run: |
+          $TargetDir = "$env:USERPROFILE\.local\bin"
+          $TargetDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        shell: powershell
 
       # Has no wasm, so we must build it. Cache the built library.
       - name: Cache tree-sitter-java-orchard library
@@ -71,6 +99,7 @@ jobs:
         with:
           path: |
             ~/.local/lib/java-orchard.so
+            ~/.local/lib/java-orchard.dll
             ~/.local/lib/java-orchard.dylib
           key: java-orchard-${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}-${{ runner.os }}-${{ runner.arch }}
 
@@ -78,6 +107,7 @@ jobs:
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: |
           git clone --branch "${BRANCH}" --depth 1 https://codeberg.org/grammar-orchard/tree-sitter-java-orchard.git
+        shell: bash
         env:
           BRANCH: ${{ env.TREE_SITTER_JAVA_ORCHARD_VERSION }}
         working-directory: ${{ runner.temp }}
@@ -92,18 +122,21 @@ jobs:
       - name: Generate parser
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: tree-sitter generate
+        shell: bash
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Build parser
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: tree-sitter build
+        shell: bash
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Install parser
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p ~/.local/lib
-          cp java-orchard.so ~/.local/lib || cp java-orchard.dylib ~/.local/lib
+          cp java-orchard.so ~/.local/lib || cp java-orchard.dylib ~/.local/lib || cp java-orchard.dll ~/.local/lib
+        shell: bash
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Setup uv
@@ -126,6 +159,7 @@ jobs:
 
       - name: Run checks
         run: make lint
+        shell: bash
         env:
           CARGO_INCREMENTAL: 0
           CARGO_NET_RETRY: 10
