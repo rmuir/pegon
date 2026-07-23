@@ -85,6 +85,12 @@ jobs:
           echo "${TARGET_DIR}/.local/bin" >> "${GITHUB_PATH}"
         shell: bash
 
+      - name: test path
+        run: |
+          echo "${PATH}"
+          ts_query_ls --version
+        shell: bash
+
       # Has no wasm, so we must build it. Cache the built library.
       - name: Cache tree-sitter-java-orchard library
         id: cache-tree-sitter-java-orchard
