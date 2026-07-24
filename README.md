@@ -12,9 +12,13 @@ Fast Java language server
 
 ## Install
 
-### Binaries
+### Github Releases
 
-Pegon is available on [pypi](https://pypi.org/project/pegon/).
+Binaries are available on the [Releases Page](https://github.com/rmuir/pegon/releases).
+
+### PyPI
+
+Binaries are available on [PyPI](https://pypi.org/project/pegon/).
 
 Use `uvx` to run a one-off lint check on your Java code:
 
