@@ -86,7 +86,7 @@ pub fn scopes<'tree, 'data>(
         if pattern.flow {
             let mut node = tree.root_node();
             while let Some(child) = node.child_with_descendant(var_node) {
-                if child.kind() == "block" {
+                if child.kind() == "block" || child.kind() == "constructor_body" {
                     start_node = child;
                     end_node = child;
                 }
