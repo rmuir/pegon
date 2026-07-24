@@ -20,6 +20,15 @@
 ; So it seems best to simply run this query before subsequent query that uses it.
 ; For big files, doing a full reparse hurts under heavy editing.
 ; ---
+((constructor_body
+  (local_variable_declaration
+    type: (_) @type
+    declarator: (variable_declarator
+      name: (identifier) @definition)) @start
+  "}" @end)
+  (#set! local.type "variable")
+  (#set! local.start.inclusive false))
+
 ((block
   (local_variable_declaration
     type: (_) @type
