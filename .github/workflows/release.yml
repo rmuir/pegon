@@ -342,7 +342,7 @@ jobs:
           package-manager-cache: false
 
       - name: Publish to Open VSX
-        run: npx ovsx publish -i vsix-packages/*.vsix
+        run: npx ovsx publish -i vsix-packages/*.vsix --skip-duplicate
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
@@ -366,6 +366,6 @@ jobs:
           package-manager-cache: false
 
       - name: Publish to Open VSX
-        run: npx @vscode/vsce publish -i vsix-packages/*.vsix
+        run: npx @vscode/vsce publish -i vsix-packages/*.vsix --skip-duplicate
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
