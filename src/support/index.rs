@@ -18,6 +18,7 @@ use regex_automata::{
     dfa::onepass::{Cache, DFA},
     util::captures::Captures,
 };
+use ristretto_jimage::Image;
 use rustc_hash::FxHashMap;
 use serde::Serialize;
 use zip::ZipArchive;
@@ -71,6 +72,11 @@ impl<'scope> Worker<'scope> {
         match path.extension().and_then(OsStr::to_str) {
             Some("java") => self.analyze_java(path),
             Some("jar") if entry.depth() == 0 => self.analyze_jar(path),
+            None if path.file_name().and_then(OsStr::to_str) == Some("modules")
+                && entry.depth() == 0 =>
+            {
+                self.analyze_jimage(path)
+            }
             _ => bail!("unknown file type"),
         }
     }
@@ -115,6 +121,26 @@ impl<'scope> Worker<'scope> {
                 let class = name.replace('/', ".");
                 self.index.names.insert(class, path.to_owned());
             }
+        }
+        Ok(())
+    }
+
+    /// analyze jimage file from openjdk
+    fn analyze_jimage(&mut self, path: &Path) -> Result<(), Error> {
+        let image = Image::from_file(path)?;
+        // TODO: throwing away a lot of good information here
+        let items = image
+            .iter()
+            .filter_map(std::result::Result::ok)
+            .filter(|item| item.extension() == "class")
+            .filter(|item| !item.name().contains('$'))
+            .filter(|item| item.name() != "module-info")
+            .filter(|item| item.name() != "package-info");
+        for something in items {
+            let parent = something.parent().replace('/', ".");
+            let base = something.base();
+            let class = format!("{parent}.{base}");
+            self.index.names.insert(class, path.to_owned());
         }
         Ok(())
     }
