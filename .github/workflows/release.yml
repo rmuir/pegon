@@ -88,7 +88,7 @@ jobs:
           path: dist
 
       - name: Archive binary
-        run: tar cvfz "pegon-${TARGET}.tar.gz" "target/${TARGET}/release/pegon"
+        run: tar cvfz "pegon-${TARGET}.tar.gz" -C "target/${TARGET}/release" pegon
         env:
           TARGET: ${{ matrix.platform.target }}
 
@@ -141,7 +141,7 @@ jobs:
           path: dist
 
       - name: Archive binary
-        run: tar cvfz "pegon-${TARGET}.tar.gz" "target/${TARGET}/release/pegon"
+        run: tar cvfz "pegon-${TARGET}.tar.gz" -C "target/${TARGET}/release" pegon
         env:
           TARGET: ${{ matrix.platform.target }}
 
@@ -190,7 +190,9 @@ jobs:
           path: dist
 
       - name: Archive binary
-        run: 7z a "pegon-${TARGET}.zip" "target/${TARGET}/release/pegon.exe"
+        run: |
+          cd "target/${TARGET}/release"
+          7z a "../../../pegon-${TARGET}.zip" pegon.exe
         shell: bash
         env:
           TARGET: ${{ matrix.platform.target }}
@@ -237,7 +239,7 @@ jobs:
           path: dist
 
       - name: Archive binary
-        run: tar cvfz "pegon-${TARGET}.tar.gz" "target/${TARGET}/release/pegon"
+        run: tar cvfz "pegon-${TARGET}.tar.gz" -C "target/${TARGET}/release" pegon
         env:
           TARGET: ${{ matrix.platform.target }}
 
