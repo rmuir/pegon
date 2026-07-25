@@ -24,7 +24,7 @@ jobs:
   # Creates a draft release that assets can be attached to
   create-release:
     name: Create release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write # must create a draft release
@@ -43,26 +43,26 @@ jobs:
   pypi-linux:
     name: Create PyPI linux wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: x86_64
             target: x86_64-unknown-linux-gnu
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: x86
             target: i686-unknown-linux-gnu
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: aarch64
             target: aarch64-unknown-linux-gnu
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: armv7
             target: armv7-unknown-linux-gnueabihf
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: s390x
             target: s390x-unknown-linux-gnu
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: ppc64le
             target: powerpc64le-unknown-linux-gnu
     steps:
@@ -105,20 +105,20 @@ jobs:
   pypi-musllinux:
     name: Create PyPI musllinux wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: x86_64
             target: x86_64-unknown-linux-musl
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: x86
             target: i686-unknown-linux-musl
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: aarch64
             target: aarch64-unknown-linux-musl
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             maturin_target: armv7
             target: armv7-unknown-linux-musleabihf
     steps:
@@ -161,14 +161,14 @@ jobs:
   pypi-windows:
     name: Create PyPI windows wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     strategy:
       matrix:
         platform:
-          - runner: windows-latest
+          - runner: windows-2025
             maturin_target: x64
             target: x86_64-pc-windows-msvc
-          - runner: windows-latest
+          - runner: windows-2025
             maturin_target: x86
             target: i686-pc-windows-msvc
           - runner: windows-11-arm
@@ -214,14 +214,14 @@ jobs:
   pypi-macos:
     name: Create PyPI macos wheels
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     strategy:
       matrix:
         platform:
-          - runner: macos-15-intel
+          - runner: macos-26-intel
             maturin_target: x86_64
             target: x86_64-apple-darwin
-          - runner: macos-latest
+          - runner: macos-26
             maturin_target: aarch64
             target: aarch64-apple-darwin
     steps:
@@ -262,7 +262,7 @@ jobs:
 
   pypi-sdist:
     name: Create PyPI source distribution
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -292,7 +292,7 @@ jobs:
       - pypi-musllinux
       - pypi-macos
       - pypi-windows
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout repository
@@ -336,7 +336,7 @@ jobs:
       - pypi-sdist
       - pypi-windows
       - vsix-packages
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write # must finalize the release
@@ -380,7 +380,7 @@ jobs:
     needs:
       - finish-release
     if: ${{ github.event_name != 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: crates
     permissions:
@@ -406,8 +406,8 @@ jobs:
     needs:
       - finish-release
     if: ${{ github.event_name != 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     environment: pypi
     permissions:
       id-token: write # required for OIDC token exchange
@@ -436,8 +436,8 @@ jobs:
     needs:
       - finish-release
     if: ${{ github.event_name != 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     environment: openvsx
     steps:
       - name: Download artifacts
@@ -460,8 +460,8 @@ jobs:
     needs:
       - finish-release
     if: ${{ github.event_name != 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     environment: vscode
     steps:
       - name: Download artifacts
