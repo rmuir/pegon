@@ -92,10 +92,6 @@ A. Google Style supports high-performance Java development, and most developers 
 
 A. These features are coming, continue to use `ctags` for now.
 
-**Q. Where's workspace symbol search? I can't live without it!**
-
-A. This feature is coming, I recommend a good fuzzy finder or `ctags` for now.
-
 **Q. What about running tests from my editor? This is essential for TDD!**
 
 A. I strongly recommend [vim-test](https://github.com/vim-test/vim-test) for this.
