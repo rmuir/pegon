@@ -3,7 +3,7 @@ name = "pegon"
 version = "1.0.7"
 edition = "2024"
 # version on github runners
-rust-version = "1.97.0"
+rust-version = "1.97.1"
 description = "Fast Java language server"
 readme = "README.md"
 homepage = "https://github.com/rmuir/pegon"
@@ -90,7 +90,7 @@ percent-encoding = "=2.3.2"
 # indexing files
 regex-automata = "=0.4.16"
 # jimage support
-ristretto_jimage = "=0.31.0"
+ristretto_jimage = "=0.32.0"
 # faster hashing for symbols, etc
 rustc-hash = "=2.1.3"
 # serialization

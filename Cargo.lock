@@ -512,9 +512,9 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "ristretto_jimage"
-version = "0.31.0"
+version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a9ce4204e34bcb14836368b24a8769b9efdda2137173c2e3486c7978e922c26"
+checksum = "34abf2513271507d77249b37ef629431c81be44453edd6107dd4f43cbc74fe37"
 dependencies = [
  "byteorder",
  "memchr",
