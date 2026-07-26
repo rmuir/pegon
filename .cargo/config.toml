@@ -1,0 +1,3 @@
+# more than 10% faster
+[env]
+CC = "clang"
