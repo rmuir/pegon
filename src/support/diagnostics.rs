@@ -174,6 +174,8 @@ impl Severity {
 pub enum Fix {
     /// Replace whitespace in range with escapes
     EscapeWhitespace,
+    /// Replace newlines in range with spaces
+    LineUnwrap,
     /// Replace range with static string
     Static(String),
     /// Transform range to uppercase
@@ -304,6 +306,7 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
         }
         let fix = match fix_kind {
             Some("escape_whitespace") => Some(Fix::EscapeWhitespace),
+            Some("line_unwrap") => Some(Fix::LineUnwrap),
             Some("static") => Some(Fix::Static(
                 fix_arg.expect("static fix should have an arg").into(),
             )),
