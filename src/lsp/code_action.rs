@@ -127,43 +127,48 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Text
         _ => bail!("invalid or missing code"),
     };
     Ok(match &rule.fix {
-        Some(Fix::EscapeWhitespace) => {
-            let re = Regex::new(r"[\s&&[^\u0020\r\n]]")?;
-            let result = re.replace_all(old_text, |caps: &Captures| {
-                let codepoint = caps[0].chars().next().expect("capture should exist") as u32;
-                match codepoint {
-                    0x9 => "\\t".into(),
-                    0xC => "\\f".into(),
-                    bmp if codepoint <= 0xFFFF => format!("\\u{bmp:04X}"),
-                    _ => {
-                        let (high, low) = to_surrogates(codepoint).expect("valid unicode");
-                        format!("\\u{high:04X}\\u{low:04X}")
-                    }
-                }
-            });
-            TextEdit::new(*range, result.into())
-        }
+        Some(Fix::EscapeWhitespace) => TextEdit::new(*range, escape_whitespace(old_text)?),
         Some(Fix::Static(replacement)) => TextEdit::new(*range, replacement.clone()),
         Some(Fix::ToUpper) => TextEdit::new(*range, old_text.to_uppercase()),
         None => bail!("invalid code"),
     })
 }
 
+/// escapes whitespace into java-escapes (UTF-16)
+///
+/// tab and form-feed should be converted into their special escape
+fn escape_whitespace(old_text: &str) -> Result<String> {
+    let re = Regex::new(r"[\s&&[^\u0020\r\n]]")?;
+    let result = re.replace_all(old_text, |caps: &Captures| {
+        let codepoint = caps[0].chars().next().expect("capture should exist") as u32;
+        match codepoint {
+            0x9 => "\\t".into(),
+            0xC => "\\f".into(),
+            bmp if codepoint <= 0xFFFF => format!("\\u{bmp:04X}"),
+            _ => {
+                let (high, low) = to_surrogates(codepoint).expect("valid unicode");
+                format!("\\u{high:04X}\\u{low:04X}")
+            }
+        }
+    });
+    Ok(result.into())
+}
+
 const SURROGATE_HIGH_START: u32 = 0xD800;
 const SURROGATE_LOW_START: u32 = 0xDC00;
 
 /// split codepoint into surrogate pair for java
-fn to_surrogates(codepoint: u32) -> Option<(u16, u16)> {
-    let surrogate_offset = codepoint.checked_sub(0x10000)?;
+fn to_surrogates(codepoint: u32) -> Result<(u16, u16)> {
+    let surrogate_offset = codepoint.checked_sub(0x10000).context("supplementary")?;
     let high = SURROGATE_HIGH_START
-        .checked_add(surrogate_offset >> 10)?
-        .try_into()
-        .ok()?;
+        .checked_add(surrogate_offset >> 10)
+        .context("valid high")?
+        .try_into()?;
     let low = SURROGATE_LOW_START
-        .checked_add(surrogate_offset & 0x3FF)?
-        .try_into()
-        .ok()?;
-    Some((high, low))
+        .checked_add(surrogate_offset & 0x3FF)
+        .context("valid low")?
+        .try_into()?;
+    Ok((high, low))
 }
 
 #[cfg(test)]
