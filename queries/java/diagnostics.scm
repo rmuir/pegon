@@ -443,7 +443,7 @@
   (#set! diagnostic.name "lowercase-long-literal")
   (#set! diagnostic.title "Lowercase long integer literal: `{node.text}`")
   (#set! diagnostic.help "Replace with uppercase L suffix to improve legibility")
-  (#set! diagnostic.severity "info")
+  (#set! diagnostic.severity "hint")
   (#set! diagnostic.fix.kind "to_upper"))
 
 ; Dollar sign in identifier
