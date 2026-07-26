@@ -3,6 +3,7 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 use indoc::indoc;
+use serde_json::{Value, json};
 use std::{
     fs,
     path::PathBuf,
@@ -36,15 +37,56 @@ fn check_simple() {
         .output()
         .expect("run pegon");
 
+    assert!(!output.status.success());
+
     let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
     let stderr = String::from_utf8(output.stderr).expect("stderr should be utf-8");
 
-    assert!(!output.status.success());
     assert!(stdout.contains("lowercase-class"), "stdout: {stdout}");
     assert!(stdout.contains("bad"), "stdout: {stdout}");
     assert!(
         stderr.contains("Found 1 problems across 2 java files"),
         "stderr: {stderr}"
+    );
+}
+
+#[test]
+fn analyze_simple() {
+    let tempdir = TempDir::new();
+    tempdir.add_file(
+        "One.java",
+        indoc! {"
+            package my.package;
+
+            public class One {}
+        "},
+    );
+
+    tempdir.add_file(
+        "Two.java",
+        indoc! {"
+            package my.package;
+
+            public class Two {}
+        "},
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_pegon"))
+        .args(["analyze", tempdir.0.to_str().expect("should be utf-8")])
+        .output()
+        .expect("run pegon");
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be utf-8");
+    assert!(output.status.success());
+    let result: Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(
+        result,
+        json!({
+            "names": {
+                "my.package.One": tempdir.0.join("One.java"),
+                "my.package.Two": tempdir.0.join("Two.java")
+            }
+        })
     );
 }
 
