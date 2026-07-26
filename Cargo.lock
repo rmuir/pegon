@@ -447,6 +447,7 @@ dependencies = [
  "line-index",
  "lsp-server",
  "percent-encoding",
+ "regex",
  "regex-automata",
  "ristretto_jimage",
  "rustc-hash",

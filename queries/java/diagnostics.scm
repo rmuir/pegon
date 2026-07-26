@@ -32,7 +32,8 @@
   (#set! diagnostic.name "literal-special-space")
   (#set! diagnostic.title "Literal contains unescaped special whitespace")
   (#set! diagnostic.help "Escape the special whitespace: only `0x20` may appear in literals")
-  (#set! diagnostic.severity "warn")) ; TODO: implement autofix
+  (#set! diagnostic.severity "hint")
+  (#set! diagnostic.fix.kind "escape_whitespace"))
 
 ; Octal backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
@@ -442,7 +443,8 @@
   (#set! diagnostic.name "lowercase-long-literal")
   (#set! diagnostic.title "Lowercase long integer literal: `{node.text}`")
   (#set! diagnostic.help "Replace with uppercase L suffix to improve legibility")
-  (#set! diagnostic.severity "info")) ; TODO: autofix
+  (#set! diagnostic.severity "info")
+  (#set! diagnostic.fix.kind "to_upper"))
 
 ; Dollar sign in identifier
 ; @see https://google.github.io/styleguide/javaguide.html#s5.1-identifier-names
