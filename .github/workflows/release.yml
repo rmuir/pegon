@@ -224,6 +224,13 @@ jobs:
           args: --release --locked --out dist --compatibility pypi
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
+      - name: Smoke-test binary
+        run: |
+          "target/${TARGET}/release/pegon" --help
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+
       - name: Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -273,6 +280,12 @@ jobs:
           target: ${{ matrix.maturin_target }}
           args: --release --locked --out dist --compatibility pypi
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Smoke-test binary
+        run: |
+          "target/${TARGET}/release/pegon" --help
+        env:
+          TARGET: ${{ matrix.target }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
