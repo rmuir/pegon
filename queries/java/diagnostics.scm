@@ -236,7 +236,8 @@
   (#set! diagnostic.name "wrapped-package")
   (#set! diagnostic.title "Line-wrapped package declaration: `{node.text}`")
   (#set! diagnostic.help "Remove newlines from the package statement")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.fix.kind "line_unwrap")
+  (#set! diagnostic.severity "hint"))
 
 ; Wildcard imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.1-wildcard-imports
@@ -254,7 +255,8 @@
   (#set! diagnostic.name "wrapped-import")
   (#set! diagnostic.title "Line-wrapped import")
   (#set! diagnostic.help "Remove newlines from the import statement")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.fix.kind "line_unwrap")
+  (#set! diagnostic.severity "hint"))
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -809,7 +811,7 @@
   (#set! diagnostic.help "Indicate ignored exception with unnamed variable `_`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "_")
-  (#set! diagnostic.severity "info")) @visible ; body is small (empty)
+  (#set! diagnostic.severity "hint")) @visible ; body is small (empty)
 
 ; Finalizers: not used
 ; @see https://google.github.io/styleguide/javaguide.html#s6.4-finalizers

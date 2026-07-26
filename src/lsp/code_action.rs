@@ -128,6 +128,7 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Text
     };
     Ok(match &rule.fix {
         Some(Fix::EscapeWhitespace) => TextEdit::new(*range, escape_whitespace(old_text)?),
+        Some(Fix::LineUnwrap) => TextEdit::new(*range, old_text.replace('\n', " ")),
         Some(Fix::Static(replacement)) => TextEdit::new(*range, replacement.clone()),
         Some(Fix::ToUpper) => TextEdit::new(*range, old_text.to_uppercase()),
         None => bail!("invalid code"),
@@ -257,7 +258,7 @@ mod tests {
         assert_eq!(
             vec![gen_lsp_types::Diagnostic {
                 range: Range::new(Position::new(4, 27), Position::new(4, 30)),
-                severity: Some(DiagnosticSeverity::Information),
+                severity: Some(DiagnosticSeverity::Hint),
                 code: Some(Code::String("swallowed-exception".into())),
                 source: Some(env!("CARGO_PKG_NAME").into()),
                 message: Message::String("Unhandled caught exception: `wtf`".into()),
