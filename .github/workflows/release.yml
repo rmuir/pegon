@@ -88,10 +88,6 @@ jobs:
           before-script-linux: |
             if command -v yum &>/dev/null; then
               yum -y install clang
-            else
-              export DEBIAN_FRONTEND=noninteractive
-              apt-get update -y
-              apt-get install -y clang
             fi
 
       - name: Set up QEMU
