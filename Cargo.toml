@@ -87,6 +87,8 @@ line-index = "=0.1.2"
 lsp-server = "=0.10.0"
 # URL handling
 percent-encoding = "=2.3.2"
+# autofixes
+regex = "=1.13.1"
 # indexing files
 regex-automata = "=0.4.16"
 # jimage support

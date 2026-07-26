@@ -172,7 +172,12 @@ impl Severity {
 
 /// rule fix types
 pub enum Fix {
+    /// Replace whitespace in range with escapes
+    EscapeWhitespace,
+    /// Replace range with static string
     Static(String),
+    /// Transform range to uppercase
+    ToUpper,
 }
 
 /// Look up rule by pattern index
@@ -298,9 +303,11 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
             }
         }
         let fix = match fix_kind {
+            Some("escape_whitespace") => Some(Fix::EscapeWhitespace),
             Some("static") => Some(Fix::Static(
                 fix_arg.expect("static fix should have an arg").into(),
             )),
+            Some("to_upper") => Some(Fix::ToUpper),
             Some(other) => panic!("{other}: unknown fix type"),
             None => None,
         };

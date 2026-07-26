@@ -8,6 +8,7 @@ use gen_lsp_types::{
     OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextDocumentIdentifier, TextEdit,
     Uri, WorkspaceEdit,
 };
+use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 
 use crate::support::diagnostics::{Fix, rule_by_name};
@@ -110,18 +111,59 @@ pub fn resolve(
     Ok(result)
 }
 
-fn quickfix(_client: &Client, _doc: &Document, params: &CodeAction) -> Result<TextEdit> {
+fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<TextEdit> {
     let diagnostics = params.diagnostics.as_ref().context("missing diagnostics")?;
     let diagnostic = diagnostics.first().context("missing diagnostics")?;
     let range = &diagnostic.range;
+    let byte_range = client
+        .decode_range(range, &doc.line_index)
+        .context("valid range")?;
+    let old_text = doc
+        .text
+        .get(byte_range.start_byte..byte_range.end_byte)
+        .context("valid slice")?;
     let rule = match &diagnostic.code {
         Some(Code::String(name)) => rule_by_name(name).context("invalid code")?,
         _ => bail!("invalid or missing code"),
     };
     Ok(match &rule.fix {
+        Some(Fix::EscapeWhitespace) => {
+            let re = Regex::new(r"[\s&&[^\u0020\r\n]]")?;
+            let result = re.replace_all(old_text, |caps: &Captures| {
+                let codepoint = caps[0].chars().next().expect("capture should exist") as u32;
+                match codepoint {
+                    0x9 => "\\t".into(),
+                    0xC => "\\f".into(),
+                    bmp if codepoint <= 0xFFFF => format!("\\u{bmp:04X}"),
+                    _ => {
+                        let (high, low) = to_surrogates(codepoint).expect("valid unicode");
+                        format!("\\u{high:04X}\\u{low:04X}")
+                    }
+                }
+            });
+            TextEdit::new(*range, result.into())
+        }
         Some(Fix::Static(replacement)) => TextEdit::new(*range, replacement.clone()),
+        Some(Fix::ToUpper) => TextEdit::new(*range, old_text.to_uppercase()),
         None => bail!("invalid code"),
     })
+}
+
+const SURROGATE_HIGH_START: u32 = 0xD800;
+const SURROGATE_LOW_START: u32 = 0xDC00;
+
+/// split codepoint into surrogate pair for java
+fn to_surrogates(codepoint: u32) -> Option<(u16, u16)> {
+    let surrogate_offset = codepoint.checked_sub(0x10000)?;
+    let high = SURROGATE_HIGH_START
+        .checked_add(surrogate_offset >> 10)?
+        .try_into()
+        .ok()?;
+    let low = SURROGATE_LOW_START
+        .checked_add(surrogate_offset & 0x3FF)?
+        .try_into()
+        .ok()?;
+    Some((high, low))
 }
 
 #[cfg(test)]
