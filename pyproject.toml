@@ -45,9 +45,9 @@ dev = [
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
-  "prek==0.4.10",
+  "prek==0.4.11",
   # markdown
-  "rumdl==0.2.41",
+  "rumdl==0.2.43",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml

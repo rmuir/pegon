@@ -44,8 +44,8 @@
     "@types/node": "24.13.3",
     "@types/vscode": "1.125.0",
     "typescript": "7.0.2",
-    "oxlint": "1.74.0",
-    "oxlint-tsgolint": "0.25.0"
+    "oxlint": "1.75.0",
+    "oxlint-tsgolint": "7.0.2001"
   },
   "dependencies": {
     "vscode-languageclient": "10.1.0"
