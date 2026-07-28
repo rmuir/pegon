@@ -1,6 +1,7 @@
 //! Shared support code
 
 pub mod diagnostics;
+pub mod fix;
 pub mod index;
 pub mod queries;
 

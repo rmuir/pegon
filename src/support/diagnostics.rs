@@ -9,6 +9,7 @@ use tree_sitter::{
     Tree,
 };
 
+use crate::support::fix::Fix;
 use crate::support::queries::{capture_id, custom_predicate};
 
 /// Single diagnostic result
@@ -170,18 +171,6 @@ impl Severity {
     }
 }
 
-/// rule fix types
-pub enum Fix {
-    /// Replace whitespace in range with escapes
-    EscapeWhitespace,
-    /// Replace newlines in range with spaces
-    LineUnwrap,
-    /// Replace range with static string
-    Static(String),
-    /// Transform range to uppercase
-    ToUpper,
-}
-
 /// Look up rule by pattern index
 #[must_use]
 pub fn rule(index: usize) -> &'static Rule {
@@ -311,6 +300,7 @@ static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
                 fix_arg.expect("static fix should have an arg").into(),
             )),
             Some("to_upper") => Some(Fix::ToUpper),
+            Some("organize_imports") => Some(Fix::OrganizeImports),
             Some(other) => panic!("{other}: unknown fix type"),
             None => None,
         };

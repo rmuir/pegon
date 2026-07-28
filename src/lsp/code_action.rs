@@ -8,10 +8,9 @@ use gen_lsp_types::{
     OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextDocumentIdentifier, TextEdit,
     Uri, WorkspaceEdit,
 };
-use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 
-use crate::support::diagnostics::{Fix, rule_by_name};
+use crate::support::diagnostics::rule_by_name;
 
 use super::{Client, server::Document};
 
@@ -32,8 +31,13 @@ pub fn request(
                 if let Some(value) = &diagnostic.data {
                     let diagnostics_data: super::diagnostics::CustomData =
                         serde_json::from_value(value.clone())?;
+                    // try to form the title from "code: Title of Fix"
+                    let title = match &diagnostic.code {
+                        Some(Code::String(code)) => format!("{code}: {}", diagnostics_data.fix),
+                        _ => diagnostics_data.fix,
+                    };
                     result.push(CodeActionResponse::CodeAction(CodeAction {
-                        title: diagnostics_data.fix,
+                        title,
                         kind: Some(CodeActionKind::QuickFix),
                         diagnostics: Some(vec![diagnostic.clone()]),
                         is_preferred: Some(true),
@@ -46,7 +50,6 @@ pub fn request(
                 }
             }
         }
-        // TODO: make this a quick fix, and if returned already, don't return here
         if only.is_none_or(|only| {
             only.contains(&CodeActionKind::Source)
                 || only.contains(&CodeActionKind::SourceOrganizeImports)
@@ -85,91 +88,65 @@ pub fn resolve(
 ) -> Result<CodeAction> {
     let mut result = params.clone();
     let edit = match params.kind {
-        Some(CodeActionKind::QuickFix) => quickfix(client, doc, params),
+        Some(CodeActionKind::QuickFix) => quickfix(client, doc, params)?,
         Some(CodeActionKind::SourceOrganizeImports) => bail!("not just yet"),
         _ => bail!("invalid or missing kind"),
-    }?;
-    result.edit = Some(if client.supports_document_changes() {
-        WorkspaceEdit {
-            changes: None,
-            document_changes: Some(vec![DocumentChange::TextDocumentEdit(TextDocumentEdit {
-                text_document: OptionalVersionedTextDocumentIdentifier {
-                    version: Some(doc.version),
-                    text_document_identifier: TextDocumentIdentifier::new(data.uri.clone()),
-                },
-                edits: vec![Edit::TextEdit(edit)],
-            })]),
-            change_annotations: None,
-        }
-    } else {
-        WorkspaceEdit {
-            changes: Some(HashMap::from([(data.uri.clone(), vec![edit])])),
-            document_changes: None,
-            change_annotations: None,
-        }
-    });
+    };
+    if let Some(edit) = edit {
+        result.edit = Some(if client.supports_document_changes() {
+            WorkspaceEdit {
+                changes: None,
+                document_changes: Some(vec![DocumentChange::TextDocumentEdit(TextDocumentEdit {
+                    text_document: OptionalVersionedTextDocumentIdentifier {
+                        version: Some(doc.version),
+                        text_document_identifier: TextDocumentIdentifier::new(data.uri.clone()),
+                    },
+                    edits: vec![Edit::TextEdit(edit)],
+                })]),
+                change_annotations: None,
+            }
+        } else {
+            WorkspaceEdit {
+                changes: Some(HashMap::from([(data.uri.clone(), vec![edit])])),
+                document_changes: None,
+                change_annotations: None,
+            }
+        });
+    }
     Ok(result)
 }
 
-fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<TextEdit> {
+fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Option<TextEdit>> {
     let diagnostics = params.diagnostics.as_ref().context("missing diagnostics")?;
     let diagnostic = diagnostics.first().context("missing diagnostics")?;
-    let range = &diagnostic.range;
-    let byte_range = client
-        .decode_range(range, &doc.line_index)
+    let range = client
+        .decode_range(&diagnostic.range, &doc.line_index)
         .context("valid range")?;
-    let old_text = doc
-        .text
-        .get(byte_range.start_byte..byte_range.end_byte)
-        .context("valid slice")?;
     let rule = match &diagnostic.code {
         Some(Code::String(name)) => rule_by_name(name).context("invalid code")?,
         _ => bail!("invalid or missing code"),
     };
-    Ok(match &rule.fix {
-        Some(Fix::EscapeWhitespace) => TextEdit::new(*range, escape_whitespace(old_text)?),
-        Some(Fix::LineUnwrap) => TextEdit::new(*range, old_text.replace('\n', " ")),
-        Some(Fix::Static(replacement)) => TextEdit::new(*range, replacement.clone()),
-        Some(Fix::ToUpper) => TextEdit::new(*range, old_text.to_uppercase()),
-        None => bail!("invalid code"),
-    })
-}
+    if let Some(fix) = &rule.fix
+        && let Some(edit) = fix.generate(
+            range.start_byte..range.end_byte,
+            &doc.tree,
+            doc.text.as_bytes(),
+        )?
+    {
+        let ts_range = tree_sitter::Range {
+            start_byte: edit.range.start,
+            end_byte: edit.range.end,
+            start_point: Client::to_point(edit.range.start, &doc.line_index)
+                .context("valid offset")?,
+            end_point: Client::to_point(edit.range.end, &doc.line_index).context("valid offset")?,
+        };
+        let encoded = client
+            .encode_range(&ts_range, &doc.line_index)
+            .context("valid range")?;
+        return Ok(Some(TextEdit::new(encoded, edit.replacement)));
+    }
 
-/// escapes whitespace into java-escapes (UTF-16)
-///
-/// tab and form-feed should be converted into their special escape
-fn escape_whitespace(old_text: &str) -> Result<String> {
-    let re = Regex::new(r"[\s&&[^\u0020\r\n]]")?;
-    let result = re.replace_all(old_text, |caps: &Captures| {
-        let codepoint = caps[0].chars().next().expect("capture should exist") as u32;
-        match codepoint {
-            0x9 => "\\t".into(),
-            0xC => "\\f".into(),
-            bmp if codepoint <= 0xFFFF => format!("\\u{bmp:04X}"),
-            _ => {
-                let (high, low) = to_surrogates(codepoint).expect("valid unicode");
-                format!("\\u{high:04X}\\u{low:04X}")
-            }
-        }
-    });
-    Ok(result.into())
-}
-
-const SURROGATE_HIGH_START: u32 = 0xD800;
-const SURROGATE_LOW_START: u32 = 0xDC00;
-
-/// split codepoint into surrogate pair for java
-fn to_surrogates(codepoint: u32) -> Result<(u16, u16)> {
-    let surrogate_offset = codepoint.checked_sub(0x10000).context("supplementary")?;
-    let high = SURROGATE_HIGH_START
-        .checked_add(surrogate_offset >> 10)
-        .context("valid high")?
-        .try_into()?;
-    let low = SURROGATE_LOW_START
-        .checked_add(surrogate_offset & 0x3FF)
-        .context("valid low")?
-        .try_into()?;
-    Ok((high, low))
+    Ok(None)
 }
 
 #[cfg(test)]
@@ -284,7 +261,9 @@ mod tests {
             action_list,
             Some(vec![
                 CodeActionResponse::CodeAction(CodeAction {
-                    title: "Indicate ignored exception with unnamed variable `_`".into(),
+                    title:
+                        "swallowed-exception: Indicate ignored exception with unnamed variable `_`"
+                            .into(),
                     kind: Some(CodeActionKind::QuickFix),
                     diagnostics: Some(diagnostics.clone()),
                     is_preferred: Some(true),

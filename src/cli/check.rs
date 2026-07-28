@@ -1,6 +1,6 @@
 //! CLI "check" command
 use annotate_snippets::{
-    AnnotationKind, Group, Level, Patch, Renderer, Snippet,
+    AnnotationKind, Group, Level, Renderer, Snippet,
     renderer::{Ansi256Color, DecorStyle, Style},
 };
 use anyhow::{Context as _, Error, bail};
@@ -18,7 +18,7 @@ use std::{
 };
 use tree_sitter::Parser;
 
-use crate::support::diagnostics::{self, Diagnostic, Fix, Severity, rule};
+use crate::support::diagnostics::{self, Diagnostic, Severity, rule};
 
 /// grey color used for context and line numbers
 static GREY: Style = Ansi256Color(247).on_default();
@@ -201,6 +201,12 @@ impl Worker {
             ];
 
             let level: Level = rule.severity.into();
+            // just show if a fix is available, the diffs can get enormous
+            let help_name = if rule.fix.is_some() {
+                "help (fix available)"
+            } else {
+                "help"
+            };
 
             let report = [
                 level
@@ -213,20 +219,11 @@ impl Worker {
                             .path(filename)
                             .annotations(annotations.into_iter().flatten()),
                     ),
-                match &rule.fix {
-                    Some(Fix::Static(replacement)) => Level::NOTE
-                        .with_name("help")
-                        .secondary_title(&diagnostic.help)
-                        .element(Snippet::source(source).patch(Patch::new(
-                            diagnostic.range.start_byte..diagnostic.range.end_byte,
-                            replacement,
-                        ))),
-                    _ => Group::with_title(
-                        Level::NOTE
-                            .with_name("help")
-                            .secondary_title(&diagnostic.help),
-                    ),
-                },
+                Group::with_title(
+                    Level::NOTE
+                        .with_name(help_name)
+                        .secondary_title(&diagnostic.help),
+                ),
             ];
             let message = if self.concise {
                 format!("{}\n", CONCISE.render(&report))

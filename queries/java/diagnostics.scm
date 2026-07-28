@@ -271,10 +271,10 @@
   (#lt? @context @error)
   (#set! diagnostic.name "unsorted-static-import")
   (#set! diagnostic.title "Static import out of order: `{node.text}`")
-  (#set! diagnostic.help "Static imports should be in alphabetical order")
+  (#set! diagnostic.help "Organize Imports")
   (#set! diagnostic.label "sorts after")
   (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.severity "hint"))
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -294,10 +294,10 @@
   (#lt? @context @error)
   (#set! diagnostic.name "unsorted-static-import")
   (#set! diagnostic.title "Static import out of order: `{node.text}`")
-  (#set! diagnostic.help "Static imports should be in alphabetical order")
+  (#set! diagnostic.help "Organize Imports")
   (#set! diagnostic.label "sorts after")
   (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.severity "hint"))
 
 ; Unsorted imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -312,10 +312,10 @@
   (#lt? @context @error)
   (#set! diagnostic.name "unsorted-import")
   (#set! diagnostic.title "Import out of order: `{node.text}`")
-  (#set! diagnostic.help "Imports should be in alphabetical order")
+  (#set! diagnostic.help "Organize Imports")
   (#set! diagnostic.label "sorts after")
   (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.severity "hint"))
 
 ; Unsorted imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -335,10 +335,10 @@
   (#lt? @context @error)
   (#set! diagnostic.name "unsorted-import")
   (#set! diagnostic.title "Import out of order: `{node.text}`")
-  (#set! diagnostic.help "Imports should be in alphabetical order")
+  (#set! diagnostic.help "Organize Imports")
   (#set! diagnostic.label "sorts after")
   (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.severity "hint"))
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
@@ -351,11 +351,11 @@
     (scoped_identifier) @context)
   (#not-match? @_node1 "^import\\s+static")
   (#set! diagnostic.name "unsorted-import-group")
-  (#set! diagnostic.title "Import out of order: `{node.text}`")
-  (#set! diagnostic.help "Static imports should be grouped before regular imports")
+  (#set! diagnostic.title "Static import after regular import: `{node.text}`")
+  (#set! diagnostic.help "Organize Imports")
   (#set! diagnostic.label "sorts after")
   (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.severity "hint"))
 
 (program
   (import_declaration
@@ -371,11 +371,11 @@
     (scoped_identifier) @context)
   (#not-match? @_node1 "^import\\s+static")
   (#set! diagnostic.name "unsorted-import-group")
-  (#set! diagnostic.title "Import out of order: `{node.text}`")
-  (#set! diagnostic.help "Static imports should be grouped before regular imports")
+  (#set! diagnostic.title "Static import after regular import: `{node.text}`")
+  (#set! diagnostic.help "Organize Imports")
   (#set! diagnostic.label "sorts after")
   (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "info"))
+  (#set! diagnostic.severity "hint"))
 
 ; Multiple top-level classes in the same file
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
