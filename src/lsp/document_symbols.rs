@@ -248,9 +248,7 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
                         .expect("kind should have a value")
                         .parse::<u32>()
                         .expect("kind should be an integer");
-                    kind = Some(
-                        SymbolKind::try_from(code).expect("kind should be a valid SymbolKind"),
-                    );
+                    kind = Some(SymbolKind::from(code));
                 }
                 _ => panic!("{key}: unknown metadata key"),
             }

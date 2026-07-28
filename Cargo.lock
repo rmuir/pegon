@@ -277,9 +277,9 @@ dependencies = [
 
 [[package]]
 name = "gen-lsp-types"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd635c5206acd03ea024d6b5902539e5c903de3afa220fdb5c94b583af77f4f"
+checksum = "b64887ac3a8083427ae935a7296db876871582cd57eac077564f8bc18fa49116"
 dependencies = [
  "serde",
  "serde_json",
@@ -513,9 +513,9 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "ristretto_jimage"
-version = "0.32.0"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34abf2513271507d77249b37ef629431c81be44453edd6107dd4f43cbc74fe37"
+checksum = "5096e0d307c33dde7c0677d521c99fa27be6f569e2f72512ecb98d29583e7a4b"
 dependencies = [
  "byteorder",
  "memchr",
