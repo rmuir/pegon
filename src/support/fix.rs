@@ -4,7 +4,7 @@
 use std::ops::Range;
 use std::str::from_utf8;
 
-use anyhow::{Context as _, Result, bail};
+use anyhow::{Context as _, Result};
 use regex::{Captures, Regex};
 use tree_sitter::Tree;
 
@@ -24,7 +24,7 @@ pub enum Fix {
 
 impl Fix {
     /// Generate an [`Edit`] if possible to fix the issue
-    pub fn generate(&self, range: Range<usize>, _tree: &Tree, data: &[u8]) -> Result<Option<Edit>> {
+    pub fn generate(&self, range: Range<usize>, tree: &Tree, data: &[u8]) -> Result<Option<Edit>> {
         let old_text = from_utf8(data.get(range.clone()).context("valid range")?)?;
         Ok(match self {
             Self::EscapeWhitespace => Some(Edit {
@@ -35,7 +35,7 @@ impl Fix {
                 range,
                 replacement: old_text.replace('\n', " "),
             }),
-            Self::OrganizeImports => bail!("not yet"),
+            Self::OrganizeImports => super::organize_imports::organize(tree, data)?,
             Self::Static(replacement) => Some(Edit {
                 range,
                 replacement: replacement.clone(),

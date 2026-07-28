@@ -27,6 +27,10 @@
       "range": "range of the area for the symbol",
       "reference": "reference to another symbol that should be highlighted"
     },
+    "imports": {
+      "node": "entire import node",
+      "text": "actual text of the import"
+    },
     "folds": {
       "range": "range of the folding region"
     },

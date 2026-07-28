@@ -10,7 +10,7 @@ use gen_lsp_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::support::diagnostics::rule_by_name;
+use crate::support::{diagnostics::rule_by_name, organize_imports::organize};
 
 use super::{Client, server::Document};
 
@@ -89,7 +89,7 @@ pub fn resolve(
     let mut result = params.clone();
     let edit = match params.kind {
         Some(CodeActionKind::QuickFix) => quickfix(client, doc, params)?,
-        Some(CodeActionKind::SourceOrganizeImports) => bail!("not just yet"),
+        Some(CodeActionKind::SourceOrganizeImports) => organize_imports(client, doc)?,
         _ => bail!("invalid or missing kind"),
     };
     if let Some(edit) = edit {
@@ -133,20 +133,34 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
             doc.text.as_bytes(),
         )?
     {
-        let ts_range = tree_sitter::Range {
-            start_byte: edit.range.start,
-            end_byte: edit.range.end,
-            start_point: Client::to_point(edit.range.start, &doc.line_index)
-                .context("valid offset")?,
-            end_point: Client::to_point(edit.range.end, &doc.line_index).context("valid offset")?,
-        };
-        let encoded = client
-            .encode_range(&ts_range, &doc.line_index)
-            .context("valid range")?;
-        return Ok(Some(TextEdit::new(encoded, edit.replacement)));
+        return Ok(Some(to_lsp_edit(client, doc, edit)?));
     }
 
     Ok(None)
+}
+
+fn organize_imports(client: &Client, doc: &Document) -> Result<Option<TextEdit>> {
+    if let Some(edit) = organize(&doc.tree, doc.text.as_bytes())? {
+        return Ok(Some(to_lsp_edit(client, doc, edit)?));
+    }
+    Ok(None)
+}
+
+fn to_lsp_edit(
+    client: &Client,
+    doc: &Document,
+    edit: crate::support::fix::Edit,
+) -> Result<TextEdit> {
+    let ts_range = tree_sitter::Range {
+        start_byte: edit.range.start,
+        end_byte: edit.range.end,
+        start_point: Client::to_point(edit.range.start, &doc.line_index).context("valid offset")?,
+        end_point: Client::to_point(edit.range.end, &doc.line_index).context("valid offset")?,
+    };
+    let encoded = client
+        .encode_range(&ts_range, &doc.line_index)
+        .context("valid range")?;
+    Ok(TextEdit::new(encoded, edit.replacement))
 }
 
 #[cfg(test)]
@@ -194,7 +208,7 @@ mod tests {
 
     /// Get an autofix for a swallowed exception
     #[test]
-    fn basic() {
+    fn quickfix() {
         let client = TestClient::new(InitializeParams {
             capabilities: capabilities(),
             ..Default::default()
@@ -205,15 +219,15 @@ mod tests {
                 language_id: "java".into(),
                 version: 0,
                 text: indoc! {r#"
-                public class Foo {
-                    public void bar() {
-                        try {
-                            Integer.parseInt("foo");
-                        } catch (Exception wtf) {
+                    public class Foo {
+                        public void bar() {
+                            try {
+                                Integer.parseInt("foo");
+                            } catch (Exception wtf) {
+                            }
                         }
                     }
-                }
-            "#}
+                "#}
                 .into(),
             },
         });
@@ -316,6 +330,81 @@ mod tests {
                     vec![TextEdit {
                         range: Range::new(Position::new(4, 27), Position::new(4, 30)),
                         new_text: "_".into()
+                    }]
+                )])),
+                document_changes: None,
+                change_annotations: None,
+            }),
+        );
+    }
+
+    /// Get an autofix for a swallowed exception
+    #[test]
+    fn organize_imports() {
+        let client = TestClient::new(InitializeParams {
+            capabilities: capabilities(),
+            ..Default::default()
+        });
+        client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: "file:///Foo.java".into(),
+                language_id: "java".into(),
+                version: 0,
+                text: indoc! {r"
+                    import b.c; // after
+                    import a.b; // before
+                    public class Foo {}
+                "}
+                .into(),
+            },
+        });
+
+        let action_list = client.request::<CodeActionRequest>(CodeActionParams {
+            text_document: TextDocumentIdentifier::new("file:///Foo.java".into()),
+            range: Range::new(Position::new(0, 0), Position::new(4, 0)),
+            context: CodeActionContext {
+                diagnostics: vec![],
+                only: Some(vec![CodeActionKind::SourceOrganizeImports]),
+                trigger_kind: None,
+            },
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+        });
+
+        let action = CodeAction {
+            title: "Organize Imports".into(),
+            kind: Some(CodeActionKind::SourceOrganizeImports),
+            diagnostics: None,
+            is_preferred: None,
+            disabled: None,
+            edit: None,
+            command: None,
+            data: Some(json!({
+                "uri": "file:///Foo.java",
+                "version": 0
+            })),
+            tags: None,
+        };
+
+        assert_eq!(
+            action_list,
+            Some(vec![CodeActionResponse::CodeAction(action.clone())])
+        );
+
+        let resolved = client.request::<CodeActionResolveRequest>(action);
+
+        assert_eq!(
+            resolved.edit,
+            Some(WorkspaceEdit {
+                changes: Some(HashMap::from([(
+                    Uri("file:///Foo.java".into()),
+                    vec![TextEdit {
+                        range: Range::new(Position::new(0, 0), Position::new(2, 0)),
+                        new_text: indoc! {r"
+                            import a.b; // before
+                            import b.c; // after
+                        "}
+                        .into()
                     }]
                 )])),
                 document_changes: None,
