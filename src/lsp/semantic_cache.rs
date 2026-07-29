@@ -38,7 +38,7 @@ impl Cache {
         let result_id = blake3::hash(&bytes).to_string();
         let tokens = Vec::from(data);
         let mut cache = self.0.lock().expect("poisoned");
-        if cache.len() > HISTORY_LEN {
+        if cache.len() == HISTORY_LEN {
             cache.pop_back();
         }
         cache.push_front(CacheEntry {
