@@ -29,9 +29,6 @@ static FULL: Renderer = Renderer::styled()
     .context(GREY)
     .line_num(GREY);
 
-/// gcc-style output
-static CONCISE: Renderer = Renderer::plain().short_message(true);
-
 /// map severity levels to annotate-snippets severities
 impl From<Severity> for Level<'_> {
     fn from(value: Severity) -> Self {
@@ -157,24 +154,24 @@ impl Worker {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);
             }
-            self.render(path, &data, &result)?;
+            if self.concise {
+                self.render_concise(path, &result)?;
+            } else {
+                self.render_full(path, &data, &result)?;
+            }
         }
         self.stats.add_file(1);
         Ok(())
     }
 
     /// Render some diagnostics to the console
-    fn render(&self, path: &Path, data: &[u8], errors: &[Diagnostic]) -> Result<(), Error> {
+    fn render_full(&self, path: &Path, data: &[u8], errors: &[Diagnostic]) -> Result<(), Error> {
         let filename = path.to_str();
         let source = str::from_utf8(data)?;
         for diagnostic in errors {
             let rule = rule(diagnostic.rule_id);
-            let id_url = if self.concise { "" } else { &rule.url };
-            let label = if self.concise {
-                None
-            } else {
-                diagnostic.label.as_ref()
-            };
+            let id_url = &rule.url;
+            let label = diagnostic.label.as_ref();
 
             let annotations = [
                 // top context: e.g. what function are you in
@@ -225,11 +222,33 @@ impl Worker {
                         .secondary_title(&diagnostic.help),
                 ),
             ];
-            let message = if self.concise {
-                format!("{}\n", CONCISE.render(&report))
-            } else {
-                format!("{}\n\n", FULL.render(&report))
-            };
+            let message = format!("{}\n\n", FULL.render(&report));
+            self.sender.send(message)?;
+        }
+        Ok(())
+    }
+
+    // fastest and easier to not use annotate-snippets for this
+    fn render_concise(&self, path: &Path, errors: &[Diagnostic]) -> Result<(), Error> {
+        let filename = path.to_string_lossy();
+        for diagnostic in errors {
+            let rule = rule(diagnostic.rule_id);
+            let line = diagnostic
+                .range
+                .start_point
+                .row
+                .checked_add(1)
+                .context("no overflow")?;
+            let column = diagnostic
+                .range
+                .start_point
+                .column
+                .checked_add(1)
+                .context("no overflow")?;
+            let severity = rule.severity.as_str();
+            let title = &diagnostic.title;
+            let id = &rule.name;
+            let message = format!("{filename}:{line}:{column}: {severity}[{id}]: {title}\n");
             self.sender.send(message)?;
         }
         Ok(())
