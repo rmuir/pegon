@@ -310,9 +310,22 @@ impl Server {
                         .clone(),
                 )?;
                 let doc = java_document(state, &data.uri)?;
-                self.dispatch::<CodeActionResolveRequest, _>(id, cancel, move |cancel| {
-                    super::code_action::resolve(&client, &doc, &params, &data, cancel)
-                })
+                if data.version == doc.version {
+                    self.dispatch::<CodeActionResolveRequest, _>(id, cancel, move |cancel| {
+                        super::code_action::resolve(&client, &doc, &params, &data, cancel)
+                    })
+                } else {
+                    Ok(self.connection.sender.send(finish_request(
+                        &cancel,
+                        &self.in_flight,
+                        req.id.clone(),
+                        error(
+                            req.id.clone(),
+                            ErrorCode::ContentModified,
+                            "stale resolve request".into(),
+                        ),
+                    ))?)
+                }
             }
             "textDocument/definition" => {
                 let params: DefinitionParams = serde_json::from_value(req.params.clone())?;
@@ -377,9 +390,22 @@ impl Server {
                         .clone(),
                 )?;
                 let doc = java_document(state, &data.uri)?;
-                self.dispatch::<InlayHintResolveRequest, _>(id, cancel, move |cancel| {
-                    super::inlay_hints::resolve(&client, &doc, &params, &data, cancel)
-                })
+                if data.version == doc.version {
+                    self.dispatch::<InlayHintResolveRequest, _>(id, cancel, move |cancel| {
+                        super::inlay_hints::resolve(&client, &doc, &params, &data, cancel)
+                    })
+                } else {
+                    Ok(self.connection.sender.send(finish_request(
+                        &cancel,
+                        &self.in_flight,
+                        req.id.clone(),
+                        error(
+                            req.id.clone(),
+                            ErrorCode::ContentModified,
+                            "stale resolve request".into(),
+                        ),
+                    ))?)
+                }
             }
             "textDocument/selectionRange" => {
                 let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
