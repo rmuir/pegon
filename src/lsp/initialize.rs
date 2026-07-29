@@ -335,7 +335,7 @@ mod tests {
     /// default to UTF-16 according to the spec
     #[test]
     fn encoding_default() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         assert_eq!(
             Some(PositionEncodingKind::UTF16),
             client.init_response().capabilities.position_encoding

@@ -138,7 +138,7 @@ static REFERENCE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "r
 mod tests {
     use gen_lsp_types::{
         DidOpenTextDocumentNotification, DidOpenTextDocumentParams, DocumentHighlight,
-        DocumentHighlightKind, DocumentHighlightParams, DocumentHighlightRequest, InitializeParams,
+        DocumentHighlightKind, DocumentHighlightParams, DocumentHighlightRequest,
         PartialResultParams, Position, Range, TextDocumentIdentifier, TextDocumentItem,
         TextDocumentPositionParams, WorkDoneProgressParams,
     };
@@ -149,7 +149,7 @@ mod tests {
     /// simple document
     #[test]
     fn simple() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

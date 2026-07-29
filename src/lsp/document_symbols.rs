@@ -275,8 +275,8 @@ static DIMENSIONS_KIND: LazyLock<u16> = LazyLock::new(|| {
 mod tests {
     use gen_lsp_types::{
         BaseSymbolInformation, DidOpenTextDocumentNotification, DidOpenTextDocumentParams,
-        DocumentSymbolParams, DocumentSymbolRequest, DocumentSymbolResponse, InitializeParams,
-        Location, PartialResultParams, Position, Range, SymbolInformation, SymbolKind,
+        DocumentSymbolParams, DocumentSymbolRequest, DocumentSymbolResponse, Location,
+        PartialResultParams, Position, Range, SymbolInformation, SymbolKind,
         TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
     };
     use indoc::indoc;
@@ -286,7 +286,7 @@ mod tests {
     /// simple document, flat results
     #[test]
     fn flat() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

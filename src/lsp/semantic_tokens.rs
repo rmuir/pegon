@@ -282,9 +282,9 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
 #[cfg(test)]
 mod tests {
     use gen_lsp_types::{
-        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InitializeParams,
-        PartialResultParams, SemanticToken, SemanticTokens, SemanticTokensParams,
-        SemanticTokensRequest, TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
+        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, PartialResultParams,
+        SemanticToken, SemanticTokens, SemanticTokensParams, SemanticTokensRequest,
+        TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
     };
     use indoc::indoc;
 
@@ -324,7 +324,7 @@ mod tests {
     /// simple document
     #[test]
     fn simple() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

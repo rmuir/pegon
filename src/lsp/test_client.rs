@@ -164,6 +164,12 @@ fn recv_timeout(receiver: &Receiver<Message>) -> Result<Option<Message>, ErrorKi
     }
 }
 
+impl Default for TestClient {
+    fn default() -> Self {
+        Self::new(InitializeParams::default())
+    }
+}
+
 impl Drop for TestClient {
     fn drop(&mut self) {
         assert_eq!((), self.request::<ShutdownRequest>(()));

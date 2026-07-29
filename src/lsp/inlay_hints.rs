@@ -290,10 +290,9 @@ static POSITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "po
 #[cfg(test)]
 mod tests {
     use gen_lsp_types::{
-        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InitializeParams, InlayHint,
-        InlayHintLabelPart, InlayHintParams, InlayHintRequest, Label::InlayHintLabelPartList,
-        Location, Position, Range, TextDocumentIdentifier, TextDocumentItem, TextEdit,
-        WorkDoneProgressParams,
+        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InlayHint, InlayHintLabelPart,
+        InlayHintParams, InlayHintRequest, Label::InlayHintLabelPartList, Location, Position,
+        Range, TextDocumentIdentifier, TextDocumentItem, TextEdit, WorkDoneProgressParams,
     };
     use indoc::indoc;
     use serde_json::json;
@@ -303,7 +302,7 @@ mod tests {
     /// simple document
     #[test]
     fn basic() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

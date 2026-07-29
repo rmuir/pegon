@@ -53,16 +53,16 @@ fn ranges(client: &Client, doc: &Document, offset: usize) -> Result<SelectionRan
 mod tests {
     use crate::lsp::test_client::TestClient;
     use gen_lsp_types::{
-        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InitializeParams,
-        PartialResultParams, Position, Range, SelectionRange, SelectionRangeParams,
-        SelectionRangeRequest, TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
+        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, PartialResultParams, Position,
+        Range, SelectionRange, SelectionRangeParams, SelectionRangeRequest, TextDocumentIdentifier,
+        TextDocumentItem, WorkDoneProgressParams,
     };
     use indoc::indoc;
 
     /// simple document
     #[test]
     fn simple() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

@@ -164,7 +164,7 @@ mod tests {
     /// diagnose a simple document (push diagnostics, zero fancy features)
     #[test]
     fn diagnostics() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),
@@ -197,7 +197,7 @@ mod tests {
     /// push diagnostics should be cleared by the server on close
     #[test]
     fn push_clear_on_close() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),
@@ -324,7 +324,7 @@ mod tests {
     /// modify a document to become problematic
     #[test]
     fn diagnostics_on_change() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

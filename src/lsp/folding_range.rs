@@ -146,8 +146,8 @@ static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range
 mod tests {
     use gen_lsp_types::{
         DidOpenTextDocumentNotification, DidOpenTextDocumentParams, FoldingRange, FoldingRangeKind,
-        FoldingRangeParams, FoldingRangeRequest, InitializeParams, PartialResultParams,
-        TextDocumentIdentifier, TextDocumentItem, WorkDoneProgressParams,
+        FoldingRangeParams, FoldingRangeRequest, PartialResultParams, TextDocumentIdentifier,
+        TextDocumentItem, WorkDoneProgressParams,
     };
     use indoc::indoc;
 
@@ -156,7 +156,7 @@ mod tests {
     /// simple document
     #[test]
     fn flat() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),

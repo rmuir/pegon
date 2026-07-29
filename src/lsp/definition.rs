@@ -190,9 +190,9 @@ static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "s
 mod tests {
     use gen_lsp_types::{
         Definition, DefinitionParams, DefinitionRequest, DefinitionResponse,
-        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, InitializeParams, Location,
-        PartialResultParams, Position, Range, TextDocumentIdentifier, TextDocumentItem,
-        TextDocumentPositionParams, WorkDoneProgressParams,
+        DidOpenTextDocumentNotification, DidOpenTextDocumentParams, Location, PartialResultParams,
+        Position, Range, TextDocumentIdentifier, TextDocumentItem, TextDocumentPositionParams,
+        WorkDoneProgressParams,
     };
     use indoc::indoc;
 
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn flat() {
-        let client = TestClient::new(InitializeParams::default());
+        let client = TestClient::default();
         client.notify::<DidOpenTextDocumentNotification>(DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri: "file:///Foo.java".into(),
