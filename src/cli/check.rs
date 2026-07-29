@@ -165,6 +165,7 @@ impl Worker {
     }
 
     /// Render some diagnostics to the console
+    #[expect(clippy::arithmetic_side_effects, reason = "TODO")]
     fn render_full(&self, path: &Path, data: &[u8], errors: &[Diagnostic]) -> Result<(), Error> {
         let filename = path.to_str();
         let source = str::from_utf8(data)?;
@@ -172,28 +173,34 @@ impl Worker {
             let rule = rule(diagnostic.rule_id);
             let id_url = &rule.url;
             let label = diagnostic.label.as_ref();
+            let bounds = diagnostic.bounds(source);
+            let offset = bounds.range.start;
 
             let annotations = [
                 // top context: e.g. what function are you in
-                diagnostic
-                    .top_context
-                    .map(|ctx| AnnotationKind::Visible.span(ctx.start_byte..ctx.end_byte)),
+                diagnostic.top_context.map(|ctx| {
+                    AnnotationKind::Visible.span(ctx.start_byte - offset..ctx.end_byte - offset)
+                }),
                 // primary error annotation: as precise of a range as possible
                 Some(
                     AnnotationKind::Primary
-                        .span(diagnostic.range.start_byte..diagnostic.range.end_byte)
+                        .span(
+                            diagnostic.range.start_byte - offset
+                                ..diagnostic.range.end_byte - offset,
+                        )
                         .label(label)
                         .highlight_source(true),
                 ),
                 // explicitly marked context in the query
                 diagnostic.context.map(|context| {
                     AnnotationKind::Context
-                        .span(context.start_byte..context.end_byte)
+                        .span(context.start_byte - offset..context.end_byte - offset)
                         .label(rule.context_label.as_ref())
                 }),
                 // explicitly marked visible in the query
                 diagnostic.visible.map(|visible| {
-                    AnnotationKind::Visible.span(visible.start_byte..visible.end_byte)
+                    AnnotationKind::Visible
+                        .span(visible.start_byte - offset..visible.end_byte - offset)
                 }),
             ];
 
@@ -212,8 +219,9 @@ impl Worker {
                     .id(&rule.name)
                     .id_url(id_url)
                     .element(
-                        Snippet::source(source)
+                        Snippet::source(source.get(bounds.range).context("valid bounds")?)
                             .path(filename)
+                            .line_start(bounds.line_start + 1)
                             .annotations(annotations.into_iter().flatten()),
                     ),
                 Group::with_title(
