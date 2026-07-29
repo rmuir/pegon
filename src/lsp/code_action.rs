@@ -280,28 +280,20 @@ mod tests {
                     kind: Some(CodeActionKind::QuickFix),
                     diagnostics: Some(diagnostics.clone()),
                     is_preferred: Some(true),
-                    disabled: None,
-                    edit: None,
-                    command: None,
                     data: Some(json!({
                         "uri": "file:///Foo.java",
                         "version": 0
                     })),
-                    tags: None,
+                    ..Default::default()
                 }),
                 CodeActionResponse::CodeAction(CodeAction {
                     title: "Organize Imports".into(),
                     kind: Some(CodeActionKind::SourceOrganizeImports),
-                    diagnostics: None,
-                    is_preferred: None,
-                    disabled: None,
-                    edit: None,
-                    command: None,
                     data: Some(json!({
                         "uri": "file:///Foo.java",
                         "version": 0
                     })),
-                    tags: None
+                    ..Default::default()
                 })
             ])
         );
@@ -311,14 +303,11 @@ mod tests {
             kind: Some(CodeActionKind::QuickFix),
             diagnostics: Some(diagnostics.clone()),
             is_preferred: Some(true),
-            disabled: None,
-            edit: None,
-            command: None,
             data: Some(json!({
                 "uri": "file:///Foo.java",
                 "version": 0
             })),
-            tags: None,
+            ..Default::default()
         });
 
         assert_eq!(
@@ -373,16 +362,11 @@ mod tests {
         let action = CodeAction {
             title: "Organize Imports".into(),
             kind: Some(CodeActionKind::SourceOrganizeImports),
-            diagnostics: None,
-            is_preferred: None,
-            disabled: None,
-            edit: None,
-            command: None,
             data: Some(json!({
                 "uri": "file:///Foo.java",
                 "version": 0
             })),
-            tags: None,
+            ..Default::default()
         };
 
         assert_eq!(
