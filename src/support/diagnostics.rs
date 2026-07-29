@@ -35,58 +35,6 @@ pub struct Diagnostic {
     pub top_context: Option<Range>,
 }
 
-/// Bounding box of a diagnostic
-pub struct DiagnosticBounds {
-    /// byte range containing all the diagnostic info
-    pub range: std::ops::Range<usize>,
-    /// line number the diagnostic starts at
-    pub line_start: usize,
-}
-
-impl Diagnostic {
-    /// compute diagnostic's bounding box for more efficient rendering
-    pub fn bounds(&self, source: &str) -> DiagnosticBounds {
-        // 4 possible ranges
-        let ranges = [
-            self.top_context.as_ref(),
-            Some(&self.range),
-            self.context.as_ref(),
-            self.visible.as_ref(),
-        ];
-
-        let mut start_byte = usize::MAX;
-        let mut line_start = 0;
-        let mut end_byte = 0;
-
-        // compute the box
-        for range in ranges.iter().flatten() {
-            if range.start_byte < start_byte {
-                start_byte = range.start_byte;
-                line_start = range.start_point.row;
-            }
-            end_byte = max(end_byte, range.end_byte);
-        }
-
-        // expand the box so it includes full lines
-        let start = source
-            .get(..start_byte)
-            .and_then(|text| text.rfind('\n'))
-            .and_then(|offset| offset.checked_add(1))
-            .unwrap_or_default();
-        let end = source
-            .get(end_byte..)
-            .and_then(|text| text.find('\n'))
-            .and_then(|offset| offset.checked_add(end_byte))
-            .and_then(|offset| offset.checked_add(1))
-            .unwrap_or(source.len());
-
-        DiagnosticBounds {
-            range: start..end,
-            line_start,
-        }
-    }
-}
-
 /// Returns any lint errors found against the document.
 ///
 /// # Errors
@@ -398,3 +346,55 @@ static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
         .build(["{node.text}", "{node.kind}"])
         .expect("dfa should build")
 });
+
+impl Diagnostic {
+    /// compute diagnostic's bounding box for more efficient rendering
+    pub fn bounds(&self, source: &str) -> DiagnosticBounds {
+        // 4 possible ranges
+        let ranges = [
+            self.top_context.as_ref(),
+            Some(&self.range),
+            self.context.as_ref(),
+            self.visible.as_ref(),
+        ];
+
+        let mut start_byte = usize::MAX;
+        let mut line_start = 0;
+        let mut end_byte = 0;
+
+        // compute the box
+        for range in ranges.iter().flatten() {
+            if range.start_byte < start_byte {
+                start_byte = range.start_byte;
+                line_start = range.start_point.row;
+            }
+            end_byte = max(end_byte, range.end_byte);
+        }
+
+        // expand the box so it includes full lines
+        let start = source
+            .get(..start_byte)
+            .and_then(|text| text.rfind('\n'))
+            .and_then(|offset| offset.checked_add(1))
+            .unwrap_or_default();
+        let end = source
+            .get(end_byte..)
+            .and_then(|text| text.find('\n'))
+            .and_then(|offset| offset.checked_add(end_byte))
+            .and_then(|offset| offset.checked_add(1))
+            .unwrap_or(source.len());
+
+        DiagnosticBounds {
+            range: start..end,
+            line_start,
+        }
+    }
+}
+
+/// Bounding box of a diagnostic
+pub struct DiagnosticBounds {
+    /// byte range containing all the diagnostic info
+    pub range: std::ops::Range<usize>,
+    /// line number the diagnostic starts at
+    pub line_start: usize,
+}
