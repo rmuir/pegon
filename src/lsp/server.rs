@@ -5,9 +5,8 @@
 //! worker thread always works the version of the document at the time the initial request
 //! was received.
 //!
-//! Request cancellation works at a coarse level by checking state of in-flight requests
-//! both before and after doing the work, to save both client and server resources when
-//! possible.
+//! Request cancellation works by checking state of in-flight requests both before and
+//! after doing the work. Cancellation is passed to the ts query callback.
 
 use core::num::NonZero;
 use core::sync::atomic::AtomicBool;
