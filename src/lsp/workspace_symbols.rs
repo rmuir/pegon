@@ -1,12 +1,9 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Result;
 use gen_lsp_types::{
     BaseSymbolInformation, Location, Position, Range, SymbolKind, WorkspaceSymbol,
-    WorkspaceSymbolLocation, WorkspaceSymbolParams,
+    WorkspaceSymbolLocation, WorkspaceSymbolParams, WorkspaceSymbolResponse,
 };
 
 use crate::lsp::server::AllWorkspaces;
@@ -25,8 +22,8 @@ pub fn request(
     _client: &Client,
     workspaces: &AllWorkspaces,
     params: &WorkspaceSymbolParams,
-    cancel: &Arc<AtomicBool>,
-) -> Result<Vec<WorkspaceSymbol>> {
+    cancel: &AtomicBool,
+) -> Result<Option<WorkspaceSymbolResponse>> {
     let query = &params.query;
     let mut response = Vec::with_capacity(128);
     let mut counter: u64 = 0;
@@ -39,7 +36,7 @@ pub fn request(
             {
                 counter = counter.wrapping_add(1);
                 if counter.is_multiple_of(128) && cancel.load(Ordering::Relaxed) {
-                    return Ok(vec![]);
+                    return Ok(Some(WorkspaceSymbolResponse::WorkspaceSymbolList(vec![])));
                 }
                 if lsp_match(query, class) {
                     response.push(WorkspaceSymbol {
@@ -59,13 +56,13 @@ pub fn request(
                         },
                     });
                     if response.len() == LIMIT {
-                        return Ok(response);
+                        return Ok(Some(WorkspaceSymbolResponse::WorkspaceSymbolList(response)));
                     }
                 }
             }
         }
     }
-    Ok(response)
+    Ok(Some(WorkspaceSymbolResponse::WorkspaceSymbolList(response)))
 }
 
 /// Attempts to match as recommended by the LSP spec

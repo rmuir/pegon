@@ -1,7 +1,7 @@
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{Contents, Hover, MarkupContent, MarkupKind, Position};
@@ -18,7 +18,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     position: Position,
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
 ) -> Result<Option<Hover>> {
     let markdown = client.prefers_hover_markdown();
     let bytes = doc.text.as_bytes();

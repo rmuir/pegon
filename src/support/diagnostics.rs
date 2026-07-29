@@ -4,7 +4,7 @@ use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 use rustc_hash::FxHashMap;
 use std::cmp::max;
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 use tree_sitter::{
     Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
     Tree,
@@ -43,7 +43,7 @@ pub struct Diagnostic {
 pub fn lint(
     tree: &Tree,
     data: &[u8],
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
     extras: bool,
 ) -> Result<Vec<Diagnostic>, Error> {
     let mut lints = Vec::new();

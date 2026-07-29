@@ -1,7 +1,7 @@
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{Definition, DefinitionParams, DefinitionResponse, Location, LocationLink};
@@ -17,7 +17,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &DefinitionParams,
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
 ) -> Result<Option<DefinitionResponse>> {
     let position = params.text_document_position_params.position;
     let bytes = doc.text.as_bytes();

@@ -1,6 +1,6 @@
 use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
@@ -19,8 +19,8 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &InlayHintParams,
-    cancel: &Arc<AtomicBool>,
-) -> Result<Vec<InlayHint>> {
+    cancel: &AtomicBool,
+) -> Result<Option<Vec<InlayHint>>> {
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
@@ -37,6 +37,7 @@ pub fn request(
         !can_resolve,
         cancel,
     )
+    .map(Some)
 }
 
 pub fn resolve(
@@ -44,7 +45,7 @@ pub fn resolve(
     doc: &Document,
     params: &InlayHint,
     data: &CustomData,
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
 ) -> Result<InlayHint> {
     let position = client
         .decode_pos(params.position, &doc.line_index)
@@ -77,7 +78,7 @@ pub fn hints(
     uri: &Uri,
     range: Range<usize>,
     populate: bool,
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
 ) -> Result<Vec<InlayHint>> {
     let data = doc.text.as_bytes();
     let mut result = Vec::with_capacity(64);

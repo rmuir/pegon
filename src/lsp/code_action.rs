@@ -1,6 +1,5 @@
 use core::sync::atomic::AtomicBool;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
@@ -18,7 +17,7 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &CodeActionParams,
-) -> Result<Vec<CodeActionResponse>> {
+) -> Result<Option<Vec<CodeActionResponse>>> {
     if client.supports_code_action_data() && client.supports_code_action_resolve_edit() {
         let mut result = Vec::with_capacity(params.context.diagnostics.len().saturating_add(1));
         let only = params.context.only.as_ref();
@@ -66,10 +65,10 @@ pub fn request(
                 tags: None,
             }));
         }
-        Ok(result)
+        Ok(Some(result))
     } else {
         // just return empty code actions if the client can't be efficient about it
-        Ok(vec![])
+        Ok(Some(vec![]))
     }
 }
 
@@ -84,7 +83,7 @@ pub fn resolve(
     doc: &Document,
     params: &CodeAction,
     data: &CustomData,
-    _cancel: &Arc<AtomicBool>,
+    _cancel: &AtomicBool,
 ) -> Result<CodeAction> {
     let mut result = params.clone();
     let edit = match params.kind {

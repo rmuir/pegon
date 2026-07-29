@@ -1,10 +1,7 @@
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use std::{
-    collections::HashSet,
-    sync::{Arc, LazyLock},
-};
+use std::{collections::HashSet, sync::LazyLock};
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{DocumentHighlight, DocumentHighlightKind, DocumentHighlightParams};
@@ -20,8 +17,8 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &DocumentHighlightParams,
-    cancel: &Arc<AtomicBool>,
-) -> Result<Vec<DocumentHighlight>> {
+    cancel: &AtomicBool,
+) -> Result<Option<Vec<DocumentHighlight>>> {
     let bytes = doc.text.as_bytes();
     let position = params.text_document_position_params.position;
     let mut result = Vec::with_capacity(3);
@@ -78,7 +75,7 @@ pub fn request(
             result.push(DocumentHighlight { range, kind });
         }
     }
-    Ok(result)
+    Ok(Some(result))
 }
 
 /// single compiled pattern

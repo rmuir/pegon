@@ -2,7 +2,7 @@ use anyhow::{Context as _, Error};
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 use rustc_hash::FxHashMap;
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 use tree_sitter::{
     Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
     Tree,
@@ -43,7 +43,7 @@ impl LocalScope<'_> {
 pub fn scopes<'tree, 'data>(
     tree: &'tree Tree,
     data: &'data [u8],
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
 ) -> Result<Scopes<'data, 'tree>, Error> {
     let mut locals = FxHashMap::default();
     let mut cursor = QueryCursor::new();

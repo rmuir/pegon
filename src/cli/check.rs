@@ -13,7 +13,6 @@ use std::{
     fs,
     io::{BufWriter, Write as _},
     path::{Path, PathBuf},
-    sync::Arc,
     time::Instant,
 };
 use tree_sitter::Parser;
@@ -144,12 +143,7 @@ impl Worker {
             .parser
             .parse(&data, None)
             .context("parser should be setup")?;
-        let result = diagnostics::lint(
-            &tree,
-            &data,
-            &Arc::new(AtomicBool::new(false)),
-            !self.concise,
-        )?;
+        let result = diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise)?;
         if !result.is_empty() {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);

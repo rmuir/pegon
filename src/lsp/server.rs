@@ -32,7 +32,6 @@ use gen_lsp_types::WorkDoneProgressEnd;
 use gen_lsp_types::WorkspaceFolder;
 use gen_lsp_types::WorkspaceSymbolParams;
 use gen_lsp_types::WorkspaceSymbolRequest;
-use gen_lsp_types::WorkspaceSymbolResponse;
 use gen_lsp_types::{
     CancelParams, CodeAction, CodeActionParams, CodeActionRequest, CodeActionResolveRequest,
     DefinitionParams, DefinitionRequest, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
@@ -292,28 +291,13 @@ impl Server {
     ) -> Result<()> {
         let id = req.id.clone();
         let client = Arc::clone(client);
-        let sender = self.connection.sender.clone();
-        let in_flight = Arc::clone(&self.in_flight);
         let cancel = Arc::clone(cancel);
         match req.method.as_str() {
             "textDocument/codeAction" => {
                 let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::code_action::request(&client, &doc, &params) {
-                            Ok(result) => response::<CodeActionRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<CodeActionRequest, _>(id, cancel, move |_| {
+                    super::code_action::request(&client, &doc, &params)
                 })
             }
             "codeAction/resolve" => {
@@ -326,123 +310,45 @@ impl Server {
                         .clone(),
                 )?;
                 let doc = java_document(state, &data.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::code_action::resolve(&client, &doc, &params, &data, &cancel) {
-                            Ok(result) => response::<CodeActionResolveRequest>(id, result),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<CodeActionResolveRequest, _>(id, cancel, move |cancel| {
+                    super::code_action::resolve(&client, &doc, &params, &data, cancel)
                 })
             }
             "textDocument/definition" => {
                 let params: DefinitionParams = serde_json::from_value(req.params.clone())?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::definition::request(&client, &doc, &params, &cancel) {
-                            Ok(result) => response::<DefinitionRequest>(id, result),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<DefinitionRequest, _>(id, cancel, move |cancel| {
+                    super::definition::request(&client, &doc, &params, cancel)
                 })
             }
             "textDocument/diagnostic" => {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::diagnostics::pull(&client, &doc, &params, &cancel) {
-                            Ok(result) => response::<DocumentDiagnosticRequest>(id, result),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<DocumentDiagnosticRequest, _>(id, cancel, move |cancel| {
+                    super::diagnostics::pull(&client, &doc, &params, cancel)
                 })
             }
             "textDocument/documentHighlight" => {
                 let params: DocumentHighlightParams = serde_json::from_value(req.params.clone())?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::document_highlight::request(&client, &doc, &params, &cancel) {
-                            Ok(result) => response::<DocumentHighlightRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<DocumentHighlightRequest, _>(id, cancel, move |cancel| {
+                    super::document_highlight::request(&client, &doc, &params, cancel)
                 })
             }
             "textDocument/documentSymbol" => {
                 let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::document_symbols::request(&client, &doc, &params, &cancel) {
-                            Ok(result) => response::<DocumentSymbolRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<DocumentSymbolRequest, _>(id, cancel, move |cancel| {
+                    super::document_symbols::request(&client, &doc, &params, cancel)
                 })
             }
             "textDocument/foldingRange" => {
                 let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::folding_range::request(&client, &doc, &cancel) {
-                            Ok(result) => response::<FoldingRangeRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<FoldingRangeRequest, _>(id, cancel, move |cancel| {
+                    super::folding_range::request(&client, &doc, cancel)
                 })
             }
             "textDocument/hover" => {
@@ -450,41 +356,15 @@ impl Server {
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
                 let position = params.text_document_position_params.position;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::hover::request(&client, &doc, position, &cancel) {
-                            Ok(result) => response::<HoverRequest>(id, result),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<HoverRequest, _>(id, cancel, move |cancel| {
+                    super::hover::request(&client, &doc, position, cancel)
                 })
             }
             "textDocument/inlayHint" => {
                 let params: InlayHintParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::inlay_hints::request(&client, &doc, &params, &cancel) {
-                            Ok(result) => response::<InlayHintRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<InlayHintRequest, _>(id, cancel, move |cancel| {
+                    super::inlay_hints::request(&client, &doc, &params, cancel)
                 })
             }
             "inlayHint/resolve" => {
@@ -497,105 +377,38 @@ impl Server {
                         .clone(),
                 )?;
                 let doc = java_document(state, &data.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::inlay_hints::resolve(&client, &doc, &params, &data, &cancel) {
-                            Ok(result) => response::<InlayHintResolveRequest>(id, result),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<InlayHintResolveRequest, _>(id, cancel, move |cancel| {
+                    super::inlay_hints::resolve(&client, &doc, &params, &data, cancel)
                 })
             }
             "textDocument/selectionRange" => {
                 let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::selection_range::request(&client, &doc, &params) {
-                            Ok(result) => response::<SelectionRangeRequest>(id, result),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<SelectionRangeRequest, _>(id, cancel, move |_| {
+                    super::selection_range::request(&client, &doc, &params)
                 })
             }
             "textDocument/semanticTokens/full" => {
                 let params: SemanticTokensParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::semantic_tokens::full(&client, &doc, &params, &cancel, &cache)
-                        {
-                            Ok(result) => response::<SemanticTokensRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<SemanticTokensRequest, _>(id, cancel, move |cancel| {
+                    super::semantic_tokens::full(&client, &doc, &params, cancel, &cache)
                 })
             }
             "textDocument/semanticTokens/full/delta" => {
                 let params: SemanticTokensDeltaParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::semantic_tokens::delta(&client, &doc, &params, &cancel, &cache)
-                        {
-                            Ok(result) => response::<SemanticTokensDeltaRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<SemanticTokensDeltaRequest, _>(id, cancel, move |cancel| {
+                    super::semantic_tokens::delta(&client, &doc, &params, cancel, &cache)
                 })
             }
             "textDocument/semanticTokens/range" => {
                 let params: SemanticTokensRangeParams = serde_json::from_value(req.params.clone())?;
                 let doc = java_document(state, &params.text_document.uri)?;
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::semantic_tokens::range(&client, &doc, &params, &cancel) {
-                            Ok(result) => response::<SemanticTokensRangeRequest>(id, Some(result)),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<SemanticTokensRangeRequest, _>(id, cancel, move |cancel| {
+                    super::semantic_tokens::range(&client, &doc, &params, cancel)
                 })
             }
             "workspace/symbol" => {
@@ -611,33 +424,12 @@ impl Server {
                             .map(|index| (name.clone(), Arc::clone(index)))
                     })
                     .collect();
-                self.workers.execute(move || {
-                    if let Some(response) = start_request(&cancel, &in_flight, &id) {
-                        drop(sender.send(response));
-                        return;
-                    }
-                    let response = finish_request(
-                        &cancel,
-                        &in_flight,
-                        id.clone(),
-                        match super::workspace_symbols::request(
-                            &client,
-                            &workspaces,
-                            &params,
-                            &cancel,
-                        ) {
-                            Ok(result) => response::<WorkspaceSymbolRequest>(
-                                id,
-                                Some(WorkspaceSymbolResponse::WorkspaceSymbolList(result)),
-                            ),
-                            Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
-                        },
-                    );
-                    drop(sender.send(response));
+                self.dispatch::<WorkspaceSymbolRequest, _>(id, cancel, move |cancel| {
+                    super::workspace_symbols::request(&client, &workspaces, &params, cancel)
                 })
             }
             _ => {
-                sender.send(finish_request(
+                self.connection.sender.send(finish_request(
                     &cancel,
                     &self.in_flight,
                     id.clone(),
@@ -726,6 +518,36 @@ impl Server {
         Ok(response)
     }
 
+    /// dispatches a job onto the threadpool
+    ///
+    /// When the threadpool begins to execute the task, it checks for cancellation
+    /// After the task finishes, it also checks (e.g. in case task early-terminated)
+    #[expect(clippy::option_if_let_else, reason = "does not help")]
+    fn dispatch<R, F>(&self, id: RequestId, cancel: Arc<AtomicBool>, job: F) -> Result<()>
+    where
+        R: gen_lsp_types::Request + 'static,
+        R::Result: Serialize,
+        F: FnOnce(&AtomicBool) -> Result<R::Result> + Send + 'static,
+    {
+        let sender = self.connection.sender.clone();
+        let in_flight = Arc::clone(&self.in_flight);
+        self.workers.execute(move || {
+            let response = match start_request(&cancel, &in_flight, &id) {
+                Some(cancellation) => cancellation,
+                None => finish_request(
+                    &cancel,
+                    &in_flight,
+                    id.clone(),
+                    match job(&cancel) {
+                        Ok(result) => response::<R>(id, result),
+                        Err(err) => error(id, ErrorCode::RequestFailed, format!("{err:#}")),
+                    },
+                ),
+            };
+            drop(sender.send(response));
+        })
+    }
+
     /// trigger workspace indexing
     fn ensure_indexed(&self, client: &Client, uri: &Uri, state: &mut State) -> Result<()> {
         // FIXME: currently this happens sync
@@ -781,11 +603,7 @@ impl Server {
 }
 
 /// returns a cancellation response when the request was already cancelled in the queue
-fn start_request(
-    cancel: &Arc<AtomicBool>,
-    in_flight: &InFlight,
-    id: &RequestId,
-) -> Option<Message> {
+fn start_request(cancel: &AtomicBool, in_flight: &InFlight, id: &RequestId) -> Option<Message> {
     cancel.load(Ordering::Relaxed).then(|| {
         finish_request(
             cancel,
@@ -798,7 +616,7 @@ fn start_request(
 
 /// returns response, unless the request was cancelled
 fn finish_request(
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
     in_flight: &InFlight,
     id: RequestId,
     response: Message,

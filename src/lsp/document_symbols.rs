@@ -1,7 +1,7 @@
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
@@ -20,17 +20,17 @@ pub fn request(
     client: &Client,
     doc: &Document,
     params: &DocumentSymbolParams,
-    cancel: &Arc<AtomicBool>,
-) -> Result<DocumentSymbolResponse> {
+    cancel: &AtomicBool,
+) -> Result<Option<DocumentSymbolResponse>> {
     let symbols = nested(client, doc, cancel)?;
     if client.supports_hierarchical_symbols() {
-        Ok(DocumentSymbolResponse::DocumentSymbolList(symbols))
+        Ok(Some(DocumentSymbolResponse::DocumentSymbolList(symbols)))
     } else {
         let mut flat: Vec<SymbolInformation> = Vec::with_capacity(symbols.len());
         for symbol in symbols {
             flatten(&mut flat, client, &params.text_document.uri, &symbol, None);
         }
-        Ok(DocumentSymbolResponse::SymbolInformationList(flat))
+        Ok(Some(DocumentSymbolResponse::SymbolInformationList(flat)))
     }
 }
 
@@ -114,11 +114,7 @@ impl Symbol {
     }
 }
 
-fn nested(
-    client: &Client,
-    doc: &Document,
-    cancel: &Arc<AtomicBool>,
-) -> Result<Vec<DocumentSymbol>> {
+fn nested(client: &Client, doc: &Document, cancel: &AtomicBool) -> Result<Vec<DocumentSymbol>> {
     let bytes = doc.text.as_bytes();
     let mut symbols = Vec::new();
     let mut roots = Vec::new();

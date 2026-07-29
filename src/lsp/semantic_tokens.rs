@@ -1,7 +1,7 @@
 use core::cmp::min;
 use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
@@ -21,49 +21,49 @@ pub fn full(
     client: &Client,
     doc: &Document,
     _params: &SemanticTokensParams,
-    cancel: &Arc<AtomicBool>,
-    cache: &Arc<Cache>,
-) -> Result<SemanticTokens> {
+    cancel: &AtomicBool,
+    cache: &Cache,
+) -> Result<Option<SemanticTokens>> {
     let tokens = tokens(client, doc, None, cancel)?;
     let result_id = cache.push(&tokens);
-    Ok(SemanticTokens::new(Some(result_id), tokens))
+    Ok(Some(SemanticTokens::new(Some(result_id), tokens)))
 }
 
 pub fn range(
     client: &Client,
     doc: &Document,
     params: &SemanticTokensRangeParams,
-    cancel: &Arc<AtomicBool>,
-) -> Result<SemanticTokens> {
+    cancel: &AtomicBool,
+) -> Result<Option<SemanticTokens>> {
     let range = client
         .decode_range(&params.range, &doc.line_index)
         .context("valid range")?;
     let byte_range = Some(&(range.start_byte..range.end_byte));
     let tokens = tokens(client, doc, byte_range, cancel)?;
-    Ok(SemanticTokens::new(None, tokens))
+    Ok(Some(SemanticTokens::new(None, tokens)))
 }
 
 pub fn delta(
     client: &Client,
     doc: &Document,
     params: &SemanticTokensDeltaParams,
-    cancel: &Arc<AtomicBool>,
-    cache: &Arc<Cache>,
-) -> Result<SemanticTokensDeltaResponse> {
+    cancel: &AtomicBool,
+    cache: &Cache,
+) -> Result<Option<SemanticTokensDeltaResponse>> {
     let tokens = tokens(client, doc, None, cancel)?;
     let diff = cache.delta(&params.previous_result_id, &tokens);
     let result_id = cache.push(&tokens);
     if let Some(diff) = diff {
-        Ok(SemanticTokensDeltaResponse::SemanticTokensDelta(
+        Ok(Some(SemanticTokensDeltaResponse::SemanticTokensDelta(
             SemanticTokensDelta {
                 result_id: Some(result_id),
                 edits: diff,
             },
-        ))
+        )))
     } else {
-        Ok(SemanticTokensDeltaResponse::SemanticTokens(
+        Ok(Some(SemanticTokensDeltaResponse::SemanticTokens(
             SemanticTokens::new(Some(result_id), tokens),
-        ))
+        )))
     }
 }
 
@@ -71,7 +71,7 @@ pub fn tokens(
     client: &Client,
     doc: &Document,
     byte_range: Option<&Range<usize>>,
-    cancel: &Arc<AtomicBool>,
+    cancel: &AtomicBool,
 ) -> Result<Vec<SemanticToken>> {
     let data = doc.text.as_bytes();
     let locals = super::locals::scopes(&doc.tree, data, cancel)?.locals;

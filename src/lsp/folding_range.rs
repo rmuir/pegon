@@ -1,7 +1,7 @@
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{FoldingRange, FoldingRangeKind};
@@ -16,8 +16,8 @@ use super::{Client, server::Document};
 pub fn request(
     client: &Client,
     doc: &Document,
-    cancel: &Arc<AtomicBool>,
-) -> Result<Vec<FoldingRange>> {
+    cancel: &AtomicBool,
+) -> Result<Option<Vec<FoldingRange>>> {
     let bytes = doc.text.as_bytes();
     let mut result = Vec::new();
     let mut cursor = QueryCursor::new();
@@ -76,7 +76,7 @@ pub fn request(
             });
         }
     }
-    Ok(result)
+    Ok(Some(result))
 }
 
 /// single compiled pattern
