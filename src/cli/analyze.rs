@@ -10,7 +10,12 @@ use std::{path::PathBuf, time::Instant};
 /// Returns an error if any files had problems, or if internal errors were encountered.
 pub fn analyze(inputs: &[PathBuf]) -> Result<(), Error> {
     let start_time = Instant::now();
-    let index = crate::support::index::index(inputs)?;
+    let roots = if inputs.is_empty() {
+        &[PathBuf::from(".")]
+    } else {
+        inputs
+    };
+    let index = crate::support::index::index(roots)?;
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
     eprintln!("Success: analyzed in {millis} ms");
