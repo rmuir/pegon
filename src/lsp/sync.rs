@@ -65,7 +65,7 @@ pub fn did_change(
     let uri = params.text_document.text_document_identifier.uri;
     let resource = state
         .docs
-        .remove(&uri.to_string())
+        .get(&uri.to_string())
         .context("document not open")?;
     let Resource::Java(doc) = resource else {
         return Ok(None);
