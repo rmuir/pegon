@@ -711,7 +711,7 @@ fn java_document(state: &State, uri: &Uri) -> Result<Arc<Document>> {
 pub fn uri_to_path(uri: &Uri) -> Option<String> {
     let path = uri.0.strip_prefix("file://")?;
     let decoded = percent_decode_str(path).decode_utf8().ok()?;
-    if decoded.contains(':') {
+    if decoded.starts_with('/') && decoded.chars().nth(2).is_some_and(|char| char == ':') {
         // windows drive
         let clean = decoded.strip_prefix('/').unwrap_or(&decoded);
         Some(clean.replace('/', "\\"))
@@ -726,7 +726,7 @@ pub fn uri_to_path(uri: &Uri) -> Option<String> {
 
 /// convert path to uri without a million crates
 pub fn path_to_uri(path: &str) -> Uri {
-    let is_windows_drive = path.contains(':');
+    let is_windows_drive = path.chars().nth(1).is_some_and(|char| char == ':');
     let prefix = if is_windows_drive {
         "file:///"
     } else {
