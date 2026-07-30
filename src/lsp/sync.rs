@@ -26,7 +26,7 @@ pub fn did_open(
     let uri = params.text_document.uri;
     let lang = params.text_document.language_id;
     if lang != LanguageKind::Java {
-        state.docs.insert(uri.to_string(), Resource::Other);
+        state.docs.insert(uri, Resource::Other);
         bail!("non-java language_id: {lang}");
     }
     state.parser.reset();
@@ -49,7 +49,7 @@ pub fn did_open(
     };
     if state
         .docs
-        .insert(uri.to_string(), Resource::Java(Arc::new(doc)))
+        .insert(uri, Resource::Java(Arc::new(doc)))
         .is_some()
     {
         bail!("was previously already open");
@@ -63,10 +63,7 @@ pub fn did_change(
     state: &mut State,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.text_document_identifier.uri;
-    let resource = state
-        .docs
-        .get(&uri.to_string())
-        .context("document not open")?;
+    let resource = state.docs.get(&uri).context("document not open")?;
     let Resource::Java(doc) = resource else {
         return Ok(None);
     };
@@ -124,9 +121,7 @@ pub fn did_change(
     } else {
         Some(diagnostics::push(client, &newdoc, &uri)?)
     };
-    state
-        .docs
-        .insert(uri.to_string(), Resource::Java(Arc::new(newdoc)));
+    state.docs.insert(uri, Resource::Java(Arc::new(newdoc)));
     Ok(push)
 }
 
@@ -136,7 +131,7 @@ pub fn did_close(
     state: &mut State,
 ) -> Result<Option<PublishDiagnosticsParams>> {
     let uri = params.text_document.uri;
-    if state.docs.remove(&uri.to_string()).is_none() {
+    if state.docs.remove(&uri).is_none() {
         bail!("was not previously open");
     }
     // according to LSP spec, we should clear on close if we are pushing

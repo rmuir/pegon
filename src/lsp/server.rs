@@ -109,7 +109,7 @@ pub type AllWorkspaces = Vec<(String, Arc<Index>)>;
 /// LSP state, only accessed by the main thread
 pub struct State {
     /// Map of documents currently opened by the editor, keyed by URI
-    pub docs: FxHashMap<String, Resource>,
+    pub docs: FxHashMap<Uri, Resource>,
     /// Treesitter parser used for parsing opened/modified documents
     pub parser: Parser,
     /// List of workspace folders, keyed by name
@@ -700,7 +700,7 @@ fn log_error(method: &str, message: &str) -> Message {
 
 /// returns open java document from the editor, or an error
 fn java_document(state: &State, uri: &Uri) -> Result<Arc<Document>> {
-    match state.docs.get(&uri.to_string()) {
+    match state.docs.get(uri) {
         Some(Resource::Java(doc)) => Ok(Arc::clone(doc)),
         Some(Resource::Other) => bail!("non-java document: {uri}"),
         None => bail!("document not open: {uri}"),
