@@ -20,6 +20,7 @@ use std::{
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
 use gen_lsp_types::DidChangeWorkspaceFoldersParams;
+use gen_lsp_types::LspRequestMethod;
 use gen_lsp_types::ProgressNotification;
 use gen_lsp_types::ProgressParams;
 use gen_lsp_types::ProgressToken;
@@ -283,6 +284,7 @@ impl Server {
     /// 1. check if request has been cancelled: it could have been sitting on the queue for a bit.
     /// 2. invoke handler, passing cancellation token for periodic checks / early termination.
     /// 3. finalize request: send response, `RequestFailed`, or `RequestCancelled`.
+    #[expect(clippy::wildcard_enum_match_arm, reason = "many to implement first")]
     fn handle_request(
         &self,
         client: &Arc<Client>,
@@ -293,15 +295,15 @@ impl Server {
         let id = req.id;
         let client = Arc::clone(client);
         let cancel = Arc::clone(cancel);
-        match req.method.as_str() {
-            "textDocument/codeAction" => {
+        match LspRequestMethod::from(req.method.as_str()) {
+            LspRequestMethod::TextDocumentCodeAction => {
                 let params: CodeActionParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<CodeActionRequest, _>(id, cancel, move |_| {
                     super::code_action::request(&client, &doc, &params)
                 })
             }
-            "codeAction/resolve" => {
+            LspRequestMethod::CodeActionResolve => {
                 let params: CodeAction = serde_json::from_value(req.params)?;
                 let data: super::code_action::CustomData = serde_json::from_value(
                     params
@@ -328,7 +330,7 @@ impl Server {
                     ))?)
                 }
             }
-            "textDocument/definition" => {
+            LspRequestMethod::TextDocumentDefinition => {
                 let params: DefinitionParams = serde_json::from_value(req.params)?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
@@ -336,14 +338,14 @@ impl Server {
                     super::definition::request(&client, &doc, &params, cancel)
                 })
             }
-            "textDocument/diagnostic" => {
+            LspRequestMethod::TextDocumentDiagnostic => {
                 let params: DocumentDiagnosticParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<DocumentDiagnosticRequest, _>(id, cancel, move |cancel| {
                     super::diagnostics::pull(&client, &doc, &params, cancel)
                 })
             }
-            "textDocument/documentHighlight" => {
+            LspRequestMethod::TextDocumentDocumentHighlight => {
                 let params: DocumentHighlightParams = serde_json::from_value(req.params)?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
@@ -351,21 +353,21 @@ impl Server {
                     super::document_highlight::request(&client, &doc, &params, cancel)
                 })
             }
-            "textDocument/documentSymbol" => {
+            LspRequestMethod::TextDocumentDocumentSymbol => {
                 let params: DocumentSymbolParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<DocumentSymbolRequest, _>(id, cancel, move |cancel| {
                     super::document_symbols::request(&client, &doc, &params, cancel)
                 })
             }
-            "textDocument/foldingRange" => {
+            LspRequestMethod::TextDocumentFoldingRange => {
                 let params: FoldingRangeParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<FoldingRangeRequest, _>(id, cancel, move |cancel| {
                     super::folding_range::request(&client, &doc, cancel)
                 })
             }
-            "textDocument/hover" => {
+            LspRequestMethod::TextDocumentHover => {
                 let params: HoverParams = serde_json::from_value(req.params)?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
@@ -374,14 +376,14 @@ impl Server {
                     super::hover::request(&client, &doc, position, cancel)
                 })
             }
-            "textDocument/inlayHint" => {
+            LspRequestMethod::TextDocumentInlayHint => {
                 let params: InlayHintParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<InlayHintRequest, _>(id, cancel, move |cancel| {
                     super::inlay_hints::request(&client, &doc, &params, cancel)
                 })
             }
-            "inlayHint/resolve" => {
+            LspRequestMethod::InlayHintResolve => {
                 let params: InlayHint = serde_json::from_value(req.params)?;
                 let data: super::inlay_hints::CustomData = serde_json::from_value(
                     params
@@ -408,14 +410,14 @@ impl Server {
                     ))?)
                 }
             }
-            "textDocument/selectionRange" => {
+            LspRequestMethod::TextDocumentSelectionRange => {
                 let params: SelectionRangeParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<SelectionRangeRequest, _>(id, cancel, move |_| {
                     super::selection_range::request(&client, &doc, &params)
                 })
             }
-            "textDocument/semanticTokens/full" => {
+            LspRequestMethod::TextDocumentSemanticTokensFull => {
                 let params: SemanticTokensParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
@@ -423,7 +425,7 @@ impl Server {
                     super::semantic_tokens::full(&client, &doc, &params, cancel, &cache)
                 })
             }
-            "textDocument/semanticTokens/full/delta" => {
+            LspRequestMethod::TextDocumentSemanticTokensFullDelta => {
                 let params: SemanticTokensDeltaParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
@@ -431,14 +433,14 @@ impl Server {
                     super::semantic_tokens::delta(&client, &doc, &params, cancel, &cache)
                 })
             }
-            "textDocument/semanticTokens/range" => {
+            LspRequestMethod::TextDocumentSemanticTokensRange => {
                 let params: SemanticTokensRangeParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<SemanticTokensRangeRequest, _>(id, cancel, move |cancel| {
                     super::semantic_tokens::range(&client, &doc, &params, cancel)
                 })
             }
-            "workspace/symbol" => {
+            LspRequestMethod::WorkspaceSymbol => {
                 let params: WorkspaceSymbolParams = serde_json::from_value(req.params)?;
                 // request doesn't specify anything except a key, search all indexed workspaces.
                 let workspaces: AllWorkspaces = state
