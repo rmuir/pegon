@@ -227,7 +227,8 @@ impl Worker {
                         .secondary_title(&diagnostic.help),
                 ),
             ];
-            let message = format!("{}\n\n", FULL.render(&report));
+            let mut message = FULL.render(&report);
+            message.push_str("\n\n");
             self.sender.send(message)?;
         }
         Ok(())
