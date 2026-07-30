@@ -3,6 +3,7 @@
 //! It works on byte ranges so it can be eventually efficient in bulk
 use std::ops::Range;
 use std::str::from_utf8;
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use regex::{Captures, Regex};
@@ -29,7 +30,7 @@ impl Fix {
         Ok(match self {
             Self::EscapeWhitespace => Some(Edit {
                 range,
-                replacement: escape_whitespace(old_text)?,
+                replacement: escape_whitespace(old_text),
             }),
             Self::LineUnwrap => Some(Edit {
                 range,
@@ -56,25 +57,28 @@ pub struct Edit {
     pub replacement: String,
 }
 
+/// matches whitespace that should not exist in any string (single or multi-line)
+static WHITESPACE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"[\s&&[^\u0020\r\n]]").expect("whitespace regex should compile"));
+
 /// escapes whitespace into java-escapes (UTF-16)
 ///
 /// tab and form-feed should be converted into their special escape
-fn escape_whitespace(old_text: &str) -> Result<String> {
-    // FIXME: compile this / make it more efficient
-    let re = Regex::new(r"[\s&&[^\u0020\r\n]]")?;
-    let result = re.replace_all(old_text, |caps: &Captures| {
-        let codepoint = caps[0].chars().next().expect("capture should exist") as u32;
-        match codepoint {
-            0x9 => "\\t".into(),
-            0xC => "\\f".into(),
-            bmp if codepoint <= 0xFFFF => format!("\\u{bmp:04X}"),
-            _ => {
-                let (high, low) = to_surrogates(codepoint).expect("valid unicode");
-                format!("\\u{high:04X}\\u{low:04X}")
+fn escape_whitespace(old_text: &str) -> String {
+    WHITESPACE_REGEX
+        .replace_all(old_text, |caps: &Captures| {
+            let codepoint = caps[0].chars().next().expect("capture should exist") as u32;
+            match codepoint {
+                0x9 => "\\t".into(),
+                0xC => "\\f".into(),
+                bmp if codepoint <= 0xFFFF => format!("\\u{bmp:04X}"),
+                _ => {
+                    let (high, low) = to_surrogates(codepoint).expect("valid unicode");
+                    format!("\\u{high:04X}\\u{low:04X}")
+                }
             }
-        }
-    });
-    Ok(result.into())
+        })
+        .into()
 }
 
 const SURROGATE_HIGH_START: u32 = 0xD800;
