@@ -226,12 +226,13 @@ impl Server {
                     if self.connection.handle_shutdown(&req)? {
                         break;
                     }
+                    let id = req.id.clone();
                     let cancel = Arc::new(AtomicBool::new(false));
                     self.in_flight
                         .lock()
                         .map_err(|err| anyhow!("poisoned: {err}"))?
-                        .insert(req.id.clone(), Arc::clone(&cancel));
-                    match self.handle_request(client, &req, &state, &cancel) {
+                        .insert(id.clone(), Arc::clone(&cancel));
+                    match self.handle_request(client, req, &state, &cancel) {
                         Ok(()) => {}
                         Err(err) => {
                             // error during dispatch (e.g. parsing params or something)
@@ -239,8 +240,8 @@ impl Server {
                             self.connection.sender.send(finish_request(
                                 &cancel,
                                 &self.in_flight,
-                                req.id.clone(),
-                                error(req.id.clone(), ErrorCode::RequestFailed, format!("{err:#}")),
+                                id.clone(),
+                                error(id.clone(), ErrorCode::RequestFailed, format!("{err:#}")),
                             ))?;
                         }
                     }
@@ -285,23 +286,23 @@ impl Server {
     fn handle_request(
         &self,
         client: &Arc<Client>,
-        req: &Request,
+        req: Request,
         state: &State,
         cancel: &Arc<AtomicBool>,
     ) -> Result<()> {
-        let id = req.id.clone();
+        let id = req.id;
         let client = Arc::clone(client);
         let cancel = Arc::clone(cancel);
         match req.method.as_str() {
             "textDocument/codeAction" => {
-                let params: CodeActionParams = serde_json::from_value(req.params.clone())?;
+                let params: CodeActionParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<CodeActionRequest, _>(id, cancel, move |_| {
                     super::code_action::request(&client, &doc, &params)
                 })
             }
             "codeAction/resolve" => {
-                let params: CodeAction = serde_json::from_value(req.params.clone())?;
+                let params: CodeAction = serde_json::from_value(req.params)?;
                 let data: super::code_action::CustomData = serde_json::from_value(
                     params
                         .data
@@ -318,9 +319,9 @@ impl Server {
                     Ok(self.connection.sender.send(finish_request(
                         &cancel,
                         &self.in_flight,
-                        req.id.clone(),
+                        id.clone(),
                         error(
-                            req.id.clone(),
+                            id,
                             ErrorCode::ContentModified,
                             "stale resolve request".into(),
                         ),
@@ -328,7 +329,7 @@ impl Server {
                 }
             }
             "textDocument/definition" => {
-                let params: DefinitionParams = serde_json::from_value(req.params.clone())?;
+                let params: DefinitionParams = serde_json::from_value(req.params)?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
                 self.dispatch::<DefinitionRequest, _>(id, cancel, move |cancel| {
@@ -336,14 +337,14 @@ impl Server {
                 })
             }
             "textDocument/diagnostic" => {
-                let params: DocumentDiagnosticParams = serde_json::from_value(req.params.clone())?;
+                let params: DocumentDiagnosticParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<DocumentDiagnosticRequest, _>(id, cancel, move |cancel| {
                     super::diagnostics::pull(&client, &doc, &params, cancel)
                 })
             }
             "textDocument/documentHighlight" => {
-                let params: DocumentHighlightParams = serde_json::from_value(req.params.clone())?;
+                let params: DocumentHighlightParams = serde_json::from_value(req.params)?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
                 self.dispatch::<DocumentHighlightRequest, _>(id, cancel, move |cancel| {
@@ -351,21 +352,21 @@ impl Server {
                 })
             }
             "textDocument/documentSymbol" => {
-                let params: DocumentSymbolParams = serde_json::from_value(req.params.clone())?;
+                let params: DocumentSymbolParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<DocumentSymbolRequest, _>(id, cancel, move |cancel| {
                     super::document_symbols::request(&client, &doc, &params, cancel)
                 })
             }
             "textDocument/foldingRange" => {
-                let params: FoldingRangeParams = serde_json::from_value(req.params.clone())?;
+                let params: FoldingRangeParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<FoldingRangeRequest, _>(id, cancel, move |cancel| {
                     super::folding_range::request(&client, &doc, cancel)
                 })
             }
             "textDocument/hover" => {
-                let params: HoverParams = serde_json::from_value(req.params.clone())?;
+                let params: HoverParams = serde_json::from_value(req.params)?;
                 let uri = &params.text_document_position_params.text_document.uri;
                 let doc = java_document(state, uri)?;
                 let position = params.text_document_position_params.position;
@@ -374,14 +375,14 @@ impl Server {
                 })
             }
             "textDocument/inlayHint" => {
-                let params: InlayHintParams = serde_json::from_value(req.params.clone())?;
+                let params: InlayHintParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<InlayHintRequest, _>(id, cancel, move |cancel| {
                     super::inlay_hints::request(&client, &doc, &params, cancel)
                 })
             }
             "inlayHint/resolve" => {
-                let params: InlayHint = serde_json::from_value(req.params.clone())?;
+                let params: InlayHint = serde_json::from_value(req.params)?;
                 let data: super::inlay_hints::CustomData = serde_json::from_value(
                     params
                         .data
@@ -398,9 +399,9 @@ impl Server {
                     Ok(self.connection.sender.send(finish_request(
                         &cancel,
                         &self.in_flight,
-                        req.id.clone(),
+                        id.clone(),
                         error(
-                            req.id.clone(),
+                            id,
                             ErrorCode::ContentModified,
                             "stale resolve request".into(),
                         ),
@@ -408,14 +409,14 @@ impl Server {
                 }
             }
             "textDocument/selectionRange" => {
-                let params: SelectionRangeParams = serde_json::from_value(req.params.clone())?;
+                let params: SelectionRangeParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<SelectionRangeRequest, _>(id, cancel, move |_| {
                     super::selection_range::request(&client, &doc, &params)
                 })
             }
             "textDocument/semanticTokens/full" => {
-                let params: SemanticTokensParams = serde_json::from_value(req.params.clone())?;
+                let params: SemanticTokensParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
                 self.dispatch::<SemanticTokensRequest, _>(id, cancel, move |cancel| {
@@ -423,7 +424,7 @@ impl Server {
                 })
             }
             "textDocument/semanticTokens/full/delta" => {
-                let params: SemanticTokensDeltaParams = serde_json::from_value(req.params.clone())?;
+                let params: SemanticTokensDeltaParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 let cache = Arc::clone(&self.semantic_cache);
                 self.dispatch::<SemanticTokensDeltaRequest, _>(id, cancel, move |cancel| {
@@ -431,14 +432,14 @@ impl Server {
                 })
             }
             "textDocument/semanticTokens/range" => {
-                let params: SemanticTokensRangeParams = serde_json::from_value(req.params.clone())?;
+                let params: SemanticTokensRangeParams = serde_json::from_value(req.params)?;
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<SemanticTokensRangeRequest, _>(id, cancel, move |cancel| {
                     super::semantic_tokens::range(&client, &doc, &params, cancel)
                 })
             }
             "workspace/symbol" => {
-                let params: WorkspaceSymbolParams = serde_json::from_value(req.params.clone())?;
+                let params: WorkspaceSymbolParams = serde_json::from_value(req.params)?;
                 // request doesn't specify anything except a key, search all indexed workspaces.
                 let workspaces: AllWorkspaces = state
                     .workspaces
