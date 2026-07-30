@@ -1,7 +1,8 @@
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use std::{collections::HashSet, sync::LazyLock};
+use rustc_hash::FxHashSet;
+use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{DocumentHighlight, DocumentHighlightKind, DocumentHighlightParams};
@@ -48,7 +49,7 @@ pub fn request(
         bytes,
         QueryCursorOptions::new().progress_callback(&mut cancellation),
     );
-    let mut seen_matches = HashSet::new();
+    let mut seen_matches = FxHashSet::default();
     while let Some(hit) = matches.next() {
         let mut found = false;
         // check if it is a true match, we must be inside a range capture
