@@ -688,7 +688,7 @@ fn error(id: RequestId, code: ErrorCode, message: String) -> Message {
 }
 
 /// logs via notification an error to the LSP client
-fn log_error(method: &String, message: &String) -> Message {
+fn log_error(method: &str, message: &str) -> Message {
     Message::Notification(Notification::new(
         LogMessageNotification::METHOD.into(),
         LogMessageParams {
