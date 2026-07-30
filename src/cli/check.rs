@@ -6,7 +6,7 @@ use annotate_snippets::{
 use anyhow::{Context as _, Error, bail};
 use core::fmt::{Display, Formatter};
 use core::sync::atomic::AtomicBool;
-use crossbeam_channel::Sender;
+use crossbeam_channel::{SendError, Sender};
 
 use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
@@ -122,6 +122,9 @@ impl Worker {
                 };
 
                 if shouldcheck && let Err(error) = self.check_file(path) {
+                    if error.downcast_ref::<SendError<String>>().is_some() {
+                        return WalkState::Quit;
+                    }
                     let filename = entry.path().to_string_lossy();
                     eprintln!("internal error: {filename} {error}");
                     self.stats.add_problem(Severity::Error);

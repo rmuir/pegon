@@ -12,7 +12,7 @@ use std::{
 
 use anyhow::{Context as _, Error, bail};
 use bstr::ByteSlice as _;
-use crossbeam_channel::Sender;
+use crossbeam_channel::{SendError, Sender};
 use ignore::{DirEntry, WalkBuilder, WalkState, overrides::OverrideBuilder, types::TypesBuilder};
 use regex_automata::{
     dfa::onepass::{Cache, DFA},
@@ -55,6 +55,9 @@ impl<'scope> Worker<'scope> {
             Ok(entry) => {
                 let shouldcheck = entry.file_type().is_none_or(|filetype| !filetype.is_dir());
                 if shouldcheck && let Err(error) = self.analyze(&entry) {
+                    if error.downcast_ref::<SendError<Index>>().is_some() {
+                        return WalkState::Quit;
+                    }
                     let filename = entry.path().to_string_lossy();
                     eprintln!("internal error: {filename} {error}");
                 }
