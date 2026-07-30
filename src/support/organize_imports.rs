@@ -46,7 +46,7 @@ pub fn organize(tree: &Tree, data: &[u8]) -> Result<Option<Edit>> {
 
 /// returns list of import ranges
 fn imports(tree: &Tree, data: &[u8]) -> Result<Vec<Import>> {
-    let mut imports = Vec::new();
+    let mut imports = Vec::with_capacity(16);
     let mut cursor = QueryCursor::new();
 
     let mut matches = cursor.matches(&QUERY, tree.root_node(), data);

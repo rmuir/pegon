@@ -19,7 +19,7 @@ pub fn request(
     cancel: &AtomicBool,
 ) -> Result<Option<Vec<FoldingRange>>> {
     let bytes = doc.text.as_bytes();
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(16);
     let mut cursor = QueryCursor::new();
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!

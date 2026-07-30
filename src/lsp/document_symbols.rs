@@ -116,9 +116,9 @@ impl Symbol {
 
 fn nested(client: &Client, doc: &Document, cancel: &AtomicBool) -> Result<Vec<DocumentSymbol>> {
     let bytes = doc.text.as_bytes();
-    let mut symbols = Vec::new();
-    let mut roots = Vec::new();
-    let mut stack: Vec<(usize, Range)> = Vec::new();
+    let mut symbols = Vec::with_capacity(16);
+    let mut roots = Vec::with_capacity(16);
+    let mut stack: Vec<(usize, Range)> = Vec::with_capacity(16);
     let mut cursor = QueryCursor::new();
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
@@ -196,7 +196,7 @@ fn nested(client: &Client, doc: &Document, cancel: &AtomicBool) -> Result<Vec<Do
         }
         stack.push((index, range));
     }
-    let mut result = Vec::new();
+    let mut result = Vec::with_capacity(roots.len());
     for index in roots {
         let symbol = symbols.get(index).context("valid index")?;
         result.push(symbol.encode(client, doc, &symbols)?);

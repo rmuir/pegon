@@ -23,6 +23,8 @@ use rustc_hash::FxHashMap;
 use serde::Serialize;
 use zip::ZipArchive;
 
+// TODO: very inefficient but almost just a prototype
+// for jars/jimage, the path is gonna be the same jazillions of times
 #[derive(Default, Serialize)]
 pub struct Index {
     /// fully qualified name -> path name

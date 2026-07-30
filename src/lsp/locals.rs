@@ -1,7 +1,7 @@
 use anyhow::{Context as _, Error};
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxBuildHasher, FxHashMap};
 use std::sync::LazyLock;
 use tree_sitter::{
     Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
@@ -45,7 +45,7 @@ pub fn scopes<'tree, 'data>(
     data: &'data [u8],
     cancel: &AtomicBool,
 ) -> Result<Scopes<'data, 'tree>, Error> {
-    let mut locals = FxHashMap::default();
+    let mut locals = FxHashMap::with_capacity_and_hasher(64, FxBuildHasher);
     let mut cursor = QueryCursor::new();
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
