@@ -20,6 +20,7 @@ use std::{
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
 use gen_lsp_types::DidChangeWorkspaceFoldersParams;
+use gen_lsp_types::LspNotificationMethod;
 use gen_lsp_types::LspRequestMethod;
 use gen_lsp_types::ProgressNotification;
 use gen_lsp_types::ProgressParams;
@@ -477,28 +478,29 @@ impl Server {
     /// In our case notification has an "optional response".
     /// if the client doesn't support pull diagnostics then we've got
     /// a push diagnostics "response" that we'll `notify()` back.
+    #[expect(clippy::wildcard_enum_match_arm, reason = "many to implement first")]
     fn handle_notification(
         &self,
         client: &Client,
         note: lsp_server::Notification,
         state: &mut State,
     ) -> Result<Option<Message>> {
-        let response = match note.method.as_str() {
-            "textDocument/didOpen" => {
+        let response = match LspNotificationMethod::from(note.method.as_str()) {
+            LspNotificationMethod::TextDocumentDidOpen => {
                 let params: DidOpenTextDocumentParams = serde_json::from_value(note.params)?;
                 let uri = &params.text_document.uri;
                 self.ensure_indexed(client, uri, state)?;
                 super::sync::did_open(client, params, state)?
             }
-            "textDocument/didChange" => {
+            LspNotificationMethod::TextDocumentDidChange => {
                 let params: DidChangeTextDocumentParams = serde_json::from_value(note.params)?;
                 super::sync::did_change(client, params, state)?
             }
-            "textDocument/didClose" => {
+            LspNotificationMethod::TextDocumentDidClose => {
                 let params: DidCloseTextDocumentParams = serde_json::from_value(note.params)?;
                 super::sync::did_close(client, params, state)?
             }
-            "workspace/didChangeWorkspaceFolders" => {
+            LspNotificationMethod::WorkspaceDidChangeWorkspaceFolders => {
                 let params: DidChangeWorkspaceFoldersParams = serde_json::from_value(note.params)?;
                 for folder in params.event.removed {
                     if state.workspaces.remove(&folder.name).is_none() {
@@ -522,7 +524,7 @@ impl Server {
                 }
                 None
             }
-            "$/cancelRequest" => {
+            LspNotificationMethod::CancelRequest => {
                 let params: CancelParams = serde_json::from_value(note.params)?;
                 let request_id: RequestId = match params.id {
                     Id::Int(id) => id.into(),
@@ -539,7 +541,7 @@ impl Server {
                 None
             }
             // can be safely ignored according to specification
-            method if method.starts_with("$/") => None,
+            method if method.as_str().starts_with("$/") => None,
             // log an error otherwise
             _ => bail!("unexpected notification"),
         }
