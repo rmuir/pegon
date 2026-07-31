@@ -24,8 +24,9 @@ pub fn main() -> Result<(), Error> {
     match &options.command {
         Commands::Check {
             files,
+            fix,
             output_format,
-        } => check::check(files, *output_format == OutputFormat::Concise),
+        } => check::check(files, *output_format == OutputFormat::Concise, *fix),
         Commands::Analyze { files } => analyze::analyze(files),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();

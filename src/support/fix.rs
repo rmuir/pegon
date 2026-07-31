@@ -50,6 +50,7 @@ impl Fix {
 }
 
 /// Edit to fix an issue
+#[derive(PartialEq, Eq)]
 pub struct Edit {
     /// Byte range to replace
     pub range: Range<usize>,

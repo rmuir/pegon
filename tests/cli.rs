@@ -45,8 +45,84 @@ fn check_simple() {
     assert!(stdout.contains("lowercase-class"), "stdout: {stdout}");
     assert!(stdout.contains("bad"), "stdout: {stdout}");
     assert!(
-        stderr.contains("Found 1 problems across 2 java files"),
+        stderr.contains("Found 1 problems in 2 files"),
         "stderr: {stderr}"
+    );
+}
+
+#[test]
+fn check_fix() {
+    let tempdir = TempDir::new();
+    tempdir.add_file(
+        "Fix.java",
+        indoc! {"
+            public class Fix {
+                long one = 1l;
+                long two = 2l;
+            }
+        "},
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_pegon"))
+        .args([
+            "check",
+            "--fix",
+            "--output-format",
+            "concise",
+            tempdir.0.to_str().expect("should be utf-8"),
+        ])
+        .output()
+        .expect("run pegon");
+
+    assert!(output.status.success());
+    let contents = fs::read_to_string(tempdir.0.join("Fix.java")).expect("readable");
+    assert_eq!(
+        contents,
+        indoc! {"
+            public class Fix {
+                long one = 1L;
+                long two = 2L;
+            }
+        "}
+    );
+}
+
+#[test]
+fn check_fix_overlap() {
+    let tempdir = TempDir::new();
+    tempdir.add_file(
+        "Imports.java",
+        indoc! {"
+            import c.d;
+            import b.c;
+            import a.b;
+
+            public class Imports {}
+        "},
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_pegon"))
+        .args([
+            "check",
+            "--fix",
+            "--output-format",
+            "concise",
+            tempdir.0.to_str().expect("should be utf-8"),
+        ])
+        .output()
+        .expect("run pegon");
+
+    assert!(output.status.success());
+    let contents = fs::read_to_string(tempdir.0.join("Imports.java")).expect("readable");
+    assert_eq!(
+        contents,
+        indoc! {"
+            import a.b;
+            import b.c;
+            import c.d;
+
+            public class Imports {}
+        "}
     );
 }
 

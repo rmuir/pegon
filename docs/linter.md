@@ -17,6 +17,14 @@ You can check your repository with the CLI:
 uvx pegon check
 ```
 
+### Fixes
+
+Pass `--fix` to apply fixes (e.g. organize imports)
+
+```sh
+uvx pegon check --fix
+```
+
 ### Output format
 
 Load all problems into vim's quickfix list:
