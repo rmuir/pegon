@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
-    Code, CodeAction, CodeActionKind, CodeActionParams, CodeActionResponse, DocumentChange, Edit,
+    Code, CodeAction, CodeActionKind, CodeActionParams, CodeActionResponse, DocumentChange,
     OptionalVersionedTextDocumentIdentifier, TextDocumentEdit, TextDocumentIdentifier, TextEdit,
     Uri, WorkspaceEdit,
 };
@@ -86,12 +86,12 @@ pub fn resolve(
     _cancel: &AtomicBool,
 ) -> Result<CodeAction> {
     let mut result = params.clone();
-    let edit = match params.kind {
+    let edits = match params.kind {
         Some(CodeActionKind::QuickFix) => quickfix(client, doc, params)?,
         Some(CodeActionKind::SourceOrganizeImports) => organize_imports(client, doc)?,
         _ => bail!("invalid or missing kind"),
     };
-    if let Some(edit) = edit {
+    if let Some(edits) = edits {
         result.edit = Some(if client.supports_document_changes() {
             WorkspaceEdit {
                 changes: None,
@@ -100,13 +100,13 @@ pub fn resolve(
                         version: Some(doc.version),
                         text_document_identifier: TextDocumentIdentifier::new(data.uri.clone()),
                     },
-                    edits: vec![Edit::TextEdit(edit)],
+                    edits: edits.into_iter().map(From::from).collect(),
                 })]),
                 change_annotations: None,
             }
         } else {
             WorkspaceEdit {
-                changes: Some(HashMap::from([(data.uri.clone(), vec![edit])])),
+                changes: Some(HashMap::from([(data.uri.clone(), edits)])),
                 document_changes: None,
                 change_annotations: None,
             }
@@ -115,7 +115,7 @@ pub fn resolve(
     Ok(result)
 }
 
-fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Option<TextEdit>> {
+fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Option<Vec<TextEdit>>> {
     let diagnostics = params.diagnostics.as_ref().context("missing diagnostics")?;
     let diagnostic = diagnostics.first().context("missing diagnostics")?;
     let range = client
@@ -132,15 +132,15 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
             doc.text.as_bytes(),
         )?
     {
-        return Ok(Some(to_lsp_edit(client, doc, edit)?));
+        return Ok(Some(vec![to_lsp_edit(client, doc, edit)?]));
     }
 
     Ok(None)
 }
 
-fn organize_imports(client: &Client, doc: &Document) -> Result<Option<TextEdit>> {
+fn organize_imports(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
     if let Some(edit) = organize(&doc.tree, doc.text.as_bytes())? {
-        return Ok(Some(to_lsp_edit(client, doc, edit)?));
+        return Ok(Some(vec![to_lsp_edit(client, doc, edit)?]));
     }
     Ok(None)
 }
