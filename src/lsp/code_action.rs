@@ -339,8 +339,10 @@ mod tests {
                 language_id: "java".into(),
                 version: 0,
                 text: indoc! {r"
-                    import b.c; // after
-                    import a.b; // before
+                    import b.c; // regular after
+                    import static d.e; // static after
+                    import a.b; // regular before
+                    import static c.d; // static before
                     public class Foo {}
                 "}
                 .into(),
@@ -382,10 +384,13 @@ mod tests {
                 changes: Some(HashMap::from([(
                     Uri("file:///Foo.java".into()),
                     vec![TextEdit {
-                        range: Range::new(Position::new(0, 0), Position::new(2, 0)),
+                        range: Range::new(Position::new(0, 0), Position::new(4, 0)),
                         new_text: indoc! {r"
-                            import a.b; // before
-                            import b.c; // after
+                            import static c.d; // static before
+                            import static d.e; // static after
+
+                            import a.b; // regular before
+                            import b.c; // regular after
                         "}
                         .into()
                     }]
