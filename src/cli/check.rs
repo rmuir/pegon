@@ -12,12 +12,16 @@ use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
     fs,
     io::{BufWriter, Write as _},
+    ops::Range,
     path::{Path, PathBuf},
     time::Instant,
 };
 use tree_sitter::Parser;
 
-use crate::support::diagnostics::{self, Diagnostic, Severity, rule};
+use crate::support::{
+    diagnostics::{self, Diagnostic, Severity, rule},
+    fix::Edit,
+};
 
 /// grey color used for context and line numbers
 static GREY: Style = Ansi256Color(247).on_default();
@@ -47,6 +51,7 @@ struct Stats {
     warning_count: usize,
     info_count: usize,
     hint_count: usize,
+    fix_count: usize,
 }
 
 impl Stats {
@@ -67,6 +72,7 @@ impl Stats {
         self.warning_count = self.warning_count.saturating_add(other.warning_count);
         self.info_count = self.info_count.saturating_add(other.info_count);
         self.hint_count = self.hint_count.saturating_add(other.hint_count);
+        self.fix_count = self.fix_count.saturating_add(other.fix_count);
     }
 
     const fn problem_count(&self) -> usize {
@@ -74,6 +80,10 @@ impl Stats {
             .saturating_add(self.warning_count)
             .saturating_add(self.info_count)
             .saturating_add(self.hint_count)
+    }
+
+    const fn fix_count(&self) -> usize {
+        self.fix_count
     }
 }
 
@@ -89,6 +99,7 @@ impl Display for Stats {
 
 struct Worker {
     concise: bool,
+    fix: bool,
     parser: Parser,
     sender: Sender<String>,
     stats_sender: Sender<Stats>,
@@ -96,13 +107,14 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(concise: bool, sender: Sender<String>, stats_sender: Sender<Stats>) -> Self {
+    fn new(concise: bool, fix: bool, sender: Sender<String>, stats_sender: Sender<Stats>) -> Self {
         let mut parser = Parser::new();
         parser
             .set_language(&crate::support::language())
             .expect("parser should be included in the binary");
         Self {
             concise,
+            fix,
             parser,
             sender,
             stats_sender,
@@ -121,7 +133,7 @@ impl Worker {
                     entry.path()
                 };
 
-                if shouldcheck && let Err(error) = self.check_file(path) {
+                if shouldcheck && let Err(error) = self.handle_file(path) {
                     if error.downcast_ref::<SendError<String>>().is_some() {
                         return WalkState::Quit;
                     }
@@ -139,6 +151,15 @@ impl Worker {
         }
     }
 
+    fn handle_file(&mut self, path: &Path) -> Result<(), Error> {
+        if self.fix {
+            self.fix_file(path)
+        } else {
+            self.check_file(path)
+        }
+    }
+
+    /// check a file without applying fixes
     fn check_file(&mut self, path: &Path) -> Result<(), Error> {
         let data = fs::read(path)?;
         self.parser.reset();
@@ -146,18 +167,116 @@ impl Worker {
             .parser
             .parse(&data, None)
             .context("parser should be setup")?;
-        let result = diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise)?;
+        let diagnostics = diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise)?;
+        self.finish_file(path, &data, &diagnostics)
+    }
+
+    /// check and apply autofixes for a file
+    ///
+    /// apply edits in backwards order.
+    /// iteratively re-parse and re-diagnose if anything was fixed or if any fixes intersect
+    fn fix_file(&mut self, path: &Path) -> Result<(), Error> {
+        // TODO: incremental tree-sitter parsing for the loop?
+        let mut data = fs::read(path)?;
+        let mut fix_count: usize = 0;
+        let mut diagnostics = vec![];
+        // place a bound on iterations
+        for _ in 1..=10 {
+            self.parser.reset();
+            let tree = self
+                .parser
+                .parse(&data, None)
+                .context("parser should be setup")?;
+            diagnostics = diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise)?;
+
+            // we're done if file has no problems
+            if diagnostics.is_empty() {
+                break;
+            }
+
+            // compute fixes: we need a vec to sort it
+            let edits: Result<Vec<Edit>, Error> = diagnostics
+                .iter()
+                .filter_map(|diagnostic| {
+                    rule(diagnostic.rule_id).fix.as_ref().map(|fix| {
+                        fix.generate(
+                            diagnostic.range.start_byte..diagnostic.range.end_byte,
+                            &tree,
+                            &data,
+                        )
+                        .transpose()
+                    })
+                })
+                .flatten()
+                .collect();
+            let mut edits = edits?;
+
+            // we're done if there are no edits
+            if edits.is_empty() {
+                break;
+            }
+
+            // sort the edits backwards
+            edits.sort_unstable_by(|right, left| {
+                left.range
+                    .start
+                    .cmp(&right.range.start)
+                    .then_with(|| left.range.end.cmp(&right.range.end))
+            });
+
+            // do we have fixes for all our problems?
+            let mut all_fixed = edits.len() == diagnostics.len();
+
+            // deduplicate edits (can happen easily for e.g. out of order imports)
+            edits.dedup();
+
+            // apply the edits in memory
+            let mut previous = None;
+            for edit in edits {
+                // if we intersect with previous edit, we'll iterate again
+                if previous
+                    .as_ref()
+                    .is_some_and(|previous| intersects(&edit.range, previous))
+                {
+                    all_fixed = false;
+                    continue;
+                }
+                data.splice(edit.range.clone(), edit.replacement.into_bytes());
+                previous = Some(edit.range);
+                fix_count = fix_count.saturating_add(1);
+            }
+            // stop iterating if we've fixed it all, there's no reason to re-parse
+            if all_fixed {
+                diagnostics = vec![];
+                break;
+            }
+        }
+        // if we applied any edits, write the buffer back
+        if fix_count > 0 {
+            self.stats.fix_count = self.stats.fix_count.saturating_add(fix_count);
+            fs::write(path, &data)?;
+        }
+        self.finish_file(path, &data, &diagnostics)
+    }
+
+    // accumulates stats and writes output for a file
+    fn finish_file(
+        &mut self,
+        path: &Path,
+        data: &[u8],
+        result: &[Diagnostic],
+    ) -> Result<(), Error> {
+        self.stats.add_file(1);
         if !result.is_empty() {
             for item in result.iter().as_ref() {
                 self.stats.add_problem(rule(item.rule_id).severity);
             }
             if self.concise {
-                self.render_concise(path, &result)?;
+                self.render_concise(path, result)?;
             } else {
-                self.render_full(path, &data, &result)?;
+                self.render_full(path, data, result)?;
             }
         }
-        self.stats.add_file(1);
         Ok(())
     }
 
@@ -261,6 +380,13 @@ impl Worker {
     }
 }
 
+/// half-open range intersection
+///
+/// come on rust, get it together
+const fn intersects(left: &Range<usize>, right: &Range<usize>) -> bool {
+    left.start < right.end && right.start < left.end
+}
+
 impl Drop for Worker {
     fn drop(&mut self) {
         _ = self.stats_sender.send(self.stats);
@@ -272,7 +398,7 @@ impl Drop for Worker {
 /// # Errors
 ///
 /// Returns an error if any files had problems, or if internal errors were encountered.
-pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
+pub fn check(inputs: &[PathBuf], concise: bool, fix: bool) -> Result<(), Error> {
     let start_time = Instant::now();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
@@ -315,7 +441,7 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
 
     let (stats_tx, stats_rx) = crossbeam_channel::unbounded();
     builder.build_parallel().run(|| {
-        let mut worker = Worker::new(concise, tx.clone(), stats_tx.clone());
+        let mut worker = Worker::new(concise, fix, tx.clone(), stats_tx.clone());
         Box::new(move |result| worker.visit(result))
     });
 
@@ -335,16 +461,26 @@ pub fn check(inputs: &[PathBuf], concise: bool) -> Result<(), Error> {
 
     let files = stats.files;
     let problem_count = stats.problem_count();
+    let fix_count = stats.fix_count();
 
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
 
+    if problem_count > 0 && fix_count > 0 {
+        bail!(
+            "{problem_count} problems remain in {files} files / {millis} ms [{stats}] [{fix_count} fixed]"
+        );
+    }
     if problem_count > 0 {
-        bail!("Found {problem_count} problems across {files} java files in {millis} ms [{stats}]");
+        bail!("Found {problem_count} problems in {files} files / {millis} ms [{stats}]");
     }
     if files == 0 {
         bail!("Found no java files to check");
     }
-    println!("Success: No problems found across {files} java files in {millis} ms");
+    if fix_count > 0 {
+        println!("Success: No problems remain in {files} files / {millis} ms [{fix_count} fixed]");
+    } else {
+        println!("Success: No problems found in {files} files / {millis} ms");
+    }
     Ok(())
 }

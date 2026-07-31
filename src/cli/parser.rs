@@ -27,6 +27,10 @@ pub enum Commands {
         /// Use `-` for standard input. [default: CWD]
         files: Vec<PathBuf>,
 
+        /// Apply fixes automatically
+        #[arg(long)]
+        fix: bool,
+
         /// Diagnostic error format
         #[arg(long, value_enum, id = "FMT", default_value_t = OutputFormat::Full)]
         output_format: OutputFormat,
