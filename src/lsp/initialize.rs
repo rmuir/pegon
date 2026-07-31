@@ -54,6 +54,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     let code_action_options = CodeActionOptions {
         code_action_kinds: Some(vec![
             CodeActionKind::QuickFix,
+            CodeActionKind::SourceFixAll,
             CodeActionKind::SourceOrganizeImports,
         ]),
         resolve_provider: Some(true),

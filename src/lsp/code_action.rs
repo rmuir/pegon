@@ -8,8 +8,13 @@ use gen_lsp_types::{
     Uri, WorkspaceEdit,
 };
 use serde::{Deserialize, Serialize};
+use tree_sitter::Parser;
 
-use crate::support::{diagnostics::rule_by_name, organize_imports::organize};
+use crate::support::{
+    diagnostics::{lint, rule_by_name},
+    fix::{Edit, Fix},
+    organize_imports::organize,
+};
 
 use super::{Client, server::Document};
 
@@ -61,10 +66,26 @@ pub fn request(
                 disabled: None,
                 edit: None,
                 command: None,
+                data: data.clone(),
+                tags: None,
+            }));
+        }
+        if only.is_none_or(|only| {
+            only.contains(&CodeActionKind::Source) || only.contains(&CodeActionKind::SourceFixAll)
+        }) {
+            result.push(CodeActionResponse::CodeAction(CodeAction {
+                title: "Fix all".into(),
+                kind: Some(CodeActionKind::SourceFixAll),
+                diagnostics: None,
+                is_preferred: None,
+                disabled: None,
+                edit: None,
+                command: None,
                 data,
                 tags: None,
             }));
         }
+
         Ok(Some(result))
     } else {
         // just return empty code actions if the client can't be efficient about it
@@ -88,6 +109,7 @@ pub fn resolve(
     let mut result = params.clone();
     let edits = match params.kind {
         Some(CodeActionKind::QuickFix) => quickfix(client, doc, params)?,
+        Some(CodeActionKind::SourceFixAll) => fix_all(client, doc)?,
         Some(CodeActionKind::SourceOrganizeImports) => organize_imports(client, doc)?,
         _ => bail!("invalid or missing kind"),
     };
@@ -132,7 +154,7 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
             doc.text.as_bytes(),
         )?
     {
-        return Ok(Some(vec![to_lsp_edit(client, doc, edit)?]));
+        return Ok(Some(vec![to_lsp_edit(client, doc, &edit)?]));
     }
 
     Ok(None)
@@ -140,15 +162,113 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
 
 fn organize_imports(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
     if let Some(edit) = organize(&doc.tree, doc.text.as_bytes())? {
-        return Ok(Some(vec![to_lsp_edit(client, doc, edit)?]));
+        return Ok(Some(vec![to_lsp_edit(client, doc, &edit)?]));
     }
     Ok(None)
+}
+
+/// optimistic if there's no intersecting edits (which LSP spec can't handle)
+/// if there are, we bail to a slower approach
+fn fix_all(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
+    let data = doc.text.as_bytes();
+    let tree = &doc.tree;
+    let diagnostics = lint(tree, data, &AtomicBool::new(false), false)?;
+
+    // we're done if the file has no problems
+    if diagnostics.is_empty() {
+        return Ok(None);
+    }
+
+    // compute fixes: we need a vec to sort it
+    let mut edits = Fix::batch(&diagnostics, tree, data)?;
+
+    // we're done if there are no edits
+    if edits.is_empty() {
+        return Ok(None);
+    }
+
+    // deduplicate edits (can happen easily for e.g. out of order imports)
+    edits.dedup();
+
+    // if we intersect with a previous edit, bail to a slower approach
+    let mut previous = None;
+    for edit in &edits {
+        if previous
+            .as_ref()
+            .is_some_and(|previous| Edit::intersects(&edit.range, previous))
+        {
+            return fix_all_with_intersections(client, doc, edits);
+        }
+        previous = Some(edit.range.clone());
+    }
+
+    // convert to LSP edits
+    let textedits: Result<Vec<_>> = edits
+        .iter()
+        .map(|edit| to_lsp_edit(client, doc, edit))
+        .collect();
+    Ok(Some(textedits?))
+}
+
+// if we have intersections, we can't just convert Edit->TextEdit
+// iteratively apply edits to a vec, reparsing/querying until they are all applied
+// then recompute a diff based on the original document
+fn fix_all_with_intersections(
+    client: &Client,
+    doc: &Document,
+    initial_edits: Vec<Edit>,
+) -> Result<Option<Vec<TextEdit>>> {
+    let mut data = doc.text.as_bytes().to_owned();
+    let mut edits = initial_edits;
+    let mut parser = Parser::new();
+    parser.set_language(&crate::support::language())?;
+    for _ in 1..10 {
+        let mut previous = None;
+        let mut all_fixed = true;
+        for edit in edits {
+            if previous
+                .as_ref()
+                .is_some_and(|previous| Edit::intersects(&edit.range, previous))
+            {
+                all_fixed = false;
+                continue;
+            }
+            data.splice(edit.range.clone(), edit.replacement.into_bytes());
+            previous = Some(edit.range);
+        }
+
+        if all_fixed {
+            break;
+        }
+
+        // re-parse to iteratively apply more fixes
+        // TODO: incremental?
+        let tree = parser
+            .parse(&data, None)
+            .context("parser should be setup")?;
+        let diagnostics = lint(&tree, &data, &AtomicBool::new(false), false)?;
+        edits = Fix::batch(&diagnostics, &tree, &data)?;
+
+        // no more edits to make
+        if edits.is_empty() {
+            break;
+        }
+
+        // deduplicate edits (e.g. organize imports)
+        edits.dedup();
+    }
+    // TODO: lets try a little harder?
+    let edit = Edit {
+        range: 0..doc.text.len(),
+        replacement: str::from_utf8(&data)?.into(),
+    };
+    Ok(Some(vec![to_lsp_edit(client, doc, &edit)?]))
 }
 
 fn to_lsp_edit(
     client: &Client,
     doc: &Document,
-    edit: crate::support::fix::Edit,
+    edit: &crate::support::fix::Edit,
 ) -> Result<TextEdit> {
     let ts_range = tree_sitter::Range {
         start_byte: edit.range.start,
@@ -159,7 +279,7 @@ fn to_lsp_edit(
     let encoded = client
         .encode_range(&ts_range, &doc.line_index)
         .context("valid range")?;
-    Ok(TextEdit::new(encoded, edit.replacement))
+    Ok(TextEdit::new(encoded, edit.replacement.clone()))
 }
 
 #[cfg(test)]
@@ -263,7 +383,7 @@ mod tests {
             range: Range::new(Position::new(0, 0), Position::new(7, 0)),
             context: CodeActionContext {
                 diagnostics: diagnostics.clone(),
-                only: None,
+                only: Some(vec![CodeActionKind::QuickFix]),
                 trigger_kind: None,
             },
             work_done_progress_params: WorkDoneProgressParams::default(),
@@ -272,30 +392,18 @@ mod tests {
 
         assert_eq!(
             action_list,
-            Some(vec![
-                CodeActionResponse::CodeAction(CodeAction {
-                    title:
-                        "swallowed-exception: Indicate ignored exception with unnamed variable `_`"
-                            .into(),
-                    kind: Some(CodeActionKind::QuickFix),
-                    diagnostics: Some(diagnostics.clone()),
-                    is_preferred: Some(true),
-                    data: Some(json!({
-                        "uri": "file:///Foo.java",
-                        "version": 0
-                    })),
-                    ..Default::default()
-                }),
-                CodeActionResponse::CodeAction(CodeAction {
-                    title: "Organize Imports".into(),
-                    kind: Some(CodeActionKind::SourceOrganizeImports),
-                    data: Some(json!({
-                        "uri": "file:///Foo.java",
-                        "version": 0
-                    })),
-                    ..Default::default()
-                })
-            ])
+            Some(vec![CodeActionResponse::CodeAction(CodeAction {
+                title: "swallowed-exception: Indicate ignored exception with unnamed variable `_`"
+                    .into(),
+                kind: Some(CodeActionKind::QuickFix),
+                diagnostics: Some(diagnostics.clone()),
+                is_preferred: Some(true),
+                data: Some(json!({
+                    "uri": "file:///Foo.java",
+                    "version": 0
+                })),
+                ..Default::default()
+            }),])
         );
 
         let resolved = client.request::<CodeActionResolveRequest>(CodeAction {
