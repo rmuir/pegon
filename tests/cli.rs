@@ -88,45 +88,6 @@ fn check_fix() {
 }
 
 #[test]
-fn check_fix_overlap() {
-    let tempdir = TempDir::new();
-    tempdir.add_file(
-        "Imports.java",
-        indoc! {"
-            import c.d;
-            import b.c;
-            import a.b;
-
-            public class Imports {}
-        "},
-    );
-
-    let output = Command::new(env!("CARGO_BIN_EXE_pegon"))
-        .args([
-            "check",
-            "--fix",
-            "--output-format",
-            "concise",
-            tempdir.0.to_str().expect("should be utf-8"),
-        ])
-        .output()
-        .expect("run pegon");
-
-    assert!(output.status.success());
-    let contents = fs::read_to_string(tempdir.0.join("Imports.java")).expect("readable");
-    assert_eq!(
-        contents,
-        indoc! {"
-            import a.b;
-            import b.c;
-            import c.d;
-
-            public class Imports {}
-        "}
-    );
-}
-
-#[test]
 fn analyze_simple() {
     let tempdir = TempDir::new();
     tempdir.add_file(

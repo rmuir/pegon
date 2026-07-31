@@ -9,6 +9,8 @@ use anyhow::{Context as _, Result};
 use regex::{Captures, Regex};
 use tree_sitter::Tree;
 
+use crate::support::diagnostics::Diagnostic;
+
 /// Automatic Fix for an issue
 pub enum Fix {
     /// Replace whitespace in range with escapes
@@ -47,6 +49,36 @@ impl Fix {
             }),
         })
     }
+
+    /// Generate a list of backwards-sorted edits from a list of diagnostics
+    pub fn batch(diagnostics: &[Diagnostic], tree: &Tree, data: &[u8]) -> Result<Vec<Edit>> {
+        let edits: Result<Vec<Edit>> = diagnostics
+            .iter()
+            .filter_map(|diagnostic| {
+                super::diagnostics::rule(diagnostic.rule_id)
+                    .fix
+                    .as_ref()
+                    .map(|fix| {
+                        fix.generate(
+                            diagnostic.range.start_byte..diagnostic.range.end_byte,
+                            tree,
+                            data,
+                        )
+                        .transpose()
+                    })
+            })
+            .flatten()
+            .collect();
+        let mut edits = edits?;
+        // sort the edits backwards
+        edits.sort_unstable_by(|right, left| {
+            left.range
+                .start
+                .cmp(&right.range.start)
+                .then_with(|| left.range.end.cmp(&right.range.end))
+        });
+        Ok(edits)
+    }
 }
 
 /// Edit to fix an issue
@@ -56,6 +88,15 @@ pub struct Edit {
     pub range: Range<usize>,
     /// New contents
     pub replacement: String,
+}
+
+impl Edit {
+    /// half-open range intersection
+    ///
+    /// come on rust, get it together
+    pub const fn intersects(left: &Range<usize>, right: &Range<usize>) -> bool {
+        left.start < right.end && right.start < left.end
+    }
 }
 
 /// matches whitespace that should not exist in any string (single or multi-line)

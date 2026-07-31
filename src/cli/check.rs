@@ -12,7 +12,6 @@ use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
     fs,
     io::{BufWriter, Write as _},
-    ops::Range,
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -20,7 +19,7 @@ use tree_sitter::Parser;
 
 use crate::support::{
     diagnostics::{self, Diagnostic, Severity, rule},
-    fix::Edit,
+    fix::{Edit, Fix},
 };
 
 /// grey color used for context and line numbers
@@ -181,7 +180,7 @@ impl Worker {
         let mut fix_count: usize = 0;
         let mut diagnostics = vec![];
         // place a bound on iterations
-        for _ in 1..=10 {
+        for _ in 1..10 {
             self.parser.reset();
             let tree = self
                 .parser
@@ -194,35 +193,12 @@ impl Worker {
                 break;
             }
 
-            // compute fixes: we need a vec to sort it
-            let edits: Result<Vec<Edit>, Error> = diagnostics
-                .iter()
-                .filter_map(|diagnostic| {
-                    rule(diagnostic.rule_id).fix.as_ref().map(|fix| {
-                        fix.generate(
-                            diagnostic.range.start_byte..diagnostic.range.end_byte,
-                            &tree,
-                            &data,
-                        )
-                        .transpose()
-                    })
-                })
-                .flatten()
-                .collect();
-            let mut edits = edits?;
+            let mut edits = Fix::batch(&diagnostics, &tree, &data)?;
 
             // we're done if there are no edits
             if edits.is_empty() {
                 break;
             }
-
-            // sort the edits backwards
-            edits.sort_unstable_by(|right, left| {
-                left.range
-                    .start
-                    .cmp(&right.range.start)
-                    .then_with(|| left.range.end.cmp(&right.range.end))
-            });
 
             // do we have fixes for all our problems?
             let mut all_fixed = edits.len() == diagnostics.len();
@@ -236,7 +212,7 @@ impl Worker {
                 // if we intersect with previous edit, we'll iterate again
                 if previous
                     .as_ref()
-                    .is_some_and(|previous| intersects(&edit.range, previous))
+                    .is_some_and(|previous| Edit::intersects(&edit.range, previous))
                 {
                     all_fixed = false;
                     continue;
@@ -378,13 +354,6 @@ impl Worker {
         }
         Ok(())
     }
-}
-
-/// half-open range intersection
-///
-/// come on rust, get it together
-const fn intersects(left: &Range<usize>, right: &Range<usize>) -> bool {
-    left.start < right.end && right.start < left.end
 }
 
 impl Drop for Worker {
