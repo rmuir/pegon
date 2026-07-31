@@ -18,8 +18,7 @@
     [
       (identifier)
       (scoped_identifier)
-    ] @text
-    (asterisk)?) @node)
+    ] @text) @node)
 
 ; regular imports
 ((program
@@ -27,6 +26,5 @@
     [
       (identifier)
       (scoped_identifier)
-    ] @text
-    (asterisk)?) @node)
+    ] @text) @node)
   (#not-match? @node "^import\\s+static"))
