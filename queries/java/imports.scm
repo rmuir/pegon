@@ -11,7 +11,7 @@
       (scoped_identifier)
     ] @text) @node)
 
-; wildcard static imports
+; static imports next
 (program
   (import_declaration
     "static"
@@ -19,32 +19,14 @@
       (identifier)
       (scoped_identifier)
     ] @text
-    (asterisk)) @node)
+    (asterisk)?) @node)
 
-; static imports
-(program
-  (import_declaration
-    "static"
-    [
-      (identifier)
-      (scoped_identifier)
-    ] @text .) @node)
-
-; wildcard imports
+; regular imports
 ((program
   (import_declaration
     [
       (identifier)
       (scoped_identifier)
     ] @text
-    (asterisk)) @node)
-  (#not-match? @node "^import\\s+static"))
-
-; imports
-((program
-  (import_declaration
-    [
-      (identifier)
-      (scoped_identifier)
-    ] @text .) @node)
+    (asterisk)?) @node)
   (#not-match? @node "^import\\s+static"))
