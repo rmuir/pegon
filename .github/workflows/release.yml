@@ -40,8 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  pypi-linux:
-    name: Create PyPI linux wheels
+  linux:
+    name: "Linux ${{ matrix.maturin_target }}"
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -123,8 +123,8 @@ jobs:
           if-no-files-found: error
           path: assets
 
-  pypi-musllinux:
-    name: Create PyPI musllinux wheels
+  alpine:
+    name: "Alpine ${{ matrix.maturin_target }}"
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -194,8 +194,8 @@ jobs:
           if-no-files-found: error
           path: assets
 
-  pypi-windows:
-    name: Create PyPI windows wheels
+  windows:
+    name: "Windows ${{ matrix.maturin_target }}"
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -254,8 +254,8 @@ jobs:
           if-no-files-found: error
           path: assets
 
-  pypi-macos:
-    name: Create PyPI macos wheels
+  macos:
+    name: "MacOS ${{ matrix.maturin_target }}"
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -310,7 +310,7 @@ jobs:
           path: assets
 
   pypi-sdist:
-    name: Create PyPI source distribution
+    name: PyPI source dist
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -337,10 +337,10 @@ jobs:
   vsix-packages:
     name: Create vsix packages
     needs:
-      - pypi-linux
-      - pypi-musllinux
-      - pypi-macos
-      - pypi-windows
+      - linux
+      - alpine
+      - macos
+      - windows
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -379,11 +379,11 @@ jobs:
     name: Finish release
     needs:
       - create-release
-      - pypi-linux
-      - pypi-musllinux
-      - pypi-macos
+      - linux
+      - alpine
+      - macos
+      - windows
       - pypi-sdist
-      - pypi-windows
       - vsix-packages
     outputs:
       # the actual version without the "v"
