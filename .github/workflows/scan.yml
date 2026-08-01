@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Semgrep Scan
+name: Scan code
 
 on:
   workflow_dispatch:
@@ -14,6 +14,8 @@ permissions: {}
 env:
   # Not updated by dependabot
   SEMGREP_VERSION: 1.172.0
+  # Not updated by dependabot
+  CHECKOV_VERSION: 3.3.8
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -46,9 +48,43 @@ jobs:
         run: uvx "semgrep@${SEMGREP_VERSION}" scan --oss-only --sarif-output=results.sarif
         env:
           SEMGREP_ENABLE_VERSION_CHECK: 0
+          UV_EXCLUDE_NEWER: "7 days"
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           sarif_file: results.sarif
           category: semgrep
+
+  checkov:
+    name: Run checkov
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      security-events: write # integration with github advanced security
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+          prune-cache: false
+          save-cache: ${{ github.event_name != 'pull_request' }}
+          cache-dependency-glob: uv.lock
+          cache-suffix: checkov-${{ env.CHECKOV_VERSION }}
+
+      - name: Run checkov
+        run: uvx "checkov@${CHECKOV_VERSION}" --directory . --output sarif
+        env:
+          UV_EXCLUDE_NEWER: "7 days"
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        with:
+          sarif_file: results.sarif
+          category: checkov
