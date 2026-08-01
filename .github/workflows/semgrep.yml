@@ -42,7 +42,7 @@ jobs:
           cache-dependency-glob: uv.lock
           cache-suffix: semgrep-${{ env.SEMGREP_VERSION }}
 
-      - name: Run zizmor
+      - name: Run semgrep
         run: uvx "semgrep@${SEMGREP_VERSION}" scan --oss-only --sarif-output=results.sarif
         env:
           SEMGREP_ENABLE_VERSION_CHECK: 0
