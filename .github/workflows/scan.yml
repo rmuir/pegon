@@ -13,7 +13,7 @@ permissions: {}
 
 env:
   # Not updated by dependabot
-  SEMGREP_VERSION: 1.172.0
+  SEMGREP_VERSION: 1.171.0
   # Not updated by dependabot
   CHECKOV_VERSION: 3.3.8
 
@@ -88,3 +88,21 @@ jobs:
         with:
           sarif_file: results.sarif
           category: checkov
+
+  zizmor:
+    name: Run zizmor
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      security-events: write # integration with github advanced security
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor 🌈
+        uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+        with:
+          persona: auditor
