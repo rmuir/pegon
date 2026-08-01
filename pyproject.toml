@@ -47,11 +47,11 @@ dev = [
   # git hooks and repository checks
   "prek==0.4.11",
   # markdown
-  "rumdl==0.2.44",
+  "rumdl==0.2.48",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml
-  "tombi==1.2.4",
+  "tombi==1.2.5",
   # spelling
   "typos==1.48.0",
   # this file

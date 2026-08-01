@@ -72,7 +72,7 @@ blake3 = { version = "=1.8.5" }
 # indexing support
 bstr = "=1.13.0"
 # CLI argument processing
-clap = { version = "=4.6.4", features = ["derive"] }
+clap = { version = "=4.6.5", features = ["derive"] }
 # threading support
 crossbeam-channel = "=0.5.16"
 # LSP data structures
