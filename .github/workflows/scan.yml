@@ -16,6 +16,8 @@ env:
   SEMGREP_VERSION: 1.171.0
   # Not updated by dependabot
   CHECKOV_VERSION: 3.3.8
+  # Not updated by dependabot
+  CARGO_DENY_VERSION: 0.20.2
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -91,7 +93,6 @@ jobs:
 
   zizmor:
     name: Run zizmor
-    if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -106,3 +107,35 @@ jobs:
         uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
         with:
           persona: auditor
+
+  deny:
+    name: Run cargo deny
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      security-events: write # integration with github advanced security
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup rust
+        run: rustup toolchain install
+
+      - name: Setup rust cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          save-if: ${{ github.event_name != 'pull_request' }}
+
+      - name: Install cargo deny
+        run: cargo install --locked --version "${CARGO_DENY_VERSION}" cargo-deny
+
+      - name: Run cargo-deny
+        run: cargo deny --locked --format sarif check --config .deny.toml > results.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        with:
+          sarif_file: results.sarif
+          category: deny
