@@ -11,7 +11,7 @@ use tree_sitter::{
 };
 
 use crate::support::fix::Fix;
-use crate::support::queries::{capture_id, custom_predicate};
+use crate::support::queries::{KindSet, capture_id, custom_predicate};
 
 /// Single diagnostic result
 pub struct Diagnostic {
@@ -208,26 +208,34 @@ fn top_context(root: Node, error_node: Node) -> Option<Range> {
     while let Some(child) = node.child_with_descendant(error_node)
         && child.id() != error_node.id()
     {
-        match child.kind() {
-            "method_declaration"
-            | "variable_declarator"
-            | "constructor_declaration"
-            | "class_declaration"
-            | "interface_declaration"
-            | "enum_declaration"
-            | "record_declaration" => {
-                if let Some(name) = child.child_by_field_name("name")
-                    && name.start_position().row != error_node.start_position().row
-                {
-                    range = Some(name.range());
-                }
-            }
-            _ => {}
+        if TOP_CONTEXT_KINDS.contains(child.kind_id())
+            && let Some(name) = child.child_by_field_id(*NAME_FIELD)
+            && name.start_position().row != error_node.start_position().row
+        {
+            range = Some(name.range());
         }
         node = child;
     }
     range
 }
+
+/// set of context parent node kinds
+static TOP_CONTEXT_KINDS: LazyLock<KindSet> = LazyLock::new(|| {
+    KindSet::new(&[
+        "method_declaration",
+        "variable_declarator",
+        "constructor_declaration",
+        "class_declaration",
+        "interface_declaration",
+        "enum_declaration",
+        "record_declaration",
+    ])
+});
+
+static NAME_FIELD: LazyLock<u16> = LazyLock::new(|| {
+    let lang = crate::support::language();
+    lang.field_id_for_name("name").expect("should exist").into()
+});
 
 /// compiled query that matches all lint rules
 static QUERY: LazyLock<Query> = LazyLock::new(|| {

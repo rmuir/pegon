@@ -51,3 +51,38 @@ pub fn capture_id(query: &Query, name: &str) -> u32 {
         .capture_index_for_name(name)
         .unwrap_or_else(|| panic!("{name} capture should exist"))
 }
+
+/// maximum size of the set.
+///
+/// the grammar is pinned and will fail tests if its too small.
+const KIND_SET_WORDS: usize = 6;
+
+/// A bitset for efficiently matching node kinds
+#[derive(Copy, Clone)]
+pub struct KindSet {
+    words: [u64; KIND_SET_WORDS],
+}
+
+#[expect(clippy::indexing_slicing, reason = "bounds are checked")]
+impl KindSet {
+    /// create set from list of node kind names
+    pub fn new(kinds: &[&str]) -> Self {
+        let mut words: [u64; KIND_SET_WORDS] = [0; KIND_SET_WORDS];
+        let lang = super::language();
+        debug_assert!(lang.node_kind_count() <= words.len() << 6);
+        for kind in kinds {
+            let id = lang.id_for_node_kind(kind, true);
+            let index = id as usize >> 6;
+            let bit = id & 0x3F;
+            words[index] |= 1 << bit;
+        }
+        Self { words }
+    }
+
+    /// true if the named node's kind is in the set
+    pub const fn contains(self, kind_id: u16) -> bool {
+        let index = kind_id as usize >> 6;
+        let bit = kind_id & 0x3F;
+        index < self.words.len() && (self.words[index] & (1 << bit)) != 0
+    }
+}

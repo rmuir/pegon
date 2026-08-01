@@ -8,7 +8,7 @@ use tree_sitter::{
     Tree,
 };
 
-use crate::support::queries::capture_id;
+use crate::support::queries::{KindSet, capture_id};
 
 pub struct Scopes<'data, 'tree> {
     pub locals: FxHashMap<&'data str, Vec<LocalScope<'tree>>>,
@@ -86,7 +86,7 @@ pub fn scopes<'tree, 'data>(
         if pattern.flow {
             let mut node = tree.root_node();
             while let Some(child) = node.child_with_descendant(var_node) {
-                if child.kind() == "block" || child.kind() == "constructor_body" {
+                if FLOW_BLOCK_KINDS.contains(child.kind_id()) {
                     start_node = child;
                     end_node = child;
                 }
@@ -192,6 +192,10 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     }
     patterns
 });
+
+/// for flow scoping, the parent node types where variables scope can "escape" into
+static FLOW_BLOCK_KINDS: LazyLock<KindSet> =
+    LazyLock::new(|| KindSet::new(&["block", "constructor_body"]));
 
 /// index of the `@definition` capture
 static DEFINITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "definition"));

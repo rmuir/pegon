@@ -6,7 +6,7 @@ use std::sync::LazyLock;
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _, Tree};
 
 use crate::support::fix::Edit;
-use crate::support::queries::capture_id;
+use crate::support::queries::{KindSet, capture_id};
 
 struct Import {
     /// type of the import, primary sort key
@@ -79,7 +79,7 @@ fn imports(tree: &Tree, data: &[u8]) -> Result<Vec<Import>> {
         // TODO: loop here to preserve multi-line comments?
         if let Some(sibling) = node.prev_named_sibling()
             && sibling.byte_range().start >= last_end_offset
-            && (sibling.kind() == "line_comment" || sibling.kind() == "block_comment")
+            && COMMENT_KINDS.contains(sibling.kind_id())
         {
             start_offset = sibling.byte_range().start;
         }
@@ -114,6 +114,10 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     )
     .expect("query should compile")
 });
+
+/// comment node kinds
+static COMMENT_KINDS: LazyLock<KindSet> =
+    LazyLock::new(|| KindSet::new(&["line_comment", "block_comment"]));
 
 /// index of the `@node` capture
 static NODE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "node"));
