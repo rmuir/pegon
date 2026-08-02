@@ -9,6 +9,7 @@ env:
   TS_QUERY_LS_VERSION: "v3.15.1"
   TREE_SITTER_VERSION: "v0.26.9"
   TREE_SITTER_JAVA_ORCHARD_VERSION: "v0.5.10"
+  RUST_NIGHTLY_VERSION: "2026-07-31"
 
 on:
   workflow_dispatch:
@@ -157,10 +158,28 @@ jobs:
       - name: Setup rust
         run: rustup toolchain install
 
-      - name: Setup rust cache
-        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      - name: Read-only cache
+        id: cache-ro
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          save-if: ${{ github.event_name != 'pull_request' }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ci-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ci-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Read-write cache
+        id: cache-rw
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ci-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run checks
         run: make lint
@@ -200,14 +219,33 @@ jobs:
 
       - name: Setup rust
         run: |
-          rustup toolchain install nightly --component rust-src
-          rustup target add "${TARGET}" --toolchain nightly
+          rustup toolchain install "nightly-${RUST_NIGHTLY_VERSION}" --component rust-src
+          rustup target add "${TARGET}" --toolchain "nightly-${RUST_NIGHTLY_VERSION}"
 
-      - name: Setup rust cache
-        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      - name: Read-only cache
+        id: cache-ro
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          save-if: ${{ github.event_name != 'pull_request' }}
-          key: ${{ matrix.sanitizer }}
+          path: |
+            ~/.rustup/toolchains/nightly-*/lib/rustlib
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ci-${{ github.job }}-${{ matrix.sanitizer }}-${{ env.RUST_NIGHTLY_VERSION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ci-${{ github.job }}-${{ matrix.sanitizer }}-${{ env.RUST_NIGHTLY_VERSION }}-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Read-write cache
+        id: cache-rw
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.rustup/toolchains/nightly-*/lib/rustlib
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ci-${{ github.job }}-${{ matrix.sanitizer }}-${{ env.RUST_NIGHTLY_VERSION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo +nightly test -Z build-std --profile sanitize --target "${TARGET}"
+        run: cargo "+nightly-${RUST_NIGHTLY_VERSION}" test -Z build-std --profile sanitize --target "${TARGET}"
