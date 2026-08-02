@@ -129,7 +129,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cargo/bin/cargo-deny
-          key: deny-${{ env.CARGO_DENY_VERSION}}-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
+          key: deny-${{ env.CARGO_DENY_VERSION }}-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
 
       - name: Read-write cache
         id: cache-rw
@@ -137,7 +137,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cargo/bin/cargo-deny
-          key: deny-${{ env.CARGO_DENY_VERSION}}-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
+          key: deny-${{ env.CARGO_DENY_VERSION }}-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
 
       - name: Install cargo deny
         if: ${{ steps.cache-ro.outputs.cache-hit != 'true' && steps.cache-rw.outputs.cache-hit != 'true' }}
