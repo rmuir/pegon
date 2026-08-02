@@ -59,7 +59,7 @@ dev = [
   # yaml linting
   "yamllint==1.38.0",
   # github actions
-  "zizmor==1.28.0",
+  "zizmor==1.29.0",
 ]
 
 [build-system]
