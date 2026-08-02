@@ -27,7 +27,7 @@ jobs:
   semgrep:
     name: Run semgrep
     if: ${{ github.actor != 'dependabot[bot]' }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     permissions:
       security-events: write # integration with github advanced security
@@ -61,7 +61,7 @@ jobs:
   checkov:
     name: Run checkov
     if: ${{ github.actor != 'dependabot[bot]' }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     permissions:
       security-events: write # integration with github advanced security
@@ -110,7 +110,7 @@ jobs:
 
   deny:
     name: Run cargo deny
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     permissions:
       security-events: write # integration with github advanced security
