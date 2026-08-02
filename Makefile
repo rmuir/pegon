@@ -3,6 +3,19 @@
 .SHELLFLAGS := --norc -euo pipefail -c
 SHELL := /bin/bash
 
+# if we hit one doing this stuff, we want it
+export RUST_BACKTRACE ?= 1
+# configuration to use for "perf"
+export PERF_CONFIG ?= .perfconfig
+# llvm tool used for coverage
+export LLVM_COV ?= llvm-cov
+# llvm tool used for profile data
+export LLVM_PROFDATA ?= llvm-profdata
+# nightly toolchain used for sanitizers
+export NIGHTLY_TOOLCHAIN ?= nightly
+# nightly target used for sanitizers
+export NIGHTLY_TARGET ?= x86_64-unknown-linux-gnu
+
 .PHONY: pegon
 pegon: ## Create binary
 	cargo build --release
@@ -24,21 +37,40 @@ bench: ## Run micro-benchmarks
 profile-queries: ## Profile queries
 	ts_query_ls profile
 
-export PERF_CONFIG ?= .perfconfig
-
 .PHONY: profile
 profile: ## Profile lint run with perf
 	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --profile profiling
 	perf record -g target/profiling/pegon check ~/workspace/lucene > out.txt || true
 	perf report
 
-export LLVM_COV ?= llvm-cov
-export LLVM_PROFDATA ?= llvm-profdata
-
 .PHONY: test
 test: ## Run tests with coverage report
 	cargo llvm-cov --text
 	cargo llvm-cov report --summary-only
+
+.PHONY: test-asan
+test-asan: export CFLAGS=-fsanitize=address,undefined -O1
+test-asan: export RUSTFLAGS=-Zsanitizer=address
+test-asan: export CXXFLAGS=${CFLAGS}
+test-asan: export RUSTDOCFLAGS=${RUSTFLAGS}
+test-asan:  ## Run tests with asan
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+
+.PHONY: test-msan
+test-msan: export CFLAGS=-fsanitize=memory -O1
+test-msan: export RUSTFLAGS=-Zsanitizer=memory
+test-msan: export CXXFLAGS=${CFLAGS}
+test-msan: export RUSTDOCFLAGS=${RUSTFLAGS}
+test-msan:  ## Run tests with msan
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+
+.PHONY: test-tsan
+test-tsan: export CFLAGS=-fsanitize=thread -O1
+test-tsan: export RUSTFLAGS=-Zsanitizer=thread
+test-tsan: export CXXFLAGS=${CFLAGS}
+test-tsan: export RUSTDOCFLAGS=${RUSTFLAGS}
+test-tsan:  ## Run tests with tsan
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
 
 version: ## Bump version to VERSION
 	# check that VERSION is set
