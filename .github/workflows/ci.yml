@@ -168,3 +168,46 @@ jobs:
         env:
           CARGO_INCREMENTAL: 0
           CARGO_NET_RETRY: 10
+
+  sanitize:
+    name: Sanitize ${{ matrix.sanitizer }}
+    strategy:
+      matrix:
+        include:
+          - sanitizer: address
+            cflags: "-fsanitize=address,undefined -O1"
+          - sanitizer: memory
+            cflags: "-fsanitize=memory -O1"
+          - sanitizer: thread
+            cflags: "-fsanitize=thread -O1"
+    runs-on: ubuntu-26.04-arm
+    timeout-minutes: 30
+    env:
+      TARGET: aarch64-unknown-linux-gnu
+      CARGO_INCREMENTAL: 0
+      CARGO_NET_RETRY: 10
+      RUSTFLAGS: "-Zsanitizer=${{ matrix.sanitizer }}"
+      RUSTDOCFLAGS: "-Zsanitizer=${{ matrix.sanitizer }}"
+      CFLAGS: ${{ matrix.cflags }}
+      CXXFLAGS: ${{ matrix.cflags }}
+      RUST_BACKTRACE: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup rust
+        run: |
+          rustup toolchain install nightly --component rust-src
+          rustup target add "${TARGET}" --toolchain nightly
+
+      - name: Setup rust cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          save-if: ${{ github.event_name != 'pull_request' }}
+          key: ${{ matrix.sanitizer }}
+
+      - name: Run tests
+        run: cargo +nightly test -Z build-std --profile sanitize --target "${TARGET}"

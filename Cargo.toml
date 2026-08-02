@@ -146,3 +146,10 @@ opt-level = 3
 inherits = "release"
 debug = "full"
 lto = "off"
+
+# for use with sanitizers
+# RUSTFLAGS="-Zsanitizer=..." must also be set
+[profile.sanitize]
+inherits = "dev"
+# hit that FFI boundary
+opt-level = 1
