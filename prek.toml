@@ -1,7 +1,10 @@
-minimum_prek_version = "0.4.0"
+minimum_prek_version = "0.4.11"
 default_install_hook_types = ["pre-commit", "commit-msg"]
-# define priority: 0 for linters that don't modify sources
+
+# define priority: checks for linters that don't modify sources
 # leave fixers with priority: null so they run sequentially
+[priorities]
+checks = 0
 
 # "Built-in Fast Hooks" from prek.
 [[repos]]
@@ -10,12 +13,12 @@ repo = "builtin"
 [[repos.hooks]]
 id = "check-added-large-files"
 name = "Check for large files"
-priority = 0
+priority = "checks"
 
 [[repos.hooks]]
 id = "check-case-conflict"
 name = "Check for case conflicts"
-priority = 0
+priority = "checks"
 
 [[repos.hooks]]
 id = "trailing-whitespace"
@@ -33,7 +36,7 @@ name = "Fix UTF-8 byte order marker"
 [[repos.hooks]]
 id = "check-json"
 name = "Check JSON files"
-priority = 0
+priority = "checks"
 types = ["json"]
 
 [[repos.hooks]]
@@ -46,13 +49,13 @@ types = ["json"]
 [[repos.hooks]]
 id = "check-toml"
 name = "Check TOML files"
-priority = 0
+priority = "checks"
 types = ["toml"]
 
 [[repos.hooks]]
 id = "check-yaml"
 name = "Check YAML files"
-priority = 0
+priority = "checks"
 types = ["yaml"]
 
 [[repos.hooks]]
@@ -63,12 +66,12 @@ types = ["text"]
 [[repos.hooks]]
 id = "check-merge-conflict"
 name = "Check for merge conflicts"
-priority = 0
+priority = "checks"
 
 [[repos.hooks]]
 id = "check-vcs-permalinks"
 name = "Check for permanent VCS links"
-priority = 0
+priority = "checks"
 require_serial = true
 types = ["text"]
 exclude_types = ["markdown"]
@@ -76,7 +79,7 @@ exclude_types = ["markdown"]
 [[repos.hooks]]
 id = "detect-private-key"
 name = "Check for private keys"
-priority = 0
+priority = "checks"
 
 # external tools
 [[repos]]
@@ -85,7 +88,7 @@ repo = "local"
 [[repos.hooks]]
 id = "actionlint"
 name = "Check Workflows"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = ["run", "--only-dev", "actionlint"]
@@ -98,7 +101,7 @@ files.glob = [".github/**/*.yml"]
 [[repos.hooks]]
 id = "jsonschema-dependabot"
 name = "Check Dependabot Schema"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = [
@@ -115,7 +118,7 @@ files.glob = [".github/dependabot.yml"]
 [[repos.hooks]]
 id = "jsonschema-release"
 name = "Check Release Schema"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = [
@@ -132,7 +135,7 @@ files.glob = [".github/release.yml"]
 [[repos.hooks]]
 id = "jsonschema-github-workflows"
 name = "Check Workflows Schema"
-priority = 0
+priority = "checks"
 require_serial = true
 language = "system"
 entry = "uv"
@@ -150,7 +153,7 @@ files.glob = [".github/workflows/*.{yml,yaml}"]
 [[repos.hooks]]
 id = "jsonschema-github-workflow-timeouts"
 name = "Check Workflows Timeouts"
-priority = 0
+priority = "checks"
 require_serial = true
 language = "system"
 entry = "uv"
@@ -168,7 +171,7 @@ files.glob = [".github/workflows/*.{yml,yaml}"]
 [[repos.hooks]]
 id = "zizmor"
 name = "Check Workflows Security"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = ["run", "--only-dev", "zizmor", "--persona", "auditor", "--offline", "."]
@@ -182,7 +185,7 @@ files.glob = [".github/**/*.yml"]
 [[repos.hooks]]
 id = "validate-pyproject"
 name = "Check pyproject.toml"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = ["run", "--only-dev", "validate-pyproject"]
@@ -194,7 +197,7 @@ files.glob = ["pyproject.toml"]
 [[repos.hooks]]
 id = "typos"
 name = "Check spelling"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = ["run", "--only-dev", "typos", "--force-exclude"]
@@ -204,7 +207,7 @@ require_serial = true
 [[repos.hooks]]
 id = "tombi-lint"
 name = "Check TOML schema"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = ["run", "--only-dev", "tombi", "lint", "--error-on-warnings"]
@@ -226,7 +229,7 @@ exclude.glob = ["**/uv.lock", "**/Cargo.lock"]
 [[repos.hooks]]
 id = "yamllint"
 name = "Check YAML lints"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "uv"
 args = ["run", "--only-dev", "yamllint", "--strict"]
@@ -257,7 +260,7 @@ types = ["yaml"]
 [[repos.hooks]]
 id = "cargo-check"
 name = "Check Rust compilation"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "cargo"
 args = ["check", "--locked", "--all-targets"]
@@ -270,7 +273,7 @@ files.glob = ["Cargo.toml", "Cargo.lock", "**/*.rs"]
 [[repos.hooks]]
 id = "cargo-clippy"
 name = "Check Rust lints"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "cargo"
 args = ["clippy", "--locked", "--all-targets"]
@@ -283,7 +286,7 @@ files.glob = ["Cargo.toml", "Cargo.lock", "**/*.rs"]
 [[repos.hooks]]
 id = "cargo-doc"
 name = "Check Rust docs"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "cargo"
 args = [
@@ -302,7 +305,7 @@ files.glob = ["Cargo.toml", "Cargo.lock", "**/*.rs"]
 [[repos.hooks]]
 id = "cargo-test"
 name = "Check Rust tests"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "cargo"
 args = ["test", "--locked"]
@@ -317,7 +320,7 @@ id = "cargo-deny"
 # until configured in CI
 stages = ["manual"]
 name = "Check Rust dependencies"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "cargo"
 args = ["deny", "--locked", "--config", ".deny.toml", "check"]
@@ -329,7 +332,7 @@ files.glob = ["Cargo.toml", "Cargo.lock", "deny.toml"]
 [[repos.hooks]]
 id = "extension-checks"
 name = "Check VSCode extension"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "npm"
 args = ["run", "ci"]
@@ -341,7 +344,7 @@ files.glob = ["package.json", "package-lock.json", "**/*.ts"]
 [[repos.hooks]]
 id = "query-check"
 name = "Check Queries"
-priority = 0
+priority = "checks"
 language = "system"
 entry = "ts_query_ls"
 require_serial = true
@@ -403,11 +406,11 @@ repo = "meta"
 [[repos.hooks]]
 id = "check-hooks-apply"
 name = "Check hooks match files"
-priority = 0
+priority = "checks"
 files.glob = ["prek.toml"]
 
 [[repos.hooks]]
 id = "check-useless-excludes"
 name = "Check excludes match includes"
-priority = 0
+priority = "checks"
 files.glob = ["prek.toml"]
