@@ -273,7 +273,7 @@ name = "Check Rust lints"
 priority = 0
 language = "system"
 entry = "cargo"
-args = ["clippy", "--locked", "--all-targets", "--", "-D", "warnings"]
+args = ["clippy", "--locked", "--all-targets"]
 env.CARGO_BUILD_WARNINGS = "deny"
 require_serial = true
 # runs across all files if any are touched
