@@ -153,3 +153,5 @@ lto = "off"
 inherits = "dev"
 # hit that FFI boundary
 opt-level = 1
+# enhance the output on failures
+debug = "line-tables-only"
