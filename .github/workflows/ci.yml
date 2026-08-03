@@ -229,7 +229,7 @@ jobs:
           key: ci-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --release
+        run: cargo test --release --locked
         shell: bash
 
   sanitize:
