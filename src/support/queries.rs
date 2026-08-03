@@ -24,9 +24,7 @@ pub fn custom_predicate(
                 .nodes_for_capture_index(*right)
                 .next()
                 .expect("valid capture");
-            let slice1 = &data[node1.start_byte()..node1.end_byte()];
-            let slice2 = &data[node2.start_byte()..node2.end_byte()];
-            slice1 < slice2
+            data[node1.byte_range()] < data[node2.byte_range()]
         }
         "eol?" => {
             debug_assert_eq!(args.len(), 1);
