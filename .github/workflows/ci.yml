@@ -189,7 +189,7 @@ jobs:
           key: ci-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run checks
-        run: make lint
+        run: make test
         shell: bash
 
   release-mode:

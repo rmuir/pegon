@@ -17,7 +17,7 @@ export NIGHTLY_TOOLCHAIN ?= nightly
 export NIGHTLY_TARGET ?= x86_64-unknown-linux-gnu
 
 .PHONY: pegon
-pegon: ## Create binary
+build: ## Create binary
 	cargo build --release
 
 .PHONY: wheel
@@ -25,26 +25,14 @@ wheel: ## Create python package
 	uv build
 
 .PHONY: lint
-lint: ## Lint, format, test
-	uv run --frozen --only-dev prek --all-files --stage pre-push
-
-.PHONY: bench
-bench: ## Run micro-benchmarks
-	# run benchmark suite
-	cargo bench
-
-.PHONY: profile-queries
-profile-queries: ## Profile queries
-	ts_query_ls profile
-
-.PHONY: profile
-profile: ## Profile lint run with perf
-	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --profile profiling
-	perf record -g target/profiling/pegon check ~/workspace/lucene > out.txt || true
-	perf report
+lint: test
 
 .PHONY: test
-test: ## Run tests with coverage report
+test: ## Lint, format, test
+	uv run --frozen --only-dev prek --all-files --stage pre-push
+
+.PHONY: test-cov
+test-cov: ## Run tests with coverage report
 	cargo llvm-cov --text
 	cargo llvm-cov report --summary-only
 
@@ -71,6 +59,16 @@ test-tsan: export CXXFLAGS=${CFLAGS}
 test-tsan: export RUSTDOCFLAGS=${RUSTFLAGS}
 test-tsan:  ## Run tests with tsan
 	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+
+.PHONY: profile
+profile: ## Profile run with perf
+	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --profile profiling
+	perf record -g target/profiling/pegon check ~/workspace/lucene > out.txt || true
+	perf report
+
+.PHONY: profile-queries
+profile-queries: ## Profile queries
+	ts_query_ls profile
 
 version: ## Bump version to VERSION
 	# check that VERSION is set
