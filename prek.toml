@@ -327,7 +327,7 @@ args = ["deny", "--locked", "--config", ".deny.toml", "check"]
 require_serial = true
 # runs across all files if any are touched
 pass_filenames = false
-files.glob = ["Cargo.toml", "Cargo.lock", "deny.toml"]
+files.glob = ["Cargo.toml", "Cargo.lock", ".deny.toml"]
 
 [[repos.hooks]]
 id = "extension-checks"
