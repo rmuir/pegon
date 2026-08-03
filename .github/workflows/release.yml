@@ -472,8 +472,8 @@ jobs:
       url: ${{ format('https://pypi.org/project/pegon/{0}/', needs.finish-release.outputs.version) }}
     permissions:
       id-token: write # required for OIDC token exchange
-      contents: write # maturin claims its needed, possibly just read...
       attestations: write # generate artifact attestations
+      artifact-metadata: write # record artifact storage data
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
