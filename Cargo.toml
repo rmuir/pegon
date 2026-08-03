@@ -60,7 +60,7 @@ path = "src/lib.rs"
 
 [dependencies]
 # Templates diagnostic errors
-aho-corasick = "=1.1.4"
+aho-corasick = "=1.1.5"
 # Renders console diagnostics
 annotate-snippets = { version = "=0.12.16", features = ["simd"] }
 # ANSI styling of console output
@@ -78,7 +78,7 @@ crossbeam-channel = "=0.5.16"
 # LSP data structures
 gen-lsp-types = "=0.11.0"
 # Traversing directories, respecting ignore files
-ignore = "=0.4.31"
+ignore = "=0.4.32"
 # indented string literals
 indoc = "=2.0.7"
 # convert offsets <-> lsp positions
