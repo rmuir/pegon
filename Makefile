@@ -16,6 +16,11 @@ export NIGHTLY_TOOLCHAIN ?= nightly
 # nightly target used for sanitizers
 export NIGHTLY_TARGET ?= x86_64-unknown-linux-gnu
 
+# extra output when running in CI
+ifdef CI
+PREK_FLAGS = --verbose --color always --no-progress
+endif
+
 .PHONY: pegon
 build: ## Create binary
 	cargo build --release
@@ -29,7 +34,7 @@ lint: test
 
 .PHONY: test
 test: ## Lint, format, test
-	uv run --frozen --only-dev prek --all-files --stage pre-push --verbose
+	uv run --frozen --only-dev prek --all-files --stage pre-push ${PREK_FLAGS}
 
 .PHONY: test-cov
 test-cov: ## Run tests with coverage report
