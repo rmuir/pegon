@@ -12,6 +12,7 @@ env:
   NIGHTLY_VERSION: "2026-07-31"
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
 
 on:
   workflow_dispatch:
