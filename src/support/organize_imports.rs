@@ -17,7 +17,6 @@ struct Import {
     range: Range<usize>,
 }
 
-#[expect(clippy::indexing_slicing, reason = "for another day")]
 #[expect(clippy::arithmetic_side_effects, reason = "for another day")]
 #[expect(clippy::map_err_ignore, reason = "because the error sucks!")]
 pub fn organize(tree: &Tree, data: &[u8]) -> Result<Option<Edit>> {
@@ -31,19 +30,22 @@ pub fn organize(tree: &Tree, data: &[u8]) -> Result<Option<Edit>> {
     let end_offset = imports.last().context("exists")?.range.end;
     // sort the imports
     imports.sort_unstable_by(|left, right| {
-        left.pattern
-            .cmp(&right.pattern)
-            .then_with(|| data[left.text.clone()].cmp(&data[right.text.clone()]))
+        left.pattern.cmp(&right.pattern).then_with(|| {
+            data.get(left.text.clone())
+                .cmp(&data.get(right.text.clone()))
+        })
     });
     // fold into an accumulated string. insert a newline between import sections.
     let replacement = imports.iter().enumerate().try_fold(
         String::with_capacity(end_offset - start_offset),
         |mut buffer, (index, import)| -> Result<_> {
-            if index > 0 && imports[index - 1].pattern != import.pattern {
+            if index > 0 && imports.get(index - 1).context("valid index")?.pattern != import.pattern
+            {
                 buffer.push('\n');
             }
             buffer.push_str(
-                from_utf8(&data[import.range.clone()]).map_err(|_| anyhow!("invalid utf-8"))?,
+                from_utf8(data.get(import.range.clone()).context("valid range")?)
+                    .map_err(|_| anyhow!("invalid utf-8"))?,
             );
             Ok(buffer)
         },
