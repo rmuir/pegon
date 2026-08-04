@@ -94,28 +94,25 @@ pub fn hints(
         }
     };
 
-    let mut matches = cursor
-        .matches_with_options(
-            &QUERY,
-            doc.tree.root_node(),
-            data,
-            QueryCursorOptions::new().progress_callback(&mut cancellation),
-        )
-        .filter(|hit| {
-            for predicate in QUERY.general_predicates(hit.pattern_index) {
-                if !custom_predicate(hit, data, &predicate.operator, &predicate.args) {
-                    return false;
-                }
-            }
-            true
-        });
+    let mut matches = cursor.matches_with_options(
+        &QUERY,
+        doc.tree.root_node(),
+        data,
+        QueryCursorOptions::new().progress_callback(&mut cancellation),
+    );
 
     let custom_data = serde_json::to_value(CustomData {
         uri: uri.clone(),
         version: doc.version,
     })?;
 
-    while let Some(hit) = matches.next() {
+    'matches: while let Some(hit) = matches.next() {
+        for predicate in QUERY.general_predicates(hit.pattern_index) {
+            if !custom_predicate(hit, data, &predicate.operator, &predicate.args)? {
+                continue 'matches;
+            }
+        }
+
         let node = hit
             .nodes_for_capture_index(*POSITION_CAPTURE)
             .next()

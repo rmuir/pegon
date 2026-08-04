@@ -58,22 +58,18 @@ pub fn lint(
         }
     };
 
-    let mut matches = cursor
-        .matches_with_options(
-            &QUERY,
-            tree.root_node(),
-            data,
-            QueryCursorOptions::new().progress_callback(&mut cancellation),
-        )
-        .filter(|hit| {
-            for predicate in QUERY.general_predicates(hit.pattern_index) {
-                if !custom_predicate(hit, data, &predicate.operator, &predicate.args) {
-                    return false;
-                }
+    let mut matches = cursor.matches_with_options(
+        &QUERY,
+        tree.root_node(),
+        data,
+        QueryCursorOptions::new().progress_callback(&mut cancellation),
+    );
+    'matches: while let Some(hit) = matches.next() {
+        for predicate in QUERY.general_predicates(hit.pattern_index) {
+            if !custom_predicate(hit, data, &predicate.operator, &predicate.args)? {
+                continue 'matches;
             }
-            true
-        });
-    while let Some(hit) = matches.next() {
+        }
         let rule = rule(hit.pattern_index);
 
         let node = hit

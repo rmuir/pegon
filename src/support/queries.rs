@@ -1,44 +1,50 @@
+use anyhow::{Context as _, Result, bail};
 use tree_sitter::{Query, QueryMatch, QueryPredicateArg};
 
 /// Implement matching for custom predicates
-#[expect(clippy::indexing_slicing, reason = "prefer panic to silent failure")]
 pub fn custom_predicate(
     hit: &QueryMatch,
     data: &[u8],
     operator: &str,
     args: &[QueryPredicateArg],
-) -> bool {
+) -> Result<bool> {
     match operator {
-        "lt?" => {
-            debug_assert!(args.len() > 1);
-            let (QueryPredicateArg::Capture(left), QueryPredicateArg::Capture(right)) =
-                (&args[0], &args[1])
-            else {
-                panic!("invalid predicate arguments")
-            };
-            let node1 = hit
-                .nodes_for_capture_index(*left)
-                .next()
-                .expect("valid capture");
-            let node2 = hit
-                .nodes_for_capture_index(*right)
-                .next()
-                .expect("valid capture");
-            data[node1.byte_range()] < data[node2.byte_range()]
-        }
-        "eol?" => {
-            debug_assert_eq!(args.len(), 1);
-            let QueryPredicateArg::Capture(left) = &args[0] else {
-                panic!("invalid predicate arguments")
-            };
-            let node = hit
-                .nodes_for_capture_index(*left)
-                .next()
-                .expect("valid capture");
-            *data.get(node.end_byte()).unwrap_or(&b'\n') == b'\n'
-        }
+        "lt?" => match args {
+            [
+                QueryPredicateArg::Capture(left),
+                QueryPredicateArg::Capture(right),
+            ] => {
+                let node1 = hit
+                    .nodes_for_capture_index(*left)
+                    .next()
+                    .context("valid capture")?;
+                let node2 = hit
+                    .nodes_for_capture_index(*right)
+                    .next()
+                    .context("valid capture")?;
+                let bytes1 = data.get(node1.byte_range()).context("valid range")?;
+                let bytes2 = data.get(node2.byte_range()).context("valid range")?;
+                Ok(bytes1 < bytes2)
+            }
+            _ => bail!("invalid predicate arguments"),
+        },
+        "eol?" => match args {
+            [QueryPredicateArg::Capture(capture)] => {
+                let node = hit
+                    .nodes_for_capture_index(*capture)
+                    .next()
+                    .context("valid capture")?;
+                let position = node.end_byte();
+                if position == data.len() {
+                    Ok(true)
+                } else {
+                    Ok(*data.get(position).context("valid range")? == b'\n')
+                }
+            }
+            _ => bail!("invalid predicate arguments"),
+        },
         _ => {
-            panic!("{operator}");
+            bail!("invalid predicate {operator}");
         }
     }
 }
