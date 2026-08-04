@@ -11,19 +11,6 @@ checks = 0
 repo = "local"
 
 [[repos.hooks]]
-id = "cargo-check"
-name = "Check Rust compilation"
-priority = "checks"
-language = "system"
-entry = "cargo"
-args = ["check", "--locked", "--all-targets"]
-env.CARGO_BUILD_WARNINGS = "deny"
-require_serial = true
-# runs across all files if any are touched
-pass_filenames = false
-files.glob = ["Cargo.toml", "Cargo.lock", "**/*.rs"]
-
-[[repos.hooks]]
 id = "cargo-clippy"
 name = "Check Rust lints"
 priority = "checks"
