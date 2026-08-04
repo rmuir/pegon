@@ -61,7 +61,7 @@ name = "Check Rust tests"
 priority = "checks"
 language = "system"
 entry = "cargo"
-args = ["test", "--locked"]
+args = ["test", "--locked", "--color=always"]
 env.CARGO_BUILD_WARNINGS = "deny"
 require_serial = true
 # run across all files if any are touched
@@ -111,7 +111,7 @@ name = "Check VSCode extension"
 priority = "checks"
 language = "system"
 entry = "npm"
-args = ["run", "ci"]
+args = ["run", "--color=always", "ci"]
 require_serial = true
 # runs across all files if any are touched
 pass_filenames = false
