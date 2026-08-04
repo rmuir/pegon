@@ -29,7 +29,7 @@ lint: test
 
 .PHONY: test
 test: ## Lint, format, test
-	uv run --frozen --only-dev prek --all-files --stage pre-push
+	uv run --frozen --only-dev prek --all-files --stage pre-push --verbose
 
 .PHONY: test-cov
 test-cov: ## Run tests with coverage report
