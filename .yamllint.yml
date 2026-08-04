@@ -25,5 +25,3 @@ rules:
     forbid-explicit-octal: true
   truthy:
     check-keys: false
-  new-lines:
-    type: platform

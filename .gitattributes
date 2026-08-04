@@ -1,0 +1,4 @@
+# Not dealing with this
+* text eol=lf
+# mark PNG files as binary
+*.png binary
