@@ -90,7 +90,7 @@ percent-encoding = "=2.3.2"
 # autofixes
 regex = "=1.13.1"
 # indexing files
-regex-automata = "=0.4.16"
+regex-automata = "=0.4.17"
 # jimage support
 ristretto_jimage = "=0.32.1"
 # faster hashing for symbols, etc
