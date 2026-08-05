@@ -78,7 +78,7 @@ crossbeam-channel = "=0.5.16"
 # LSP data structures
 gen-lsp-types = "=0.11.0"
 # Traversing directories, respecting ignore files
-ignore = "=0.4.32"
+ignore = "=0.4.33"
 # indented string literals
 indoc = "=2.0.7"
 # convert offsets <-> lsp positions
@@ -90,7 +90,7 @@ percent-encoding = "=2.3.2"
 # autofixes
 regex = "=1.13.1"
 # indexing files
-regex-automata = "=0.4.17"
+regex-automata = "=0.4.18"
 # jimage support
 ristretto_jimage = "=0.32.1"
 # faster hashing for symbols, etc
