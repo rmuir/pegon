@@ -1,52 +1,36 @@
-use anyhow::{Context as _, Result, bail};
-use tree_sitter::{QueryMatch, QueryPredicateArg};
+use tree_sitter::QueryMatch;
 
 use crate::java_constants::NODE_KIND_COUNT;
+use crate::java_queries::Predicate;
 
-/// Implement matching for custom predicates
-pub fn custom_predicate(
-    hit: &QueryMatch,
-    data: &[u8],
-    operator: &str,
-    args: &[QueryPredicateArg],
-) -> Result<bool> {
-    match operator {
-        "lt?" => match args {
-            [
-                QueryPredicateArg::Capture(left),
-                QueryPredicateArg::Capture(right),
-            ] => {
+/// allows matching against predicates generated from build.rs
+pub trait PredicateMatch {
+    /// true if the hit matches the predicate
+    fn matches(&self, hit: &QueryMatch, data: &[u8]) -> bool;
+}
+
+impl PredicateMatch for Predicate {
+    fn matches(&self, hit: &QueryMatch, data: &[u8]) -> bool {
+        match self {
+            Self::LessThan(left, right) => {
                 let node1 = hit
                     .nodes_for_capture_index(*left)
                     .next()
-                    .context("valid capture")?;
+                    .expect("valid capture");
                 let node2 = hit
                     .nodes_for_capture_index(*right)
                     .next()
-                    .context("valid capture")?;
-                let bytes1 = data.get(node1.byte_range()).context("valid range")?;
-                let bytes2 = data.get(node2.byte_range()).context("valid range")?;
-                Ok(bytes1 < bytes2)
+                    .expect("valid capture");
+                data.get(node1.byte_range()) < data.get(node2.byte_range())
             }
-            _ => bail!("invalid predicate arguments"),
-        },
-        "eol?" => match args {
-            [QueryPredicateArg::Capture(capture)] => {
+            Self::EndOfLine(capture) => {
                 let node = hit
                     .nodes_for_capture_index(*capture)
                     .next()
-                    .context("valid capture")?;
+                    .expect("valid capture");
                 let position = node.end_byte();
-                if position == data.len() {
-                    Ok(true)
-                } else {
-                    Ok(*data.get(position).context("valid range")? == b'\n')
-                }
+                data.get(position).copied().unwrap_or(b'\n') == b'\n'
             }
-            _ => bail!("invalid predicate arguments"),
-        },
-        _ => {
-            bail!("invalid predicate {operator}");
         }
     }
 }

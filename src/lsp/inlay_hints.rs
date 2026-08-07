@@ -12,7 +12,8 @@ use tree_sitter::{
 };
 
 use crate::java_queries::hints::captures;
-use crate::support::queries::custom_predicate;
+use crate::java_queries::hints::predicates::{PREDICATES, PREDICATES_BY_PATTERN};
+use crate::support::queries::PredicateMatch as _;
 
 use super::{Client, server::Document};
 
@@ -95,25 +96,30 @@ pub fn hints(
         }
     };
 
-    let mut matches = cursor.matches_with_options(
-        &QUERY,
-        doc.tree.root_node(),
-        data,
-        QueryCursorOptions::new().progress_callback(&mut cancellation),
-    );
+    #[expect(clippy::indexing_slicing, reason = "checked at compile-time")]
+    let mut matches = cursor
+        .matches_with_options(
+            &QUERY,
+            doc.tree.root_node(),
+            data,
+            QueryCursorOptions::new().progress_callback(&mut cancellation),
+        )
+        .filter(|hit| {
+            let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
+            for index in list.start..list.end {
+                if !PREDICATES[index as usize].matches(hit, data) {
+                    return false;
+                }
+            }
+            true
+        });
 
     let custom_data = serde_json::to_value(CustomData {
         uri: uri.clone(),
         version: doc.version,
     })?;
 
-    'matches: while let Some(hit) = matches.next() {
-        for predicate in QUERY.general_predicates(hit.pattern_index) {
-            if !custom_predicate(hit, data, &predicate.operator, &predicate.args)? {
-                continue 'matches;
-            }
-        }
-
+    while let Some(hit) = matches.next() {
         let node = hit
             .nodes_for_capture_index(captures::POSITION)
             .next()

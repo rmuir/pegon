@@ -10,11 +10,12 @@ use std::{
     error::Error,
     ffi::OsStr,
     fs::{read_dir, read_to_string, write},
+    ops::Not as _,
     path::Path,
 };
 
 use indoc::{formatdoc, indoc};
-use tree_sitter::{Language, Query};
+use tree_sitter::{Language, Query, QueryPredicateArg};
 
 /// build script that regenerates output if the queries files change
 fn main() -> Result<(), Box<dyn Error>> {
@@ -25,21 +26,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let language: Language = tree_sitter_java_orchard::LANGUAGE.into();
 
     // create language constants
-    write(
-        out_dir.join("java_constants.rs"),
-        java_constants(&language)?,
-    )?;
+    write(out_dir.join("java_constants.rs"), constants(&language)?)?;
 
     // create query constants
     let cargo_manifest = var("CARGO_MANIFEST_DIR")?;
     let queries_dir = Path::new(&cargo_manifest).join("queries").join("java");
-    write(out_dir.join("java_queries.rs"), java_queries(&queries_dir)?)?;
+    write(
+        out_dir.join("java_queries.rs"),
+        queries(&language, &queries_dir)?,
+    )?;
 
     Ok(())
 }
 
 /// generate constants from the grammar
-fn java_constants(language: &Language) -> Result<String, Box<dyn Error>> {
+fn constants(language: &Language) -> Result<String, Box<dyn Error>> {
     let node_kind_count = language.node_kind_count();
 
     // counts for sizing
@@ -48,8 +49,8 @@ fn java_constants(language: &Language) -> Result<String, Box<dyn Error>> {
         pub const NODE_KIND_COUNT: usize = {node_kind_count};
     "};
 
-    doc.push_str(node_kinds(language)?.as_str());
-    doc.push_str(fields(language)?.as_str());
+    doc.push_str(&node_kinds(language)?);
+    doc.push_str(&fields(language)?);
 
     Ok(doc)
 }
@@ -72,13 +73,10 @@ fn node_kinds(language: &Language) -> Result<String, Box<dyn Error>> {
             .node_kind_for_id(id)
             .ok_or("kind should have a name")?;
         let upper_name = name.to_ascii_uppercase();
-        doc.push_str(
-            formatdoc! {r"
+        doc.push_str(&formatdoc! {r"
             /// Node kind ID for `{name}`
             pub const {upper_name}: u16 = {id};
-        "}
-            .as_str(),
-        );
+        "});
     }
     doc.push_str(indoc! {"
         }
@@ -99,13 +97,10 @@ fn fields(language: &Language) -> Result<String, Box<dyn Error>> {
         let id: u16 = kind.try_into()?;
         if let Some(name) = language.field_name_for_id(id) {
             let upper_name = name.to_ascii_uppercase();
-            doc.push_str(
-                formatdoc! {r"
-                    /// Field ID for `{name}`
-                    pub const {upper_name}: u16 = {id};
-                "}
-                .as_str(),
-            );
+            doc.push_str(&formatdoc! {r"
+                /// Field ID for `{name}`
+                pub const {upper_name}: u16 = {id};
+            "});
         }
     }
     doc.push_str(indoc! {"
@@ -115,9 +110,17 @@ fn fields(language: &Language) -> Result<String, Box<dyn Error>> {
 }
 
 /// generate constants from each tree-sitter query
-fn java_queries(queries_dir: &Path) -> Result<String, Box<dyn Error>> {
-    let language: Language = tree_sitter_java_orchard::LANGUAGE.into();
-    let mut doc = String::new();
+fn queries(language: &Language, queries_dir: &Path) -> Result<String, Box<dyn Error>> {
+    let mut doc = indoc! {r"
+        /// Custom predicates used by queries
+        pub enum Predicate {
+            /// Compares the text of the captures in codepoint order
+            LessThan(u32, u32),
+            /// True if the node precedes end of line or end of file
+            EndOfLine(u32),
+        }
+    "}
+    .to_owned();
     for entry in read_dir(queries_dir)? {
         let entry = entry?;
         let path = entry.path();
@@ -127,16 +130,16 @@ fn java_queries(queries_dir: &Path) -> Result<String, Box<dyn Error>> {
                 .ok_or("file should have name")?
                 .to_str()
                 .ok_or("valid unicode")?;
-            doc.push_str(
-                formatdoc! {r"
-                    /// Query constants for `{name}.scm`
-                    pub mod {name} {{
-                "}
-                .as_str(),
-            );
+            doc.push_str(&formatdoc! {r"
+                /// Query constants for `{name}.scm`
+                pub mod {name} {{
+            "});
             let text = read_to_string(&path)?;
-            let query = Query::new(&language, &text)?;
-            doc.push_str(query_captures(&query).as_str());
+            let query = Query::new(language, &text)?;
+            doc.push_str(&query_captures(&query));
+            if let Some(predicates) = query_predicates(&query) {
+                doc.push_str(&predicates);
+            }
             doc.push_str(indoc! {"
                 }
             "});
@@ -158,16 +161,100 @@ fn query_captures(query: &Query) -> String {
             continue;
         }
         let upper_name = name.to_ascii_uppercase().replace('.', "_");
-        doc.push_str(
-            formatdoc! {r"
+        doc.push_str(&formatdoc! {r"
             /// Capture index for `@{name}`
             pub const {upper_name}: u32 = {index};
-        "}
-            .as_str(),
-        );
+        "});
     }
     doc.push_str(indoc! {"
         }
     "});
     doc
+}
+
+/// generate arrays of custom predicates indexed by pattern
+fn query_predicates(query: &Query) -> Option<String> {
+    let mut doc = indoc! {r"
+        /// Custom predicates by pattern in the query
+        pub mod predicates {
+    "}
+    .to_owned();
+
+    let mut by_query = vec![];
+    let mut by_pattern = vec![];
+    for pattern in 0..query.pattern_count() {
+        let start_index: u8 = by_query.len().try_into().expect("no overflow");
+        for predicate in query.general_predicates(pattern) {
+            let operator: &str = &predicate.operator;
+            let args: &[QueryPredicateArg] = &predicate.args;
+            by_query.push(match operator {
+                "lt?" => match args {
+                    [
+                        QueryPredicateArg::Capture(left),
+                        QueryPredicateArg::Capture(right),
+                    ] => {
+                        formatdoc! {"
+                            Predicate::LessThan({left}, {right}),
+                        "}
+                    }
+                    _ => panic!("invalid predicate arguments"),
+                },
+                "eol?" => match args {
+                    [QueryPredicateArg::Capture(capture)] => {
+                        formatdoc! {"
+                            Predicate::EndOfLine({capture}),
+                        "}
+                    }
+                    _ => panic!("invalid predicate arguments"),
+                },
+                _ => {
+                    panic!("invalid predicate {operator}");
+                }
+            });
+        }
+        let end_index: u8 = by_query.len().try_into().expect("no overflow");
+        by_pattern.push(start_index..end_index);
+    }
+
+    if !by_query.is_empty() {
+        // output array for the query
+        let count = by_query.len();
+        doc.push_str(&formatdoc! {"
+            use core::ops::Range;
+            use crate::java_queries::Predicate;
+
+            /// All predicates used by the query
+            pub const PREDICATES: [Predicate; {count}] = [
+        "});
+        for predicate in &by_query {
+            doc.push_str(predicate);
+        }
+        doc.push_str(&formatdoc! {"
+            ];
+        "});
+
+        // output array by pattern
+        let pattern_count = by_pattern.len();
+        doc.push_str(&formatdoc! {"
+            /// Range of indices into `PREDICATES` indexed by pattern
+            pub const PREDICATES_BY_PATTERN: [Range<u8>; {pattern_count}] = [
+        "});
+        for range in &by_pattern {
+            let start = range.start;
+            let end = range.end;
+            doc.push_str(&formatdoc! {"
+                {start}..{end},
+            "});
+        }
+        doc.push_str(&formatdoc! {"
+            ];
+        "});
+
+        // end module
+        doc.push_str(indoc! {"
+            }
+        "});
+    }
+
+    by_query.is_empty().not().then_some(doc)
 }

@@ -12,8 +12,9 @@ use tree_sitter::{
 
 use crate::java_constants::{fields, kinds};
 use crate::java_queries::diagnostics::captures;
+use crate::java_queries::diagnostics::predicates::{PREDICATES, PREDICATES_BY_PATTERN};
 use crate::support::fix::Fix;
-use crate::support::queries::{KindSet, custom_predicate};
+use crate::support::queries::{KindSet, PredicateMatch as _};
 
 /// Single diagnostic result
 pub struct Diagnostic {
@@ -60,18 +61,24 @@ pub fn lint(
         }
     };
 
-    let mut matches = cursor.matches_with_options(
-        &QUERY,
-        tree.root_node(),
-        data,
-        QueryCursorOptions::new().progress_callback(&mut cancellation),
-    );
-    'matches: while let Some(hit) = matches.next() {
-        for predicate in QUERY.general_predicates(hit.pattern_index) {
-            if !custom_predicate(hit, data, &predicate.operator, &predicate.args)? {
-                continue 'matches;
+    #[expect(clippy::indexing_slicing, reason = "checked at compile-time")]
+    let mut matches = cursor
+        .matches_with_options(
+            &QUERY,
+            tree.root_node(),
+            data,
+            QueryCursorOptions::new().progress_callback(&mut cancellation),
+        )
+        .filter(|hit| {
+            let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
+            for index in list.start..list.end {
+                if !PREDICATES[index as usize].matches(hit, data) {
+                    return false;
+                }
             }
-        }
+            true
+        });
+    while let Some(hit) = matches.next() {
         let rule = rule(hit.pattern_index);
 
         let node = hit
