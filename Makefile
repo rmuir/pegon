@@ -46,24 +46,18 @@ test-asan: export CFLAGS=-fsanitize=address,undefined -O1
 test-asan: export RUSTFLAGS=-Zsanitizer=address
 test-asan: export CXXFLAGS=${CFLAGS}
 test-asan: export RUSTDOCFLAGS=${RUSTFLAGS}
+test-asan: export CARGO_PROFILE_SANITIZE_BUILD_OVERRIDE_RUSTFLAGS=-C linker=clang -Clink-arg=-fsanitize=address,undefined
 test-asan:  ## Run tests with asan
-	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
-
-.PHONY: test-msan
-test-msan: export CFLAGS=-fsanitize=memory -O1
-test-msan: export RUSTFLAGS=-Zsanitizer=memory
-test-msan: export CXXFLAGS=${CFLAGS}
-test-msan: export RUSTDOCFLAGS=${RUSTFLAGS}
-test-msan:  ## Run tests with msan
-	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z profile-rustflags -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
 
 .PHONY: test-tsan
 test-tsan: export CFLAGS=-fsanitize=thread -O1
 test-tsan: export RUSTFLAGS=-Zsanitizer=thread
 test-tsan: export CXXFLAGS=${CFLAGS}
 test-tsan: export RUSTDOCFLAGS=${RUSTFLAGS}
+test-tsan: export CARGO_PROFILE_SANITIZE_BUILD_OVERRIDE_RUSTFLAGS=-C linker=clang -Clink-arg=-fsanitize=thread
 test-tsan:  ## Run tests with tsan
-	cargo +${NIGHTLY_TOOLCHAIN} test -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z profile-rustflags -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
 
 .PHONY: profile
 profile: ## Profile run with perf

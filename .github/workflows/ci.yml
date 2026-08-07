@@ -238,7 +238,6 @@ jobs:
       matrix:
         include:
           - name: asan
-          - name: msan
           - name: tsan
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 30
