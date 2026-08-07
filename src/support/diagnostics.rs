@@ -10,8 +10,10 @@ use tree_sitter::{
     Tree,
 };
 
+use crate::java_constants::{fields, kinds};
+use crate::java_queries::diagnostics::captures;
 use crate::support::fix::Fix;
-use crate::support::queries::{KindSet, capture_id, custom_predicate};
+use crate::support::queries::{KindSet, custom_predicate};
 
 /// Single diagnostic result
 pub struct Diagnostic {
@@ -73,7 +75,7 @@ pub fn lint(
         let rule = rule(hit.pattern_index);
 
         let node = hit
-            .nodes_for_capture_index(*ERROR_CAPTURE)
+            .nodes_for_capture_index(captures::ERROR)
             .next()
             .context("error capture should exist")?;
 
@@ -85,13 +87,13 @@ pub fn lint(
 
         // explicitly marked context in the query
         let context = hit
-            .nodes_for_capture_index(*CONTEXT_CAPTURE)
+            .nodes_for_capture_index(captures::CONTEXT)
             .map(|item| item.range())
             .next();
 
         // explicitly marked visible in the query
         let visible = if extras {
-            hit.nodes_for_capture_index(*VISIBLE_CAPTURE)
+            hit.nodes_for_capture_index(captures::VISIBLE)
                 .map(|item| item.range())
                 .next()
         } else {
@@ -205,7 +207,7 @@ fn top_context(root: Node, error_node: Node) -> Option<Range> {
         && child.id() != error_node.id()
     {
         if TOP_CONTEXT_KINDS.contains(child.kind_id())
-            && let Some(name) = child.child_by_field_id(*NAME_FIELD)
+            && let Some(name) = child.child_by_field_id(fields::NAME)
             && name.start_position().row != error_node.start_position().row
         {
             range = Some(name.range());
@@ -216,22 +218,15 @@ fn top_context(root: Node, error_node: Node) -> Option<Range> {
 }
 
 /// set of context parent node kinds
-static TOP_CONTEXT_KINDS: LazyLock<KindSet> = LazyLock::new(|| {
-    KindSet::new(&[
-        "method_declaration",
-        "variable_declarator",
-        "constructor_declaration",
-        "class_declaration",
-        "interface_declaration",
-        "enum_declaration",
-        "record_declaration",
-    ])
-});
-
-static NAME_FIELD: LazyLock<u16> = LazyLock::new(|| {
-    let lang = crate::support::language();
-    lang.field_id_for_name("name").expect("should exist").into()
-});
+static TOP_CONTEXT_KINDS: KindSet = KindSet::new(&[
+    kinds::METHOD_DECLARATION,
+    kinds::VARIABLE_DECLARATOR,
+    kinds::CONSTRUCTOR_DECLARATION,
+    kinds::CLASS_DECLARATION,
+    kinds::INTERFACE_DECLARATION,
+    kinds::ENUM_DECLARATION,
+    kinds::RECORD_DECLARATION,
+]);
 
 /// compiled query that matches all lint rules
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
@@ -333,15 +328,6 @@ static RULES_BY_NAME: LazyLock<FxHashMap<&str, usize>> = LazyLock::new(|| {
         .map(|(index, item)| (item.name.as_str(), index))
         .collect()
 });
-
-/// index of the `@error` capture
-static ERROR_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "error"));
-
-/// index of the `@context` capture
-static CONTEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "context"));
-
-/// index of the `@visible` capture
-static VISIBLE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "visible"));
 
 /// simple error templating engine
 static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {

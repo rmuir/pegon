@@ -1,5 +1,7 @@
 use anyhow::{Context as _, Result, bail};
-use tree_sitter::{Query, QueryMatch, QueryPredicateArg};
+use tree_sitter::{QueryMatch, QueryPredicateArg};
+
+use crate::java_constants::NODE_KIND_COUNT;
 
 /// Implement matching for custom predicates
 pub fn custom_predicate(
@@ -49,42 +51,35 @@ pub fn custom_predicate(
     }
 }
 
-/// Returns id of the capture, or panics if it doesn't exist in the query
-pub fn capture_id(query: &Query, name: &str) -> u32 {
-    query
-        .capture_index_for_name(name)
-        .unwrap_or_else(|| panic!("{name} capture should exist"))
-}
-
 /// maximum size of the set.
-///
-/// the grammar is pinned and will fail tests if its too small.
-const KIND_SET_WORDS: usize = 6;
+const KIND_SET_WORDS: usize = NODE_KIND_COUNT.div_ceil(64);
 
 /// A bitset for efficiently matching node kinds
-#[derive(Copy, Clone)]
 pub struct KindSet {
     words: [u64; KIND_SET_WORDS],
 }
 
 #[expect(clippy::indexing_slicing, reason = "bounds are checked")]
+#[expect(clippy::arithmetic_side_effects, reason = "not possible")]
 impl KindSet {
-    /// create set from list of node kind names
-    pub fn new(kinds: &[&str]) -> Self {
+    /// create set from list of node kinds
+    pub const fn new(kinds: &[u16]) -> Self {
         let mut words: [u64; KIND_SET_WORDS] = [0; KIND_SET_WORDS];
-        let lang = super::language();
-        debug_assert!(lang.node_kind_count() <= words.len() << 6);
-        for kind in kinds {
-            let id = lang.id_for_node_kind(kind, true);
-            let index = id as usize >> 6;
+        let mut kind = 0;
+
+        while kind < kinds.len() {
+            let id = kinds[kind] as usize;
+            debug_assert!(id < NODE_KIND_COUNT);
+            let index = id >> 6;
             let bit = id & 0x3F;
             words[index] |= 1 << bit;
+            kind += 1;
         }
         Self { words }
     }
 
     /// true if the named node's kind is in the set
-    pub const fn contains(self, kind_id: u16) -> bool {
+    pub const fn contains(&self, kind_id: u16) -> bool {
         let index = kind_id as usize >> 6;
         let bit = kind_id & 0x3F;
         index < self.words.len() && (self.words[index] & (1 << bit)) != 0

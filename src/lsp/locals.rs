@@ -8,7 +8,9 @@ use tree_sitter::{
     Tree,
 };
 
-use crate::support::queries::{KindSet, capture_id};
+use crate::java_constants::kinds;
+use crate::java_queries::locals::captures;
+use crate::support::queries::KindSet;
 
 pub struct Scopes<'data, 'tree> {
     pub locals: FxHashMap<&'data str, Vec<LocalScope<'tree>>>,
@@ -67,21 +69,21 @@ pub fn scopes<'tree, 'data>(
         let pattern = pattern(hit.pattern_index);
 
         let var_node = hit
-            .nodes_for_capture_index(*DEFINITION_CAPTURE)
+            .nodes_for_capture_index(captures::DEFINITION)
             .next()
             .context("definition capture should exist")?;
 
         let mut start_node = hit
-            .nodes_for_capture_index(*START_CAPTURE)
+            .nodes_for_capture_index(captures::START)
             .next()
             .context("start capture should exist")?;
 
         let mut end_node = hit
-            .nodes_for_capture_index(*END_CAPTURE)
+            .nodes_for_capture_index(captures::END)
             .next()
             .context("end capture should exist")?;
 
-        let type_node = hit.nodes_for_capture_index(*TYPE_CAPTURE).next();
+        let type_node = hit.nodes_for_capture_index(captures::TYPE).next();
 
         if pattern.flow {
             let mut node = tree.root_node();
@@ -194,17 +196,4 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
 });
 
 /// for flow scoping, the parent node types where variables scope can "escape" into
-static FLOW_BLOCK_KINDS: LazyLock<KindSet> =
-    LazyLock::new(|| KindSet::new(&["block", "constructor_body"]));
-
-/// index of the `@definition` capture
-static DEFINITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "definition"));
-
-/// index of the `@start` capture
-static START_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "start"));
-
-/// index of the `@end` capture
-static END_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "end"));
-
-/// index of the `@type` capture
-static TYPE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "type"));
+static FLOW_BLOCK_KINDS: KindSet = KindSet::new(&[kinds::BLOCK, kinds::CONSTRUCTOR_BODY]);

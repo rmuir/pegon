@@ -12,7 +12,8 @@ use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
 };
 
-use crate::support::queries::capture_id;
+use crate::java_constants::kinds;
+use crate::java_queries::symbols::captures;
 
 use super::{Client, server::Document};
 
@@ -139,7 +140,7 @@ fn nested(client: &Client, doc: &Document, cancel: &AtomicBool) -> Result<Vec<Do
     while let Some(hit) = matches.next() {
         let pattern = pattern(hit.pattern_index);
         let node = hit
-            .nodes_for_capture_index(*RANGE_CAPTURE)
+            .nodes_for_capture_index(captures::RANGE)
             .next()
             .context("range capture should exist")?;
         let range = node.range();
@@ -148,18 +149,18 @@ fn nested(client: &Client, doc: &Document, cancel: &AtomicBool) -> Result<Vec<Do
             .is_some()
         {}
         let selection = hit
-            .nodes_for_capture_index(*SELECTION_CAPTURE)
+            .nodes_for_capture_index(captures::SELECTION)
             .next()
             .context("selection capture should exist")?;
-        let detail = hit.nodes_for_capture_index(*DETAIL_CAPTURE).next();
+        let detail = hit.nodes_for_capture_index(captures::DETAIL).next();
         let mut deprecated = false;
-        for marker in hit.nodes_for_capture_index(*MARKER_CAPTURE) {
+        for marker in hit.nodes_for_capture_index(captures::MARKER) {
             deprecated |= marker.utf8_text(bytes)? == "Deprecated";
         }
         let mut name = selection.utf8_text(bytes)?.to_owned();
         let mut first_param = true;
-        for signature in hit.nodes_for_capture_index(*SIGNATURE_CAPTURE) {
-            if signature.is_named() && signature.kind_id() != *DIMENSIONS_KIND {
+        for signature in hit.nodes_for_capture_index(captures::SIGNATURE) {
+            if signature.is_named() && signature.kind_id() != kinds::DIMENSIONS {
                 if !first_param {
                     name.push(',');
                 }
@@ -254,21 +255,6 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
         });
     }
     patterns
-});
-
-static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
-
-static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "selection"));
-
-static MARKER_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "marker"));
-
-static SIGNATURE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "signature"));
-
-static DETAIL_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "detail"));
-
-static DIMENSIONS_KIND: LazyLock<u16> = LazyLock::new(|| {
-    let lang = crate::support::language();
-    lang.id_for_node_kind("dimensions", true)
 });
 
 #[cfg(test)]

@@ -9,7 +9,7 @@ use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
 };
 
-use crate::support::queries::capture_id;
+use crate::java_queries::definitions::captures;
 
 use super::{Client, server::Document};
 
@@ -59,7 +59,7 @@ pub fn request(
         let pattern = pattern(hit.pattern_index);
         // check if it is a true match, we must be inside the selection capture
         let selection = hit
-            .nodes_for_capture_index(*SELECTION_CAPTURE)
+            .nodes_for_capture_index(captures::SELECTION)
             .next()
             .context("should have selection capture")?;
         let mut selection_range = selection.range();
@@ -74,7 +74,7 @@ pub fn request(
         }
 
         let target = hit
-            .nodes_for_capture_index(*RANGE_CAPTURE)
+            .nodes_for_capture_index(captures::RANGE)
             .next()
             .context("should have range capture")?;
         let mut target_range = target.range();
@@ -181,10 +181,6 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     }
     patterns
 });
-
-static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
-
-static SELECTION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "selection"));
 
 #[cfg(test)]
 mod tests {

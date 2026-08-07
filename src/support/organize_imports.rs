@@ -5,8 +5,10 @@ use std::str::from_utf8;
 use std::sync::LazyLock;
 use tree_sitter::{Query, QueryCursor, StreamingIterator as _, Tree};
 
+use crate::java_constants::kinds;
+use crate::java_queries::imports::captures;
 use crate::support::fix::Edit;
-use crate::support::queries::{KindSet, capture_id};
+use crate::support::queries::KindSet;
 
 struct Import {
     /// type of the import, primary sort key
@@ -65,12 +67,12 @@ fn imports(tree: &Tree, data: &[u8]) -> Result<Vec<Import>> {
     let mut last_end_offset = 0;
     while let Some(hit) = matches.next() {
         let node = hit
-            .nodes_for_capture_index(*NODE_CAPTURE)
+            .nodes_for_capture_index(captures::NODE)
             .next()
             .context("node capture should exist")?;
 
         let text = hit
-            .nodes_for_capture_index(*TEXT_CAPTURE)
+            .nodes_for_capture_index(captures::TEXT)
             .next()
             .context("text capture should exist")?;
 
@@ -118,11 +120,4 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
 });
 
 /// comment node kinds
-static COMMENT_KINDS: LazyLock<KindSet> =
-    LazyLock::new(|| KindSet::new(&["line_comment", "block_comment"]));
-
-/// index of the `@node` capture
-static NODE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "node"));
-
-/// index of the `@text` capture
-static TEXT_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "text"));
+static COMMENT_KINDS: KindSet = KindSet::new(&[kinds::LINE_COMMENT, kinds::BLOCK_COMMENT]);

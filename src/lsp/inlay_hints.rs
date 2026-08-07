@@ -11,7 +11,8 @@ use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
 };
 
-use crate::support::queries::{capture_id, custom_predicate};
+use crate::java_queries::hints::captures;
+use crate::support::queries::custom_predicate;
 
 use super::{Client, server::Document};
 
@@ -114,7 +115,7 @@ pub fn hints(
         }
 
         let node = hit
-            .nodes_for_capture_index(*POSITION_CAPTURE)
+            .nodes_for_capture_index(captures::POSITION)
             .next()
             .context("position capture should exist")?;
         let node_range = node.byte_range();
@@ -132,7 +133,7 @@ pub fn hints(
         if let Some(prefix) = pattern.prefix {
             value.push_str(prefix);
         }
-        for part in hit.nodes_for_capture_index(*LABEL_CAPTURE) {
+        for part in hit.nodes_for_capture_index(captures::LABEL) {
             if !value.is_empty() && pattern.pad_medial {
                 value.push(' ');
             }
@@ -172,7 +173,7 @@ pub fn hints(
         }
 
         let location = if populate
-            && let Some(location) = hit.nodes_for_capture_index(*LOCATION_CAPTURE).next()
+            && let Some(location) = hit.nodes_for_capture_index(captures::LOCATION).next()
         {
             Some(Location {
                 uri: uri.clone(),
@@ -277,12 +278,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     )
     .expect("query should compile")
 });
-
-static LABEL_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "label"));
-
-static LOCATION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "location"));
-
-static POSITION_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "position"));
 
 #[cfg(test)]
 mod tests {

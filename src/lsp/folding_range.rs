@@ -9,9 +9,8 @@ use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
 };
 
-use crate::support::queries::capture_id;
-
 use super::{Client, server::Document};
+use crate::java_queries::folds::captures;
 
 pub fn request(
     client: &Client,
@@ -39,7 +38,7 @@ pub fn request(
     );
     while let Some(hit) = matches.next() {
         let pattern = pattern(hit.pattern_index);
-        let mut nodes = hit.nodes_for_capture_index(*RANGE_CAPTURE);
+        let mut nodes = hit.nodes_for_capture_index(captures::RANGE);
         let node = nodes.next().context("should have range capture")?;
         let start_range = node.range();
         let end_range = nodes.last().unwrap_or(node).range();
@@ -139,8 +138,6 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
     }
     patterns
 });
-
-static RANGE_CAPTURE: LazyLock<u32> = LazyLock::new(|| capture_id(&QUERY, "range"));
 
 #[cfg(test)]
 mod tests {
