@@ -447,9 +447,9 @@ pub fn check(inputs: &[PathBuf], concise: bool, fix: bool) -> Result<(), Error> 
         bail!("Found no java files to check");
     }
     if fix_count > 0 {
-        println!("Success: No problems remain in {files} files / {millis} ms [{fix_count} fixed]");
+        eprintln!("Success: No problems remain in {files} files / {millis} ms [{fix_count} fixed]");
     } else {
-        println!("Success: No problems found in {files} files / {millis} ms");
+        eprintln!("Success: No problems found in {files} files / {millis} ms");
     }
     Ok(())
 }
