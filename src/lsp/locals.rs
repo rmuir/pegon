@@ -196,4 +196,4 @@ static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
 });
 
 /// for flow scoping, the parent node types where variables scope can "escape" into
-static FLOW_BLOCK_KINDS: KindSet = KindSet::new(&[kinds::BLOCK, kinds::CONSTRUCTOR_BODY]);
+const FLOW_BLOCK_KINDS: KindSet = KindSet::new(&[kinds::BLOCK, kinds::CONSTRUCTOR_BODY]);

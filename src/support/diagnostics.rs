@@ -218,7 +218,7 @@ fn top_context(root: Node, error_node: Node) -> Option<Range> {
 }
 
 /// set of context parent node kinds
-static TOP_CONTEXT_KINDS: KindSet = KindSet::new(&[
+const TOP_CONTEXT_KINDS: KindSet = KindSet::new(&[
     kinds::METHOD_DECLARATION,
     kinds::VARIABLE_DECLARATOR,
     kinds::CONSTRUCTOR_DECLARATION,

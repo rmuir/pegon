@@ -120,4 +120,4 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
 });
 
 /// comment node kinds
-static COMMENT_KINDS: KindSet = KindSet::new(&[kinds::LINE_COMMENT, kinds::BLOCK_COMMENT]);
+const COMMENT_KINDS: KindSet = KindSet::new(&[kinds::LINE_COMMENT, kinds::BLOCK_COMMENT]);
