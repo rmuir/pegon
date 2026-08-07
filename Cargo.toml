@@ -68,11 +68,11 @@ anstream = "=1.0.0"
 # Error handling
 anyhow = "=1.0.104"
 # Generation of LSP result_id
-blake3 = { version = "=1.8.5" }
+blake3 = { version = "=1.8.6" }
 # indexing support
 bstr = "=1.13.0"
 # CLI argument processing
-clap = { version = "=4.6.5", features = ["derive"] }
+clap = { version = "=4.6.6", features = ["derive"] }
 # threading support
 crossbeam-channel = "=0.5.16"
 # LSP data structures
