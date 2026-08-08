@@ -14,7 +14,7 @@ export LLVM_PROFDATA ?= llvm-profdata
 # nightly toolchain used for sanitizers
 export NIGHTLY_TOOLCHAIN ?= nightly
 # nightly target used for sanitizers
-export NIGHTLY_TARGET ?= x86_64-unknown-linux-gnu
+export NIGHTLY_TARGET ?= $(shell rustc --print=host-tuple)
 
 # extra output when running in CI
 ifdef CI
