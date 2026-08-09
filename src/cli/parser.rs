@@ -34,6 +34,10 @@ pub enum Commands {
         /// Diagnostic error format
         #[arg(long, value_enum, id = "FMT", default_value_t = OutputFormat::Full)]
         output_format: OutputFormat,
+
+        /// Name of file when passing via stdin
+        #[arg(long)]
+        stdin_filename: Option<PathBuf>,
     },
 
     /// Analyze java code

@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use tree_sitter::QueryMatch;
 
 use crate::java_constants::NODE_KIND_COUNT;
@@ -6,11 +8,11 @@ use crate::java_queries::Predicate;
 /// allows matching against predicates generated from build.rs
 pub trait PredicateMatch {
     /// true if the hit matches the predicate
-    fn matches(&self, hit: &QueryMatch, data: &[u8]) -> bool;
+    fn matches(&self, hit: &QueryMatch, data: &[u8], path: Option<&Path>) -> bool;
 }
 
 impl PredicateMatch for Predicate {
-    fn matches(&self, hit: &QueryMatch, data: &[u8]) -> bool {
+    fn matches(&self, hit: &QueryMatch, data: &[u8], path: Option<&Path>) -> bool {
         match self {
             Self::LessThan(left, right) => {
                 let node1 = hit
@@ -30,6 +32,17 @@ impl PredicateMatch for Predicate {
                     .expect("valid capture");
                 let position = node.end_byte();
                 data.get(position).copied().unwrap_or(b'\n') == b'\n'
+            }
+            Self::NotEqualsFileName(capture) => {
+                let Some(path) = path else { return false };
+                let Some(path) = path.file_stem() else {
+                    return false;
+                };
+                let node = hit
+                    .nodes_for_capture_index(*capture)
+                    .next()
+                    .expect("valid capture");
+                Some(path.as_encoded_bytes()) != data.get(node.byte_range())
             }
         }
     }

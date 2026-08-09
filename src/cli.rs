@@ -26,7 +26,13 @@ pub fn main() -> Result<(), Error> {
             files,
             fix,
             output_format,
-        } => check::check(files, *output_format == OutputFormat::Concise, *fix),
+            stdin_filename,
+        } => check::check(
+            files,
+            *output_format == OutputFormat::Concise,
+            *fix,
+            stdin_filename.as_deref(),
+        ),
         Commands::Analyze { files } => analyze::analyze(files),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();

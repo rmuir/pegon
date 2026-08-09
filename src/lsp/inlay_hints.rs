@@ -1,5 +1,6 @@
 use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
+use std::path::PathBuf;
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
@@ -86,6 +87,7 @@ pub fn hints(
     let mut result = Vec::with_capacity(64);
     let mut cursor = QueryCursor::new();
     cursor.set_byte_range(range.start..range.end);
+    let path = super::server::uri_to_path(uri).map(PathBuf::from);
 
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
@@ -107,7 +109,7 @@ pub fn hints(
         .filter(|hit| {
             let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
             for index in list.start..list.end {
-                if !PREDICATES[index as usize].matches(hit, data) {
+                if !PREDICATES[index as usize].matches(hit, data, path.as_deref()) {
                     return false;
                 }
             }

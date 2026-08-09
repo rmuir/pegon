@@ -4,6 +4,7 @@ use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 use rustc_hash::FxHashMap;
 use std::cmp::max;
+use std::path::Path;
 use std::sync::LazyLock;
 use tree_sitter::{
     Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
@@ -48,6 +49,7 @@ pub fn lint(
     data: &[u8],
     cancel: &AtomicBool,
     extras: bool,
+    path: Option<&Path>,
 ) -> Result<Vec<Diagnostic>, Error> {
     let mut lints = Vec::new();
     let mut cursor = QueryCursor::new();
@@ -72,7 +74,7 @@ pub fn lint(
         .filter(|hit| {
             let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
             for index in list.start..list.end {
-                if !PREDICATES[index as usize].matches(hit, data) {
+                if !PREDICATES[index as usize].matches(hit, data, path) {
                     return false;
                 }
             }

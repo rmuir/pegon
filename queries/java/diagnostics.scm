@@ -383,30 +383,10 @@
   (#set! diagnostic.context.label "sorts before")
   (#set! diagnostic.severity "hint"))
 
-; Multiple top-level classes in the same file
+; Top-level class belongs in its own file with a matching name
+; @see https://google.github.io/styleguide/javaguide.html#s2.1-file-name
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
 (program
-  .
-  [
-    (package_declaration)
-    (import_declaration)
-    (line_comment)
-    (block_comment)
-  ]+
-  .
-  [
-    (class_declaration
-      name: (identifier) @context)
-    (interface_declaration
-      name: (identifier) @context)
-    (record_declaration
-      name: (identifier) @context)
-    (enum_declaration
-      name: (identifier) @context)
-    (annotation_type_declaration
-      name: (identifier) @context)
-  ]
-  ; parser uses ABI 14
   [
     (class_declaration
       name: (identifier) @error)
@@ -419,10 +399,9 @@
     (annotation_type_declaration
       name: (identifier) @error)
   ]
-  (#set! diagnostic.name "multiple-classes")
-  (#set! diagnostic.title "Multiple top-level classes: `{node.text}`")
-  (#set! diagnostic.label "Additional class")
-  (#set! diagnostic.context.label "First class")
+  (#not-eq-filename? @error)
+  (#set! diagnostic.name "wrong-filename")
+  (#set! diagnostic.title "Top-level class belongs in `{node.text}.java`")
   (#set! diagnostic.help "Move `{node.text}` to separate `{node.text}.java` file")
   (#set! diagnostic.severity "warn"))
 

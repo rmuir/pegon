@@ -1,4 +1,5 @@
 use core::sync::atomic::AtomicBool;
+use std::path::PathBuf;
 
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{
@@ -39,7 +40,9 @@ pub fn pull(
     cancel: &AtomicBool,
 ) -> Result<DocumentDiagnosticReport> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes, cancel, false)?;
+    let path = super::server::uri_to_path(&params.text_document.uri).map(PathBuf::from);
+
+    let results = lint(&doc.tree, bytes, cancel, false, path.as_deref())?;
 
     Ok(
         DocumentDiagnosticReport::RelatedFullDocumentDiagnosticReport(
@@ -57,7 +60,14 @@ pub fn pull(
 /// publish diagnostics (push)
 pub fn push(client: &Client, doc: &Document, uri: &Uri) -> Result<PublishDiagnosticsParams> {
     let bytes = doc.text.as_bytes();
-    let results = lint(&doc.tree, bytes, &AtomicBool::new(false), false)?;
+    let path = super::server::uri_to_path(uri).map(PathBuf::from);
+    let results = lint(
+        &doc.tree,
+        bytes,
+        &AtomicBool::new(false),
+        false,
+        path.as_deref(),
+    )?;
     Ok(PublishDiagnosticsParams {
         diagnostics: encode(client, uri, doc, true, &results)?,
         uri: uri.clone(),
@@ -170,7 +180,7 @@ mod tests {
                 language_id: "java".into(),
                 version: 0,
                 text: indoc! {"
-                public class foo {
+                public class Goo {
                 }
             "}
                 .into(),
@@ -184,9 +194,9 @@ mod tests {
             vec![gen_lsp_types::Diagnostic {
                 range: Range::new(Position::new(0, 13), Position::new(0, 16)),
                 severity: Some(DiagnosticSeverity::Warning),
-                code: Some(Code::String("lowercase-class".into())),
+                code: Some(Code::String("wrong-filename".into())),
                 source: Some(env!("CARGO_PKG_NAME").into()),
-                message: "Lowercase class: `foo`".into(),
+                message: "Top-level class belongs in `Goo.java`".into(),
                 ..Default::default()
             }],
             diagnostics.diagnostics
@@ -203,7 +213,7 @@ mod tests {
                 language_id: "java".into(),
                 version: 0,
                 text: indoc! {"
-                public class foo {
+                public class Goo {
                 }
             "}
                 .into(),
@@ -273,7 +283,7 @@ mod tests {
                 language_id: "java".into(),
                 version: 0,
                 text: indoc! {"
-                public class foo {
+                public class Goo {
                 }
             "}
                 .into(),
@@ -298,21 +308,21 @@ mod tests {
             vec![gen_lsp_types::Diagnostic {
                 range: Range::new(Position::new(0, 13), Position::new(0, 16)),
                 severity: Some(DiagnosticSeverity::Warning),
-                code: Some(Code::String("lowercase-class".into())),
+                code: Some(Code::String("wrong-filename".into())),
                 source: Some(env!("CARGO_PKG_NAME").into()),
                 message: Message::MarkupContent(MarkupContent {
                     kind: MarkupKind::Markdown,
-                    value: "Lowercase class: `foo`".into(),
+                    value: "Top-level class belongs in `Goo.java`".into(),
                 }),
                 code_description: Some(CodeDescription {
-                    href: "https://github.com/rmuir/pegon/wiki/diagnostics#lowercase-class".into()
+                    href: "https://github.com/rmuir/pegon/wiki/diagnostics#wrong-filename".into()
                 }),
                 related_information: Some(vec![DiagnosticRelatedInformation {
                     location: Location {
                         uri: "file:///Foo.java".into(),
                         range: Range::new(Position::new(0, 13), Position::new(0, 16)),
                     },
-                    message: "Rename `foo` using UpperCamelCase".into(),
+                    message: "Move `Goo` to separate `Goo.java` file".into(),
                 },]),
                 ..Default::default()
             }],
@@ -350,14 +360,14 @@ mod tests {
                         range: Range::new(Position::new(0, 13), Position::new(0, 14)),
                         #[expect(deprecated, reason = "unavoidable")]
                         range_length: None,
-                        text: "f".into(),
+                        text: "G".into(),
                     },
                 ),
             ],
         });
         let changed = client.read_notify::<PublishDiagnosticsNotification>();
         assert_eq!(1, changed.diagnostics.len());
-        let code = Some(Code::String("lowercase-class".into()));
+        let code = Some(Code::String("wrong-filename".into()));
         assert_eq!(code, changed.diagnostics[0].code);
     }
 }

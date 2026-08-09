@@ -1,5 +1,8 @@
 use core::sync::atomic::AtomicBool;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
@@ -109,7 +112,7 @@ pub fn resolve(
     let mut result = params.clone();
     let edits = match params.kind {
         Some(CodeActionKind::QuickFix) => quickfix(client, doc, params)?,
-        Some(CodeActionKind::SourceFixAll) => fix_all(client, doc)?,
+        Some(CodeActionKind::SourceFixAll) => fix_all(client, doc, &data.uri)?,
         Some(CodeActionKind::SourceOrganizeImports) => organize_imports(client, doc)?,
         _ => bail!("invalid or missing kind"),
     };
@@ -169,10 +172,11 @@ fn organize_imports(client: &Client, doc: &Document) -> Result<Option<Vec<TextEd
 
 /// optimistic if there's no intersecting edits (which LSP spec can't handle)
 /// if there are, we bail to a slower approach
-fn fix_all(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
+fn fix_all(client: &Client, doc: &Document, uri: &Uri) -> Result<Option<Vec<TextEdit>>> {
     let data = doc.text.as_bytes();
     let tree = &doc.tree;
-    let diagnostics = lint(tree, data, &AtomicBool::new(false), false)?;
+    let path = super::server::uri_to_path(uri).map(PathBuf::from);
+    let diagnostics = lint(tree, data, &AtomicBool::new(false), false, path.as_deref())?;
 
     // we're done if the file has no problems
     if diagnostics.is_empty() {
@@ -197,7 +201,7 @@ fn fix_all(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
             .as_ref()
             .is_some_and(|previous| Edit::intersects(&edit.range, previous))
         {
-            return fix_all_with_intersections(client, doc, edits);
+            return fix_all_with_intersections(client, doc, path.as_deref(), edits);
         }
         previous = Some(edit.range.clone());
     }
@@ -216,6 +220,7 @@ fn fix_all(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
 fn fix_all_with_intersections(
     client: &Client,
     doc: &Document,
+    path: Option<&Path>,
     initial_edits: Vec<Edit>,
 ) -> Result<Option<Vec<TextEdit>>> {
     let mut data = doc.text.as_bytes().to_owned();
@@ -246,7 +251,7 @@ fn fix_all_with_intersections(
         let tree = parser
             .parse(&data, None)
             .context("parser should be setup")?;
-        let diagnostics = lint(&tree, &data, &AtomicBool::new(false), false)?;
+        let diagnostics = lint(&tree, &data, &AtomicBool::new(false), false, path)?;
         edits = Fix::batch(&diagnostics, &tree, &data)?;
 
         // no more edits to make
