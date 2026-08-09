@@ -8,10 +8,10 @@ use core::fmt::{Display, Formatter};
 use core::sync::atomic::AtomicBool;
 use crossbeam_channel::{SendError, Sender};
 
-use ignore::{WalkBuilder, WalkState, types::TypesBuilder};
+use ignore::{DirEntry, WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
     fs,
-    io::{BufWriter, Write as _},
+    io::{BufWriter, Read as _, Write as _},
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -96,17 +96,24 @@ impl Display for Stats {
     }
 }
 
-struct Worker {
+struct Worker<'scope> {
     concise: bool,
     fix: bool,
+    stdin_filename: Option<&'scope Path>,
     parser: Parser,
     sender: Sender<String>,
     stats_sender: Sender<Stats>,
     stats: Stats,
 }
 
-impl Worker {
-    fn new(concise: bool, fix: bool, sender: Sender<String>, stats_sender: Sender<Stats>) -> Self {
+impl<'scope> Worker<'scope> {
+    fn new(
+        concise: bool,
+        fix: bool,
+        stdin_filename: Option<&'scope Path>,
+        sender: Sender<String>,
+        stats_sender: Sender<Stats>,
+    ) -> Self {
         let mut parser = Parser::new();
         parser
             .set_language(&crate::support::language())
@@ -114,6 +121,7 @@ impl Worker {
         Self {
             concise,
             fix,
+            stdin_filename,
             parser,
             sender,
             stats_sender,
@@ -125,14 +133,7 @@ impl Worker {
         match result {
             Ok(entry) => {
                 let shouldcheck = entry.file_type().is_none_or(|filetype| !filetype.is_dir());
-                let path = if entry.is_stdin() {
-                    // TODO
-                    Path::new("/dev/stdin")
-                } else {
-                    entry.path()
-                };
-
-                if shouldcheck && let Err(error) = self.handle_file(path) {
+                if shouldcheck && let Err(error) = self.handle_file(&entry) {
                     if error.downcast_ref::<SendError<String>>().is_some() {
                         return WalkState::Quit;
                     }
@@ -150,35 +151,64 @@ impl Worker {
         }
     }
 
-    fn handle_file(&mut self, path: &Path) -> Result<(), Error> {
-        if self.fix {
-            self.fix_file(path)
+    /// Reads file (or stdin) contents
+    fn read_bytes(entry: &DirEntry) -> Result<Vec<u8>, Error> {
+        if entry.is_stdin() {
+            let mut buffer = vec![];
+            std::io::stdin().read_to_end(&mut buffer)?;
+            Ok(buffer)
         } else {
-            self.check_file(path)
+            Ok(fs::read(entry.path())?)
+        }
+    }
+
+    /// Reads file (or stdout) contents
+    fn write_bytes(entry: &DirEntry, data: &[u8]) -> Result<(), Error> {
+        if entry.is_stdin() {
+            Ok(std::io::stdout().write_all(data)?)
+        } else {
+            Ok(fs::write(entry.path(), data)?)
+        }
+    }
+
+    fn handle_file(&mut self, entry: &DirEntry) -> Result<(), Error> {
+        // compute file's effective name for diagnostic purposes
+        let path = if entry.is_stdin() {
+            self.stdin_filename
+        } else {
+            Some(entry.path())
+        };
+
+        if self.fix {
+            self.fix_file(entry, path)
+        } else {
+            self.check_file(entry, path)
         }
     }
 
     /// check a file without applying fixes
-    fn check_file(&mut self, path: &Path) -> Result<(), Error> {
-        let data = fs::read(path)?;
+    fn check_file(&mut self, entry: &DirEntry, path: Option<&Path>) -> Result<(), Error> {
+        let data = Self::read_bytes(entry)?;
         self.parser.reset();
         let tree = self
             .parser
             .parse(&data, None)
             .context("parser should be setup")?;
-        let diagnostics = diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise)?;
-        self.finish_file(path, &data, &diagnostics)
+        let diagnostics =
+            diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise, path)?;
+        self.finish_file(entry, &data, &diagnostics)
     }
 
     /// check and apply autofixes for a file
     ///
     /// apply edits in backwards order.
     /// iteratively re-parse and re-diagnose if anything was fixed or if any fixes intersect
-    fn fix_file(&mut self, path: &Path) -> Result<(), Error> {
+    fn fix_file(&mut self, entry: &DirEntry, path: Option<&Path>) -> Result<(), Error> {
         // TODO: incremental tree-sitter parsing for the loop?
-        let mut data = fs::read(path)?;
+        let mut data = Self::read_bytes(entry)?;
         let mut fix_count: usize = 0;
         let mut diagnostics = vec![];
+
         // place a bound on iterations
         for _ in 1..10 {
             self.parser.reset();
@@ -186,7 +216,8 @@ impl Worker {
                 .parser
                 .parse(&data, None)
                 .context("parser should be setup")?;
-            diagnostics = diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise)?;
+            diagnostics =
+                diagnostics::lint(&tree, &data, &AtomicBool::new(false), !self.concise, path)?;
 
             // we're done if file has no problems
             if diagnostics.is_empty() {
@@ -230,15 +261,15 @@ impl Worker {
         // if we applied any edits, write the buffer back
         if fix_count > 0 {
             self.stats.fix_count = self.stats.fix_count.saturating_add(fix_count);
-            fs::write(path, &data)?;
+            Self::write_bytes(entry, &data)?;
         }
-        self.finish_file(path, &data, &diagnostics)
+        self.finish_file(entry, &data, &diagnostics)
     }
 
     // accumulates stats and writes output for a file
     fn finish_file(
         &mut self,
-        path: &Path,
+        entry: &DirEntry,
         data: &[u8],
         result: &[Diagnostic],
     ) -> Result<(), Error> {
@@ -248,9 +279,9 @@ impl Worker {
                 self.stats.add_problem(rule(item.rule_id).severity);
             }
             if self.concise {
-                self.render_concise(path, result)?;
+                self.render_concise(entry, result)?;
             } else {
-                self.render_full(path, data, result)?;
+                self.render_full(entry, data, result)?;
             }
         }
         Ok(())
@@ -258,8 +289,13 @@ impl Worker {
 
     /// Render some diagnostics to the console
     #[expect(clippy::arithmetic_side_effects, reason = "TODO")]
-    fn render_full(&self, path: &Path, data: &[u8], errors: &[Diagnostic]) -> Result<(), Error> {
-        let filename = path.to_str();
+    fn render_full(
+        &self,
+        entry: &DirEntry,
+        data: &[u8],
+        errors: &[Diagnostic],
+    ) -> Result<(), Error> {
+        let filename = entry.path().to_str();
         let source = str::from_utf8(data)?;
         for diagnostic in errors {
             let rule = rule(diagnostic.rule_id);
@@ -330,8 +366,8 @@ impl Worker {
     }
 
     // fastest and easier to not use annotate-snippets for this
-    fn render_concise(&self, path: &Path, errors: &[Diagnostic]) -> Result<(), Error> {
-        let filename = path.to_string_lossy();
+    fn render_concise(&self, entry: &DirEntry, errors: &[Diagnostic]) -> Result<(), Error> {
+        let filename = entry.path().to_string_lossy();
         for diagnostic in errors {
             let rule = rule(diagnostic.rule_id);
             let line = diagnostic
@@ -356,7 +392,7 @@ impl Worker {
     }
 }
 
-impl Drop for Worker {
+impl Drop for Worker<'_> {
     fn drop(&mut self) {
         _ = self.stats_sender.send(self.stats);
     }
@@ -367,7 +403,12 @@ impl Drop for Worker {
 /// # Errors
 ///
 /// Returns an error if any files had problems, or if internal errors were encountered.
-pub fn check(inputs: &[PathBuf], concise: bool, fix: bool) -> Result<(), Error> {
+pub fn check(
+    inputs: &[PathBuf],
+    concise: bool,
+    fix: bool,
+    stdin_filename: Option<&Path>,
+) -> Result<(), Error> {
     let start_time = Instant::now();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
@@ -410,7 +451,7 @@ pub fn check(inputs: &[PathBuf], concise: bool, fix: bool) -> Result<(), Error> 
 
     let (stats_tx, stats_rx) = crossbeam_channel::unbounded();
     builder.build_parallel().run(|| {
-        let mut worker = Worker::new(concise, fix, tx.clone(), stats_tx.clone());
+        let mut worker = Worker::new(concise, fix, stdin_filename, tx.clone(), stats_tx.clone());
         Box::new(move |result| worker.visit(result))
     });
 

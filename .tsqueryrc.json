@@ -98,6 +98,16 @@
       ],
       "description": "utf-8 comparison between two nodes"
     },
+    "not-eq-filename": {
+      "not": false,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        }
+      ],
+      "description": "true if the text does not match the filename"
+    },
     "any-of": {
       "parameters": [
         {

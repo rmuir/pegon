@@ -118,6 +118,8 @@ fn queries(language: &Language, queries_dir: &Path) -> Result<String, Box<dyn Er
             LessThan(u32, u32),
             /// True if the node precedes end of line or end of file
             EndOfLine(u32),
+            /// True if the node's text doesn't equal the filename
+            NotEqualsFileName(u32),
         }
     "}
     .to_owned();
@@ -203,6 +205,14 @@ fn query_predicates(query: &Query) -> Option<String> {
                     [QueryPredicateArg::Capture(capture)] => {
                         formatdoc! {"
                             Predicate::EndOfLine({capture}),
+                        "}
+                    }
+                    _ => panic!("invalid predicate arguments"),
+                },
+                "not-eq-filename?" => match args {
+                    [QueryPredicateArg::Capture(capture)] => {
+                        formatdoc! {"
+                            Predicate::NotEqualsFileName({capture}),
                         "}
                     }
                     _ => panic!("invalid predicate arguments"),
