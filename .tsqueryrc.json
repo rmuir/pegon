@@ -163,7 +163,7 @@
               "diagnostic.severity",
               "diagnostic.title",
               "fold.kind",
-              "fold.lineoffset",
+              "fold.nextline",
               "hint.prefix",
               "hint.suffix",
               "hint.pad.left",
@@ -179,7 +179,8 @@
               "local.start.inclusive",
               "symbol.kind",
               "token.type",
-              "token.modifiers",
+              "token.modifier",
+              "token.modifier2",
               "token.scoped"
             ]
           }

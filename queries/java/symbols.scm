@@ -9,7 +9,7 @@
 (object_creation_expression
   type: (type_identifier) @selection
   (class_body)
-  (#set! symbol.kind 19)) @range
+  (#set! symbol.kind "object")) @range
 
 ; kind=11 (Interface) ?
 (annotation_type_declaration
@@ -17,7 +17,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! symbol.kind 11)) @range
+  (#set! symbol.kind "interface")) @range
 
 ; kind=5 (Class)
 (class_declaration
@@ -26,7 +26,7 @@
       name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
-  (#set! symbol.kind 5)) @range
+  (#set! symbol.kind "class")) @range
 
 ; kind=10 (Enum)
 (enum_declaration
@@ -34,7 +34,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! symbol.kind 10)) @range
+  (#set! symbol.kind "enum")) @range
 
 ; kind=11 (Interface)
 (interface_declaration
@@ -43,7 +43,7 @@
       name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
-  (#set! symbol.kind 11)) @range
+  (#set! symbol.kind "interface")) @range
 
 ; kind=23 (Struct fallback to Class)
 (record_declaration
@@ -52,7 +52,7 @@
       name: (identifier) @marker)*)?
   name: (identifier) @selection
   type_parameters: (type_parameters)? @detail
-  (#set! symbol.kind 23)) @range
+  (#set! symbol.kind "struct")) @range
 
 ; "members"
 ; kind=7 (Property)
@@ -62,7 +62,7 @@
       name: (identifier) @marker)*)?
   type: (_) @detail
   name: (identifier) @selection
-  (#set! symbol.kind 7)) @range
+  (#set! symbol.kind "property")) @range
 
 ; kind=9 (Constructor)
 (compact_constructor_declaration
@@ -70,7 +70,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! symbol.kind 9)) @range
+  (#set! symbol.kind "constructor")) @range
 
 ; kind=14 (Constant)
 (constant_declaration
@@ -80,7 +80,7 @@
   type: (_) @detail
   declarator: (variable_declarator
     name: (identifier) @selection)
-  (#set! symbol.kind 14)) @range
+  (#set! symbol.kind "constant")) @range
 
 ; kind=9 (Constructor)
 (constructor_declaration
@@ -102,7 +102,7 @@
       ","
     ]*
     ")" @signature)
-  (#set! symbol.kind 9)) @range
+  (#set! symbol.kind "constructor")) @range
 
 ; kind=22 (EnumMember fallback to Field)
 (enum_constant
@@ -110,7 +110,7 @@
     (marker_annotation
       name: (identifier) @marker)*)?
   name: (identifier) @selection
-  (#set! symbol.kind 22)) @range
+  (#set! symbol.kind "enum_member")) @range
 
 ; kind=14 (Constant)
 ; static final field
@@ -127,7 +127,7 @@
     name: (identifier) @selection)
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
-  (#set! symbol.kind 14)) @range
+  (#set! symbol.kind "constant")) @range
 
 ; kind=8 (Field)
 ; final field
@@ -144,7 +144,7 @@
     name: (identifier) @selection)
   (#match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! symbol.kind 8)) @range
+  (#set! symbol.kind "field")) @range
 
 ; kind=8 (Field)
 ; static field
@@ -161,7 +161,7 @@
     name: (identifier) @selection)
   (#not-match? @_modifiers "final")
   (#match? @_modifiers "static")
-  (#set! symbol.kind 8)) @range
+  (#set! symbol.kind "field")) @range
 
 ; kind=8 (Field)
 ; member field
@@ -178,7 +178,7 @@
     name: (identifier) @selection)
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
-  (#set! symbol.kind 8)) @range
+  (#set! symbol.kind "field")) @range
 
 ; kind=12 (Function)
 (method_declaration
@@ -206,7 +206,7 @@
     ]*
     ")" @signature)
   (#match? @_modifiers "static")
-  (#set! symbol.kind 12)) @range
+  (#set! symbol.kind "function")) @range
 
 ; kind=6 (Method)
 (method_declaration
@@ -234,4 +234,4 @@
     ]*
     ")" @signature)
   (#not-match? @_modifiers "static")
-  (#set! symbol.kind 6)) @range
+  (#set! symbol.kind "method")) @range

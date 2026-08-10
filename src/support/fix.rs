@@ -20,7 +20,7 @@ pub enum Fix {
     /// Sort imports according to google style
     OrganizeImports,
     /// Replace range with static string
-    Static(String),
+    Static(&'static str),
     /// Transform range to uppercase
     ToUpper,
 }
@@ -41,7 +41,7 @@ impl Fix {
             Self::OrganizeImports => super::organize_imports::organize(tree, data)?,
             Self::Static(replacement) => Some(Edit {
                 range,
-                replacement: replacement.clone(),
+                replacement: (*replacement).into(),
             }),
             Self::ToUpper => Some(Edit {
                 range,
@@ -55,7 +55,7 @@ impl Fix {
         let edits: Result<Vec<Edit>> = diagnostics
             .iter()
             .filter_map(|diagnostic| {
-                super::diagnostics::rule(diagnostic.rule_id)
+                super::diagnostics::pattern(diagnostic.pattern_id)
                     .fix
                     .as_ref()
                     .map(|fix| {

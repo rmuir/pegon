@@ -9,13 +9,13 @@
 ((if_statement
   "if" @range @reference
   "else"? @range @reference)
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; do-while
 ((do_statement
   "do" @range @reference
   "while" @range @reference)
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; switch/case/default
 ((switch_expression
@@ -35,7 +35,7 @@
             "default"
           ] @range @reference))
     ]*))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; try/catch/finally
 ((try_statement
@@ -46,7 +46,7 @@
     (finally_clause
       "finally" @range @reference)
   ]*)
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; try/catch/finally
 ((try_with_resources_statement
@@ -57,7 +57,7 @@
     (finally_clause
       "finally" @range @reference)
   ]*)
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; do block start/end
 ((do_statement
@@ -65,7 +65,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; synchronized block start/end
 ((synchronized_statement
@@ -73,7 +73,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; try block start/end
 ((try_statement
@@ -81,7 +81,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; catch block start/end
 ((catch_clause
@@ -89,7 +89,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; finally block start/end
 ((finally_clause
@@ -97,7 +97,7 @@
   (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; try-with-resources block start/end
 ((try_with_resources_statement
@@ -105,7 +105,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; if block start/end
 ((if_statement
@@ -113,7 +113,7 @@
   consequence: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; if block start/end
 ((if_statement
@@ -121,7 +121,7 @@
   alternative: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; while block start/end
 ((while_statement
@@ -129,7 +129,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; for block start/end
 ((for_statement
@@ -137,7 +137,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; for block start/end
 ((enhanced_for_statement
@@ -145,7 +145,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; module block start-end
 ((module_declaration
@@ -157,7 +157,7 @@
   body: (module_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; enum block start-end
 ((enum_declaration
@@ -166,7 +166,7 @@
   body: (enum_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; enum constant block start-end
 ((enum_constant
@@ -174,7 +174,7 @@
   body: (class_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; class block start-end
 ((class_declaration
@@ -183,7 +183,7 @@
   body: (class_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; static block start-end
 ((static_initializer
@@ -191,7 +191,7 @@
   (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; constructor block start-end
 ((constructor_declaration
@@ -199,7 +199,7 @@
   body: (constructor_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; record block start-end
 ((record_declaration
@@ -208,7 +208,7 @@
   body: (class_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; annotation type block start-end
 ((annotation_type_declaration
@@ -217,7 +217,7 @@
   body: (annotation_type_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; interface block start-end
 ((interface_declaration
@@ -226,7 +226,7 @@
   body: (interface_body
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; array initializer start-end
 ((variable_declarator
@@ -238,7 +238,7 @@
   value: (array_initializer
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; method block start-end
 ((method_declaration
@@ -246,7 +246,7 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))
 
 ; compact constructor block start-end
 ((compact_constructor_declaration
@@ -254,4 +254,4 @@
   body: (block
     "{" @range @reference
     "}" @range @reference))
-  (#set! highlight.kind 2))
+  (#set! highlight.kind "read"))

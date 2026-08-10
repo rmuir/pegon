@@ -14,6 +14,8 @@ use tree_sitter::{
 
 use crate::java_constants::kinds;
 use crate::java_queries::symbols::captures;
+use crate::java_queries::symbols::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
+use crate::support::queries::const_array_from_fn;
 
 use super::{Client, server::Document};
 
@@ -212,9 +214,65 @@ struct Pattern {
 }
 
 /// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut kind: Option<SymbolKind> = None;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"symbol.kind" => kind = Some(to_kind(property.1)),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    Pattern {
+        kind: kind.expect("kind should be set"),
+    }
+}
+
+const fn to_kind(string: &str) -> SymbolKind {
+    match string.as_bytes() {
+        b"file" => SymbolKind::File,
+        b"module" => SymbolKind::Module,
+        b"namespace" => SymbolKind::Namespace,
+        b"package" => SymbolKind::Package,
+        b"class" => SymbolKind::Class,
+        b"method" => SymbolKind::Method,
+        b"property" => SymbolKind::Property,
+        b"field" => SymbolKind::Field,
+        b"constructor" => SymbolKind::Constructor,
+        b"enum" => SymbolKind::Enum,
+        b"interface" => SymbolKind::Interface,
+        b"function" => SymbolKind::Function,
+        b"variable" => SymbolKind::Variable,
+        b"constant" => SymbolKind::Constant,
+        b"string" => SymbolKind::String,
+        b"number" => SymbolKind::Number,
+        b"boolean" => SymbolKind::Boolean,
+        b"array" => SymbolKind::Array,
+        b"object" => SymbolKind::Object,
+        b"key" => SymbolKind::Key,
+        b"null" => SymbolKind::Null,
+        b"enum_member" => SymbolKind::EnumMember,
+        b"struct" => SymbolKind::Struct,
+        b"event" => SymbolKind::Event,
+        b"operator" => SymbolKind::Operator,
+        b"type_parameter" => SymbolKind::TypeParameter,
+        _ => panic!("unknown kind"),
+    }
 }
 
 /// compiled query that matches all symbol patterns
@@ -227,34 +285,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .expect("query should compile")
-});
-
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut kind: Option<SymbolKind> = None;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "symbol.kind" => {
-                    let code = value
-                        .expect("kind should have a value")
-                        .parse::<u32>()
-                        .expect("kind should be an integer");
-                    kind = Some(SymbolKind::from(code));
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
-        }
-        patterns.push(Pattern {
-            kind: kind.expect("pattern should have a kind"),
-        });
-    }
-    patterns
 });
 
 #[cfg(test)]

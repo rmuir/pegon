@@ -142,6 +142,9 @@ fn queries(language: &Language, queries_dir: &Path) -> Result<String, Box<dyn Er
             if let Some(predicates) = query_predicates(&query) {
                 doc.push_str(&predicates);
             }
+            if let Some(properties) = query_properties(&query) {
+                doc.push_str(&properties);
+            }
             doc.push_str(indoc! {"
                 }
             "});
@@ -248,6 +251,85 @@ fn query_predicates(query: &Query) -> Option<String> {
         doc.push_str(&formatdoc! {"
             /// Range of indices into `PREDICATES` indexed by pattern
             pub const PREDICATES_BY_PATTERN: [Range<u8>; {pattern_count}] = [
+        "});
+        for range in &by_pattern {
+            let start = range.start;
+            let end = range.end;
+            doc.push_str(&formatdoc! {"
+                {start}..{end},
+            "});
+        }
+        doc.push_str(&formatdoc! {"
+            ];
+        "});
+
+        // end module
+        doc.push_str(indoc! {"
+            }
+        "});
+    }
+
+    by_query.is_empty().not().then_some(doc)
+}
+
+/// generate arrays of custom predicates indexed by pattern
+#[expect(clippy::unwrap_in_result, reason = "panic is desired in such case")]
+fn query_properties(query: &Query) -> Option<String> {
+    let mut doc = indoc! {r"
+        /// Custom properties by pattern in the query
+        pub mod properties {
+    "}
+    .to_owned();
+
+    let mut by_query = vec![];
+    let mut by_pattern = vec![];
+    for pattern in 0..query.pattern_count() {
+        let start_index = by_query.len();
+        for property in query.property_settings(pattern) {
+            let key: String = property
+                .key
+                .chars()
+                .flat_map(char::escape_default)
+                .collect();
+            let value: String = property
+                .value
+                .as_ref()
+                .expect("property should have value")
+                .chars()
+                .flat_map(char::escape_default)
+                .collect();
+            by_query.push(formatdoc! {r#"
+                ("{key}", "{value}"),
+            "#});
+        }
+        let end_index = by_query.len();
+        by_pattern.push(start_index..end_index);
+    }
+
+    if !by_query.is_empty() {
+        // output array for the query
+        let count = by_query.len();
+        doc.push_str(&formatdoc! {"
+            use core::ops::Range;
+
+            /// All properties used by the query
+            pub const PROPERTIES: [(&str, &str); {count}] = [
+        "});
+        for property in &by_query {
+            doc.push_str(property);
+        }
+        doc.push_str(&formatdoc! {"
+            ];
+        "});
+
+        // output array by pattern
+        let pattern_count = by_pattern.len();
+        doc.push_str(&formatdoc! {"
+            /// Pattern count in the query
+            pub const PATTERN_COUNT: usize = {pattern_count};
+
+            /// Range of indices into `PROPERTIES` indexed by pattern
+            pub const PROPERTIES_BY_PATTERN: [Range<usize>; {pattern_count}] = [
         "});
         for range in &by_pattern {
             let start = range.start;

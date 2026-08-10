@@ -10,7 +10,8 @@ use tree_sitter::{
 
 use crate::java_constants::kinds;
 use crate::java_queries::locals::captures;
-use crate::support::queries::KindSet;
+use crate::java_queries::locals::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
+use crate::support::queries::{KindSet, const_array_from_fn, const_table_search, to_bool_const};
 
 pub struct Scopes<'data, 'tree> {
     pub locals: FxHashMap<&'data str, Vec<LocalScope<'tree>>>,
@@ -134,10 +135,46 @@ pub struct Pattern {
     pub flow: bool,
 }
 
-/// Look up metadata by pattern index
-#[must_use]
-pub fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+/// Look up rule by pattern index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+#[expect(clippy::cast_possible_truncation, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut token_type = None;
+    let mut start_inclusive = true;
+    let mut flow = false;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"local.type" => {
+                token_type = Some(const_table_search(
+                    &super::semantic_tokens::TOKEN_TYPES,
+                    property.1,
+                ));
+            }
+            b"local.flow" => flow = to_bool_const(property.1),
+            b"local.start.inclusive" => start_inclusive = to_bool_const(property.1),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    Pattern {
+        token_type: token_type.expect("local.type should be set") as u32,
+        start_inclusive,
+        flow,
+    }
 }
 
 /// compiled query that matches all lint rules
@@ -150,49 +187,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .expect("query should compile")
-});
-
-/// array of patterns indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut token_type = None;
-        let mut start_inclusive = true;
-        let mut flow = false;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "local.flow" => {
-                    let value = value.expect("local.flow should have a value");
-                    flow = value.parse::<bool>().expect("valid boolean");
-                }
-                "local.type" => {
-                    let value = value.expect("local.type should have a value");
-                    token_type = super::semantic_tokens::TOKEN_TYPES
-                        .binary_search(&value)
-                        .ok();
-                    assert!(token_type.is_some(), "unknown token type: {value}");
-                }
-                "local.start.inclusive" => {
-                    let value = value.expect("local.start.inclusive should have a value");
-                    start_inclusive = value.parse::<bool>().expect("valid boolean");
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
-        }
-        patterns.push(Pattern {
-            token_type: token_type
-                .expect("local.type should be set")
-                .try_into()
-                .expect("should be u32"),
-            start_inclusive,
-            flow,
-        });
-    }
-    patterns
 });
 
 /// for flow scoping, the parent node types where variables scope can "escape" into

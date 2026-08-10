@@ -48,6 +48,55 @@ impl PredicateMatch for Predicate {
     }
 }
 
+/// Create array element at a time from const fn
+macro_rules! const_array_from_fn {
+    ($f:expr, $n:expr) => {{
+        let mut array = [const { ::core::mem::MaybeUninit::uninit() }; $n];
+        let mut index = 0;
+        while index < $n {
+            array[index].write($f(index));
+            index += 1;
+        }
+        // SAFETY: entire array was initialized above
+        unsafe { ::core::mem::transmute::<_, [_; $n]>(array) }
+    }};
+}
+
+pub(crate) use const_array_from_fn;
+
+/// parse a boolean from a string
+pub const fn to_bool_const(string: &str) -> bool {
+    match string.as_bytes() {
+        b"true" => true,
+        b"false" => false,
+        _ => panic!("invalid boolean"),
+    }
+}
+
+// slow linear search at compile-time until rust lets us bsearch
+#[expect(clippy::indexing_slicing, reason = "bounds are checked")]
+#[expect(clippy::arithmetic_side_effects, reason = "not possible")]
+pub const fn const_table_search(slice: &[&str], target: &str) -> usize {
+    let target = target.as_bytes();
+    let mut index = 0;
+    'iteration: while index < slice.len() {
+        let val = slice[index].as_bytes();
+        if target.len() == val.len() {
+            let mut offset = 0;
+            while offset < val.len() {
+                if target[offset] != val[offset] {
+                    index += 1;
+                    continue 'iteration;
+                }
+                offset += 1;
+            }
+            return index;
+        }
+        index += 1;
+    }
+    panic!("did not find element in table");
+}
+
 /// maximum size of the set.
 const KIND_SET_WORDS: usize = NODE_KIND_COUNT.div_ceil(64);
 

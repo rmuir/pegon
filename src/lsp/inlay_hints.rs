@@ -14,7 +14,8 @@ use tree_sitter::{
 
 use crate::java_queries::hints::captures;
 use crate::java_queries::hints::predicates::{PREDICATES, PREDICATES_BY_PATTERN};
-use crate::support::queries::PredicateMatch as _;
+use crate::java_queries::hints::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
+use crate::support::queries::{PredicateMatch as _, const_array_from_fn, to_bool_const};
 
 use super::{Client, server::Document};
 
@@ -230,50 +231,47 @@ struct Pattern {
 }
 
 /// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
 }
 
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut prefix = None;
-        let mut suffix = None;
-        let mut pad_left = false;
-        let mut pad_medial = false;
-        let mut pad_right = false;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "hint.prefix" => prefix = value,
-                "hint.suffix" => suffix = value,
-                "hint.pad.left" => {
-                    pad_left = value.expect("bool value").parse().expect("bool value");
-                }
-                "hint.pad.medial" => {
-                    pad_medial = value.expect("bool value").parse().expect("bool value");
-                }
-                "hint.pad.right" => {
-                    pad_right = value.expect("bool value").parse().expect("bool value");
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut prefix = None;
+    let mut suffix = None;
+    let mut pad_left = false;
+    let mut pad_medial = false;
+    let mut pad_right = false;
+
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"hint.prefix" => prefix = Some(property.1),
+            b"hint.suffix" => suffix = Some(property.1),
+            b"hint.pad.left" => pad_left = to_bool_const(property.1),
+            b"hint.pad.medial" => pad_medial = to_bool_const(property.1),
+            b"hint.pad.right" => pad_right = to_bool_const(property.1),
+            _ => panic!("unknown property key"),
         }
-        patterns.push(Pattern {
-            prefix,
-            suffix,
-            pad_left,
-            pad_medial,
-            pad_right,
-        });
+        index += 1;
     }
-    patterns
-});
+    Pattern {
+        prefix,
+        suffix,
+        pad_left,
+        pad_medial,
+        pad_right,
+    }
+}
 
 /// compiled query that matches all folding patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {

@@ -12,6 +12,10 @@ use tree_sitter::{
 
 use super::{Client, server::Document};
 use crate::java_queries::highlights::captures;
+use crate::java_queries::highlights::properties::{
+    PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN,
+};
+use crate::support::queries::const_array_from_fn;
 
 pub fn request(
     client: &Client,
@@ -84,10 +88,44 @@ struct Pattern {
     kind: DocumentHighlightKind,
 }
 
-/// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+/// Look up pattern by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut kind: Option<DocumentHighlightKind> = None;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"highlight.kind" => kind = Some(to_kind(property.1)),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    Pattern {
+        kind: kind.expect("kind should be set"),
+    }
+}
+
+/// parse a kind into an lsp kind
+const fn to_kind(string: &str) -> DocumentHighlightKind {
+    match string.as_bytes() {
+        b"read" => DocumentHighlightKind::Read,
+        b"text" => DocumentHighlightKind::Text,
+        b"write" => DocumentHighlightKind::Write,
+        _ => panic!("invalid kind"),
+    }
 }
 
 /// compiled query that matches all folding patterns
@@ -100,34 +138,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .expect("query should compile")
-});
-
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut kind: Option<DocumentHighlightKind> = None;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "highlight.kind" => {
-                    let code = value
-                        .expect("kind should have a value")
-                        .parse::<u32>()
-                        .expect("kind should be an integer");
-                    kind = Some(DocumentHighlightKind::from(code));
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
-        }
-        patterns.push(Pattern {
-            kind: kind.expect("should exist"),
-        });
-    }
-    patterns
 });
 
 #[cfg(test)]

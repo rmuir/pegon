@@ -18,7 +18,7 @@ use std::{
 use tree_sitter::Parser;
 
 use crate::support::{
-    diagnostics::{self, Diagnostic, Severity, rule},
+    diagnostics::{self, Diagnostic, Severity, pattern},
     fix::{Edit, Fix},
 };
 
@@ -276,7 +276,7 @@ impl<'scope> Worker<'scope> {
         self.stats.add_file(1);
         if !result.is_empty() {
             for item in result.iter().as_ref() {
-                self.stats.add_problem(rule(item.rule_id).severity);
+                self.stats.add_problem(pattern(item.pattern_id).severity);
             }
             if self.concise {
                 self.render_concise(entry, result)?;
@@ -298,8 +298,7 @@ impl<'scope> Worker<'scope> {
         let filename = entry.path().to_str();
         let source = str::from_utf8(data)?;
         for diagnostic in errors {
-            let rule = rule(diagnostic.rule_id);
-            let id_url = &rule.url;
+            let rule = pattern(diagnostic.pattern_id);
             let label = diagnostic.label.as_ref();
             let bounds = diagnostic.bounds(source);
             let offset = bounds.range.start;
@@ -323,7 +322,7 @@ impl<'scope> Worker<'scope> {
                 diagnostic.context.map(|context| {
                     AnnotationKind::Context
                         .span(context.start_byte - offset..context.end_byte - offset)
-                        .label(rule.context_label.as_ref())
+                        .label(rule.context_label)
                 }),
                 // explicitly marked visible in the query
                 diagnostic.visible.map(|visible| {
@@ -344,8 +343,8 @@ impl<'scope> Worker<'scope> {
                 level
                     .with_name(rule.severity.as_str())
                     .primary_title(&diagnostic.title)
-                    .id(&rule.name)
-                    .id_url(id_url)
+                    .id(rule.name)
+                    .id_url(rule.url())
                     .element(
                         Snippet::source(source.get(bounds.range).context("valid bounds")?)
                             .path(filename)
@@ -369,7 +368,7 @@ impl<'scope> Worker<'scope> {
     fn render_concise(&self, entry: &DirEntry, errors: &[Diagnostic]) -> Result<(), Error> {
         let filename = entry.path().to_string_lossy();
         for diagnostic in errors {
-            let rule = rule(diagnostic.rule_id);
+            let rule = pattern(diagnostic.pattern_id);
             let line = diagnostic
                 .range
                 .start_point

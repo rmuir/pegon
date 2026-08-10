@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tree_sitter::Parser;
 
 use crate::support::{
-    diagnostics::{lint, rule_by_name},
+    diagnostics::{lint, pattern_by_name},
     fix::{Edit, Fix},
     organize_imports::organize,
 };
@@ -147,7 +147,7 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
         .decode_range(&diagnostic.range, &doc.line_index)
         .context("valid range")?;
     let rule = match &diagnostic.code {
-        Some(Code::String(name)) => rule_by_name(name).context("invalid code")?,
+        Some(Code::String(name)) => pattern_by_name(name).context("invalid code")?,
         _ => bail!("invalid or missing code"),
     };
     if let Some(fix) = &rule.fix

@@ -13,7 +13,9 @@ use tree_sitter::{
 };
 
 use crate::java_queries::tokens::captures;
+use crate::java_queries::tokens::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
 use crate::lsp::semantic_cache::Cache;
+use crate::support::queries::{const_array_from_fn, const_table_search, to_bool_const};
 
 use super::{Client, server::Document};
 
@@ -226,56 +228,43 @@ struct Pattern {
 }
 
 /// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
 }
 
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut token_type = None;
-        let mut modifiers_bitset = 0;
-        let mut scoped = false;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "token.type" => {
-                    let value = value.expect("token.type should have a value");
-                    token_type = TOKEN_TYPES.binary_search(&value).ok();
-                    assert!(token_type.is_some(), "unknown token type: {value}");
-                }
-                "token.modifiers" => {
-                    let value = value.expect("token.modifiers should have a value");
-                    for modifier in value.split(',') {
-                        let bit = TOKEN_MODIFIERS
-                            .binary_search(&modifier)
-                            .expect("valid modifier");
-                        modifiers_bitset |= 1 << bit;
-                    }
-                }
-                "token.scoped" => {
-                    let value = value.expect("token.scoped should have a value");
-                    scoped = value.parse::<bool>().expect("valid boolean");
-                }
-                _ => panic!("{key}: unknown metadata key"),
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+#[expect(clippy::cast_possible_truncation, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut token_type = None;
+    let mut modifiers_bitset = 0;
+    let mut scoped = false;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"token.type" => token_type = Some(const_table_search(&TOKEN_TYPES, property.1)),
+            b"token.modifier" | b"token.modifier2" => {
+                modifiers_bitset |= 1 << const_table_search(&TOKEN_MODIFIERS, property.1);
             }
+            b"token.scoped" => scoped = to_bool_const(property.1),
+            _ => panic!("unknown property key"),
         }
-        patterns.push(Pattern {
-            token_type: token_type
-                .expect("token.type should be set")
-                .try_into()
-                .expect("should be u32"),
-            modifiers_bitset,
-            scoped,
-        });
+        index += 1;
     }
-    patterns
-});
+    Pattern {
+        token_type: token_type.expect("local.type should be set") as u32,
+        modifiers_bitset,
+        scoped,
+    }
+}
 
 #[cfg(test)]
 mod tests {

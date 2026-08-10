@@ -14,13 +14,16 @@ use tree_sitter::{
 use crate::java_constants::{fields, kinds};
 use crate::java_queries::diagnostics::captures;
 use crate::java_queries::diagnostics::predicates::{PREDICATES, PREDICATES_BY_PATTERN};
+use crate::java_queries::diagnostics::properties::{
+    PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN,
+};
 use crate::support::fix::Fix;
-use crate::support::queries::{KindSet, PredicateMatch as _};
+use crate::support::queries::{KindSet, PredicateMatch as _, const_array_from_fn};
 
 /// Single diagnostic result
 pub struct Diagnostic {
     /// Matched rule
-    pub rule_id: usize,
+    pub pattern_id: usize,
     /// Primary matching error node range
     pub range: Range,
     /// Formatted title of problem
@@ -81,7 +84,7 @@ pub fn lint(
             true
         });
     while let Some(hit) = matches.next() {
-        let rule = rule(hit.pattern_index);
+        let rule = pattern(hit.pattern_index);
 
         let node = hit
             .nodes_for_capture_index(captures::ERROR)
@@ -117,10 +120,10 @@ pub fn lint(
         };
 
         lints.push(Diagnostic {
-            rule_id: hit.pattern_index,
+            pattern_id: hit.pattern_index,
             range: node.range(),
-            title: TEMPLATE_ENGINE.replace_all(&rule.title, &replacements),
-            help: TEMPLATE_ENGINE.replace_all(&rule.help, &replacements),
+            title: TEMPLATE_ENGINE.replace_all(rule.title, &replacements),
+            help: TEMPLATE_ENGINE.replace_all(rule.help, &replacements),
             label,
             visible,
             context,
@@ -136,23 +139,30 @@ pub fn lint(
 }
 
 /// single rule (compiled pattern)
-pub struct Rule {
+pub struct Pattern {
     /// Name such as `[missing-foobar]`
-    pub name: String,
+    pub name: &'static str,
     /// Template description of problem
-    pub title: String,
-    /// Severity of problem
-    pub severity: Severity,
+    pub title: &'static str,
     /// Template of instructions to address the issue
-    pub help: String,
-    /// URL with more information
-    pub url: String,
+    pub help: &'static str,
     /// Template describing the matching error range
-    pub label: Option<String>,
+    pub label: Option<&'static str>,
     /// Describes context ranges (applied to first one)
-    pub context_label: Option<String>,
+    pub context_label: Option<&'static str>,
     /// Optional automatic fix
     pub fix: Option<Fix>,
+    /// Severity of problem
+    pub severity: Severity,
+}
+
+impl Pattern {
+    pub fn url(&self) -> String {
+        format!(
+            "https://github.com/rmuir/pegon/wiki/diagnostics#{}",
+            self.name
+        )
+    }
 }
 
 /// rule severity
@@ -180,15 +190,84 @@ impl Severity {
 }
 
 /// Look up rule by pattern index
-#[must_use]
-pub fn rule(index: usize) -> &'static Rule {
-    RULES.get(index).expect("rule should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+pub const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut name: Option<&str> = None;
+    let mut title: Option<&str> = None;
+    let mut severity: Option<Severity> = None;
+    let mut help: Option<&str> = None;
+    let mut label: Option<&str> = None;
+    let mut context_label: Option<&str> = None;
+    let mut fix_arg: Option<&str> = None;
+    let mut fix_kind: Option<&str> = None;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"diagnostic.name" => name = Some(property.1),
+            b"diagnostic.title" => title = Some(property.1),
+            b"diagnostic.severity" => severity = Some(to_severity(property.1)),
+            b"diagnostic.help" => help = Some(property.1),
+            b"diagnostic.label" => label = Some(property.1),
+            b"diagnostic.context.label" => context_label = Some(property.1),
+            b"diagnostic.fix.kind" => fix_kind = Some(property.1),
+            b"diagnostic.fix.arg" => fix_arg = Some(property.1),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    Pattern {
+        name: name.expect("pattern should have a name"),
+        title: title.expect("pattern should have a title"),
+        severity: severity.expect("pattern should have a severity"),
+        help: help.expect("pattern should have a help"),
+        label,
+        context_label,
+        fix: if let Some(fix_kind) = fix_kind {
+            Some(to_fix(fix_kind, fix_arg))
+        } else {
+            None
+        },
+    }
+}
+
+const fn to_severity(string: &str) -> Severity {
+    match string.as_bytes() {
+        b"error" => Severity::Error,
+        b"warn" => Severity::Warn,
+        b"info" => Severity::Info,
+        b"hint" => Severity::Hint,
+        _ => panic!("unknown severity value"),
+    }
+}
+
+const fn to_fix(string: &str, fix_arg: Option<&'static str>) -> Fix {
+    match string.as_bytes() {
+        b"escape_whitespace" => Fix::EscapeWhitespace,
+        b"line_unwrap" => Fix::LineUnwrap,
+        b"static" => Fix::Static(fix_arg.expect("static fix should have an arg")),
+        b"to_upper" => Fix::ToUpper,
+        b"organize_imports" => Fix::OrganizeImports,
+        _ => panic!("unknown fix type"),
+    }
 }
 
 /// Lookup rule by name
 #[must_use]
-pub fn rule_by_name(name: &str) -> Option<&'static Rule> {
-    RULES_BY_NAME.get(name).map(|index| rule(*index))
+pub fn pattern_by_name(name: &str) -> Option<&'static Pattern> {
+    PATTERNS_BY_NAME.get(name).map(|index| pattern(*index))
 }
 
 /// Returns optional range of "top context" for the node.
@@ -249,92 +328,11 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
     .expect("query should compile")
 });
 
-/// array of rules indexed by patterns of `QUERY`
-static RULES: LazyLock<Vec<Rule>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut rules = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut name: Option<&str> = None;
-        let mut title: Option<&str> = None;
-        let mut severity: Option<Severity> = None;
-        let mut help: Option<&str> = None;
-        let mut label: Option<&str> = None;
-        let mut context_label: Option<&str> = None;
-        let mut fix_arg: Option<&str> = None;
-        let mut fix_kind: Option<&str> = None;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "diagnostic.name" => {
-                    name = value;
-                }
-                "diagnostic.title" => {
-                    title = value;
-                }
-                "diagnostic.severity" => {
-                    severity = match value {
-                        Some("error") => Some(Severity::Error),
-                        Some("warn") => Some(Severity::Warn),
-                        Some("info") => Some(Severity::Info),
-                        Some("hint") => Some(Severity::Hint),
-                        _ => {
-                            panic!("invalid severity");
-                        }
-                    }
-                }
-                "diagnostic.help" => {
-                    help = value;
-                }
-                "diagnostic.label" => {
-                    label = value;
-                }
-                "diagnostic.context.label" => {
-                    context_label = value;
-                }
-                "diagnostic.fix.kind" => {
-                    fix_kind = value;
-                }
-                "diagnostic.fix.arg" => {
-                    fix_arg = value;
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
-        }
-        let fix = match fix_kind {
-            Some("escape_whitespace") => Some(Fix::EscapeWhitespace),
-            Some("line_unwrap") => Some(Fix::LineUnwrap),
-            Some("static") => Some(Fix::Static(
-                fix_arg.expect("static fix should have an arg").into(),
-            )),
-            Some("to_upper") => Some(Fix::ToUpper),
-            Some("organize_imports") => Some(Fix::OrganizeImports),
-            Some(other) => panic!("{other}: unknown fix type"),
-            None => None,
-        };
-        rules.push(Rule {
-            name: name.expect("pattern should have a name").into(),
-            title: title.expect("pattern should have a title").into(),
-            severity: severity.expect("pattern should have a severity"),
-            help: help.expect("pattern should have a help").into(),
-            label: label.map(str::to_owned),
-            context_label: context_label.map(str::to_owned),
-            url: format!(
-                "https://github.com/rmuir/pegon/wiki/diagnostics#{}",
-                name.expect("pattern should have a name")
-            ),
-            fix,
-        });
-    }
-    rules
-});
-
-static RULES_BY_NAME: LazyLock<FxHashMap<&str, usize>> = LazyLock::new(|| {
-    RULES
+static PATTERNS_BY_NAME: LazyLock<FxHashMap<&str, usize>> = LazyLock::new(|| {
+    PATTERNS
         .iter()
         .enumerate()
-        .map(|(index, item)| (item.name.as_str(), index))
+        .map(|(index, item)| (item.name, index))
         .collect()
 });
 

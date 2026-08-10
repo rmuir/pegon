@@ -4,13 +4,15 @@ use core::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
 
 use anyhow::{Context as _, Result};
-use gen_lsp_types::{FoldingRange, FoldingRangeKind};
+use gen_lsp_types::FoldingRange;
 use tree_sitter::{
     Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _,
 };
 
 use super::{Client, server::Document};
 use crate::java_queries::folds::captures;
+use crate::java_queries::folds::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
+use crate::support::queries::{const_array_from_fn, to_bool_const};
 
 pub fn request(
     client: &Client,
@@ -51,17 +53,17 @@ pub fn request(
         let range = client
             .encode_range(&range, &doc.line_index)
             .context("valid range")?;
-        if pattern.line_offset > 0 {
+        if pattern.nextline {
             result.push(FoldingRange {
                 start_line: range
                     .start
                     .line
-                    .checked_add(pattern.line_offset)
+                    .checked_add(1)
                     .context("should not overflow")?,
                 start_character: Some(0),
                 end_line: range.end.line,
                 end_character: Some(range.end.character),
-                kind: Some(pattern.kind.clone()),
+                kind: Some(pattern.kind.into()),
                 collapsed_text: None,
             });
         } else {
@@ -70,7 +72,7 @@ pub fn request(
                 start_character: Some(range.start.character),
                 end_line: range.end.line,
                 end_character: Some(range.end.character),
-                kind: Some(pattern.kind.clone()),
+                kind: Some(pattern.kind.into()),
                 collapsed_text: None,
             });
         }
@@ -81,15 +83,49 @@ pub fn request(
 /// single compiled pattern
 struct Pattern {
     /// kind of fold
-    kind: FoldingRangeKind,
+    kind: &'static str,
     /// adjustment to start line
-    line_offset: u32,
+    nextline: bool,
 }
 
 /// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut kind: Option<&str> = None;
+    let mut nextline = false;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"fold.kind" => kind = Some(to_kind(property.1)),
+            b"fold.nextline" => nextline = to_bool_const(property.1),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    Pattern {
+        kind: kind.expect("kind should be set"),
+        nextline,
+    }
+}
+
+const fn to_kind(string: &str) -> &str {
+    match string.as_bytes() {
+        b"comment" | b"imports" | b"region" => string,
+        _ => panic!("unknown kind"),
+    }
 }
 
 /// compiled query that matches all folding patterns
@@ -102,41 +138,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .expect("query should compile")
-});
-
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut kind: Option<&str> = None;
-        let mut line_offset: Option<u32> = None;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "fold.kind" => {
-                    kind = value;
-                }
-                "fold.lineoffset" => {
-                    line_offset = Some(1);
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
-        }
-        patterns.push(Pattern {
-            kind: match kind {
-                Some("comment") => FoldingRangeKind::Comment,
-                Some("imports") => FoldingRangeKind::Imports,
-                Some("region") => FoldingRangeKind::Region,
-                Some(str) => FoldingRangeKind::Custom(str.into()),
-                _ => panic!("unspecified folding kind"),
-            },
-            line_offset: line_offset.unwrap_or_default(),
-        });
-    }
-    patterns
 });
 
 #[cfg(test)]

@@ -20,7 +20,7 @@
     (line_comment)
   ]+ @range)
   (#set! fold.kind "comment")
-  (#set! fold.lineoffset 1))
+  (#set! fold.nextline true))
 
 ; adjacent imports
 ((import_declaration)+ @range
@@ -31,7 +31,7 @@
 ((block_comment) @range
   (#match? @range "^/[*][*][\\s]*[\n].")
   (#set! fold.kind "comment")
-  (#set! fold.lineoffset 1))
+  (#set! fold.nextline true))
 
 ; markdown javadoc comment blocks
 ((line_comment)+ @range

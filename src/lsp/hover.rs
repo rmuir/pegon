@@ -12,6 +12,8 @@ use tree_sitter::{
 
 use super::{Client, server::Document};
 use crate::java_queries::hover::captures;
+use crate::java_queries::hover::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
+use crate::support::queries::const_array_from_fn;
 
 pub fn request(
     client: &Client,
@@ -171,17 +173,61 @@ const SPEC_PREFIX: &str = "https://docs.oracle.com/javase/specs/jls/se26/html";
 
 struct SpecPattern {
     /// summary
-    summary: String,
+    summary: &'static str,
     /// description
-    description: String,
+    description: &'static str,
     /// reference
-    reference: String,
+    reference: &'static str,
 }
 
 /// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut kind: Option<&str> = None;
+    let mut summary: Option<&str> = None;
+    let mut reference: Option<&str> = None;
+    let mut description: Option<&str> = None;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"hover.spec.description" => description = Some(property.1),
+            b"hover.spec.summary" => summary = Some(property.1),
+            b"hover.spec.reference" => reference = Some(property.1),
+            b"hover.kind" => kind = Some(to_kind(property.1)),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    match kind.expect("should be set").as_bytes() {
+        b"reference" => Pattern::Reference,
+        b"bail" => Pattern::Bail,
+        b"spec" => Pattern::Spec(SpecPattern {
+            summary: summary.expect("summary should be set"),
+            description: description.expect("description should be set"),
+            reference: reference.expect("reference should be set"),
+        }),
+        _ => panic!("should not reach here"),
+    }
+}
+
+const fn to_kind(string: &str) -> &str {
+    match string.as_bytes() {
+        b"reference" | b"bail" | b"spec" => string,
+        _ => panic!("unknown kind"),
+    }
 }
 
 /// compiled query that matches all folding patterns
@@ -194,41 +240,6 @@ static QUERY: LazyLock<Query> = LazyLock::new(|| {
         )),
     )
     .expect("query should compile")
-});
-
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut kind: Option<&str> = None;
-        let mut summary: Option<&str> = None;
-        let mut reference: Option<&str> = None;
-        let mut description: Option<&str> = None;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "hover.spec.description" => description = value,
-                "hover.spec.summary" => summary = value,
-                "hover.spec.reference" => reference = value,
-                "hover.kind" => kind = value,
-                _ => panic!("{key}: unknown metadata key"),
-            }
-        }
-        patterns.push(match kind {
-            Some("reference") => Pattern::Reference,
-            Some("bail") => Pattern::Bail,
-            Some("spec") => Pattern::Spec(SpecPattern {
-                summary: summary.expect("should exist").into(),
-                reference: reference.expect("should exist").into(),
-                description: description.expect("should exist").into(),
-            }),
-            _ => panic!("{kind:?}: unknown metadata kind"),
-        });
-    }
-    patterns
 });
 
 #[cfg(test)]

@@ -77,7 +77,7 @@
       array: (identifier) @range)
   ])
   (#set! token.type "variable")
-  (#set! token.modifiers "modification"))
+  (#set! token.modifier "modification"))
 
 ((update_expression
   [
@@ -86,7 +86,7 @@
       array: (identifier) @range)
   ])
   (#set! token.type "variable")
-  (#set! token.modifiers "modification"))
+  (#set! token.modifier "modification"))
 
 ((assignment_expression
   left: [
@@ -97,7 +97,7 @@
         field: (identifier) @range))
   ])
   (#set! token.type "property")
-  (#set! token.modifiers "modification"))
+  (#set! token.modifier "modification"))
 
 ((update_expression
   [
@@ -108,7 +108,7 @@
         field: (identifier) @range))
   ])
   (#set! token.type "property")
-  (#set! token.modifiers "modification"))
+  (#set! token.modifier "modification"))
 
 ; gonna be slow
 ; fall back to property if we aren't declared within doc
@@ -121,27 +121,27 @@
   declarator: (variable_declarator
     name: (identifier) @range))
   (#set! token.type "variable")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((enhanced_for_statement
   name: (identifier) @range)
   (#set! token.type "variable")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((instanceof_expression
   name: (identifier) @range)
   (#set! token.type "variable")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((record_pattern_component
   (identifier) @range .)
   (#set! token.type "variable")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((type_pattern
   (identifier) @range .)
   (#set! token.type "variable")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ; labels
 ((labeled_statement
@@ -160,38 +160,39 @@
 ((identifier) @range
   (#match? @range "^[A-Z_][A-Z0-9_]+$")
   (#set! token.type "property")
-  (#set! token.modifiers "readonly,static"))
+  (#set! token.modifier "readonly")
+  (#set! token.modifier2 "static"))
 
 ; Types
 ((interface_declaration
   name: (identifier) @range)
   (#set! token.type "type")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((class_declaration
   name: (identifier) @range)
   (#set! token.type "type")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((record_declaration
   name: (identifier) @range)
   (#set! token.type "type")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((enum_declaration
   name: (identifier) @range)
   (#set! token.type "type")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((constructor_declaration
   name: (identifier) @range)
   (#set! token.type "type")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((compact_constructor_declaration
   name: (identifier) @range)
   (#set! token.type "type")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((type_identifier) @range
   (#set! token.type "type")
@@ -205,13 +206,13 @@
   (void_type)
 ] @range
   (#set! token.type "type")
-  (#set! token.modifiers "defaultLibrary"))
+  (#set! token.modifier "defaultLibrary"))
 
 ; builtin-type
 ((type_identifier) @range
   (#eq? @range "var")
   (#set! token.type "type")
-  (#set! token.modifiers "defaultLibrary"))
+  (#set! token.modifier "defaultLibrary"))
 
 (((method_invocation
   object: (identifier) @range)
@@ -247,7 +248,7 @@
     name: (identifier) @range))
   (#match? @range "^[a-z]")
   (#set! token.type "method")
-  (#set! token.modifiers "static"))
+  (#set! token.modifier "static"))
 
 ; new java.lang.xxx()
 (scoped_type_identifier
@@ -260,7 +261,7 @@
   declarator: (variable_declarator
     name: (identifier) @range))
   (#set! token.type "property")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ; field access
 ((field_access
@@ -276,7 +277,7 @@
 ((method_declaration
   name: (identifier) @range)
   (#set! token.type "method")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((method_declaration
   (modifiers
@@ -284,7 +285,7 @@
       "static"))
   name: (identifier) @range)
   (#set! token.type "method")
-  (#set! token.modifiers "static"))
+  (#set! token.modifier "static"))
 
 ((method_invocation
   name: (identifier) @range)
@@ -296,7 +297,7 @@
   name: (identifier) @range)
   (#match? @_receiver "^[A-Z].*[a-z]")
   (#set! token.type "method")
-  (#set! token.modifiers "static"))
+  (#set! token.modifier "static"))
 
 ; method call on qualified type
 ((method_invocation
@@ -305,7 +306,7 @@
   name: (identifier) @range)
   (#match? @_receiver "^[A-Z].*[a-z]")
   (#set! token.type "method")
-  (#set! token.modifiers "static"))
+  (#set! token.modifier "static"))
 
 ((method_reference
   (identifier) @range .)
@@ -315,41 +316,41 @@
 ((method_reference
   "new" @range .)
   (#set! token.type "method")
-  (#set! token.modifiers "defaultLibrary"))
+  (#set! token.modifier "defaultLibrary"))
 
 ; Parameters
 ((formal_parameter
   name: (identifier) @range)
   (#set! token.type "parameter")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((catch_formal_parameter
   name: (identifier) @range)
   (#set! token.type "parameter")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((spread_parameter
   (variable_declarator
     name: (identifier) @range)) ; int... foo
   (#set! token.type "parameter")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ; Lambda parameter
 ((inferred_parameters
   (identifier) @range) ; (x,y) -> ...
   (#set! token.type "parameter")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((lambda_expression
   parameters: (identifier) @range) ; x -> ...
   (#set! token.type "parameter")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ; type parameters
 ((type_parameter
   (type_identifier) @range)
   (#set! token.type "typeParameter")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ; decorators
 ("@" @range
@@ -358,7 +359,7 @@
 ((annotation_type_declaration
   name: (identifier) @range)
   (#set! token.type "decorator")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((annotation
   name: [
@@ -379,7 +380,7 @@
 ((annotation_type_element_declaration
   name: (identifier) @range)
   (#set! token.type "property")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ((element_value_pair
   key: (identifier) @range)
@@ -391,7 +392,7 @@
     (formal_parameter
       name: (identifier) @range)))
   (#set! token.type "property")
-  (#set! token.modifiers "definition"))
+  (#set! token.modifier "definition"))
 
 ; builtin variables
 ([
@@ -399,4 +400,5 @@
   (super)
 ] @range
   (#set! token.type "variable")
-  (#set! token.modifiers "defaultLibrary,readonly"))
+  (#set! token.modifier "defaultLibrary")
+  (#set! token.modifier2 "readonly"))

@@ -10,7 +10,7 @@ use gen_lsp_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::support::diagnostics::{Diagnostic, Severity, lint, rule};
+use crate::support::diagnostics::{Diagnostic, Severity, lint, pattern};
 
 use super::{Client, server::Document};
 
@@ -86,7 +86,7 @@ fn encode(
     results
         .iter()
         .map(|diagnostic| {
-            let rule = rule(diagnostic.rule_id);
+            let rule = pattern(diagnostic.pattern_id);
             let range = client
                 .encode_range(&diagnostic.range, &doc.line_index)
                 .context("invalid range")?;
@@ -101,7 +101,7 @@ fn encode(
                             .encode_range(related, &doc.line_index)
                             .context("invalid range")?,
                     },
-                    message: rule.context_label.clone().unwrap_or_default(),
+                    message: rule.context_label.unwrap_or_default().into(),
                 });
             }
             // optional label maps to related information at node's position
@@ -134,10 +134,10 @@ fn encode(
             Ok(gen_lsp_types::Diagnostic {
                 range,
                 severity: Some(lsp_severity),
-                code: Some(Code::String(rule.name.clone())),
+                code: Some(Code::String(rule.name.into())),
                 code_description: client
                     .supports_code_description(push)
-                    .then_some(CodeDescription::new(rule.url.clone().into())),
+                    .then_some(CodeDescription::new(rule.url().into())),
                 source: Some("pegon".into()),
                 message,
                 related_information: client

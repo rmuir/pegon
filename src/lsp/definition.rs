@@ -10,6 +10,10 @@ use tree_sitter::{
 };
 
 use crate::java_queries::definitions::captures;
+use crate::java_queries::definitions::properties::{
+    PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN,
+};
+use crate::support::queries::{const_array_from_fn, to_bool_const};
 
 use super::{Client, server::Document};
 
@@ -149,38 +153,34 @@ struct Pattern {
 }
 
 /// Look up rule by pattern index
-#[must_use]
-fn pattern(index: usize) -> &'static Pattern {
-    PATTERNS.get(index).expect("pattern should exist")
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
 }
 
-/// array of rules indexed by patterns of `QUERY`
-static PATTERNS: LazyLock<Vec<Pattern>> = LazyLock::new(|| {
-    let count = QUERY.pattern_count();
-    let mut patterns = Vec::with_capacity(count);
-    for index in 0..count {
-        let mut bail = false;
-        let mut scoped = false;
-        let props = QUERY.property_settings(index);
-        for prop in props {
-            let key = prop.key.as_ref();
-            let value = prop.value.as_deref();
-            match key {
-                "definition.bail" => {
-                    let value = value.expect("definition.bail should have a value");
-                    bail = value.parse::<bool>().expect("valid boolean");
-                }
-                "definition.scoped" => {
-                    let value = value.expect("definition.scoped should have a value");
-                    scoped = value.parse::<bool>().expect("valid boolean");
-                }
-                _ => panic!("{key}: unknown metadata key"),
-            }
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut bail = false;
+    let mut scoped = false;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"definition.bail" => bail = to_bool_const(property.1),
+            b"definition.scoped" => scoped = to_bool_const(property.1),
+            _ => panic!("unknown property key"),
         }
-        patterns.push(Pattern { bail, scoped });
+        index += 1;
     }
-    patterns
-});
+    Pattern { bail, scoped }
+}
 
 #[cfg(test)]
 mod tests {
