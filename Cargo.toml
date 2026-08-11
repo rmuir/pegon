@@ -131,22 +131,12 @@ opt-level = 1
 [profile.dev.package."tree-sitter-java-orchard"]
 opt-level = 1
 
-# optimize mostly for size, but be reasonable
+# optimize for speed
 [profile.release]
-opt-level = "s"
+opt-level = 3
 lto = "fat"
 panic = "abort"
 codegen-units = 1
-
-# optimize the hotspots for speed
-[profile.release.package."regex-automata"]
-opt-level = 3
-
-[profile.release.package."tree-sitter"]
-opt-level = 3
-
-[profile.release.package."tree-sitter-java-orchard"]
-opt-level = 3
 
 # for use with linux perf
 # RUSTFLAGS="-C force-frame-pointers=yes" must also be set.

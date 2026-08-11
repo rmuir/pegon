@@ -7,14 +7,20 @@ SHELL := /bin/bash
 export RUST_BACKTRACE ?= 1
 # configuration to use for "perf"
 export PERF_CONFIG ?= .perfconfig
-# llvm tool used for coverage
-export LLVM_COV ?= llvm-cov
-# llvm tool used for profile data
-export LLVM_PROFDATA ?= llvm-profdata
 # nightly toolchain used for sanitizers
 export NIGHTLY_TOOLCHAIN ?= nightly
-# nightly target used for sanitizers
-export NIGHTLY_TARGET ?= $(shell rustc --print=host-tuple)
+# target used for sanitizers, pgo, etc
+export TARGET := $(shell rustc --print=host-tuple)
+# location of internal tools
+export SYSROOT := $(shell rustc --print sysroot)
+# llvm tool used for coverage
+export LLVM_COV ?= $(SYSROOT)/lib/rustlib/$(TARGET)/bin/llvm-cov
+# llvm tool used for profile data
+export LLVM_PROFDATA ?= $(SYSROOT)/lib/rustlib/$(TARGET)/bin/llvm-profdata
+# directory used to gather profile data
+export PROFILE_DIR := $(abspath target/pgo-data)
+# raw filenames used for profiled output
+export LLVM_PROFILE_FILE := ${PROFILE_DIR}/%m_%p.profraw
 
 # extra output when running in CI
 ifdef CI
@@ -25,8 +31,11 @@ endif
 build: ## Create binary
 	cargo build --release
 
-.PHONY: wheel
-wheel: ## Create python package
+.PHONY: build-pgo
+build-pgo: corpus pgo-generate pgo-train pgo-merge pgo-use ## Create profile-guided binary
+
+.PHONY: build-wheel
+build-wheel: ## Create python package
 	uv build
 
 .PHONY: lint
@@ -48,7 +57,7 @@ test-asan: export CXXFLAGS=${CFLAGS}
 test-asan: export RUSTDOCFLAGS=${RUSTFLAGS}
 test-asan: export CARGO_PROFILE_SANITIZE_BUILD_OVERRIDE_RUSTFLAGS=-C linker=clang -Clink-arg=-fsanitize=address,undefined
 test-asan:  ## Run tests with asan
-	cargo +${NIGHTLY_TOOLCHAIN} test -Z profile-rustflags -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z profile-rustflags -Z build-std --profile sanitize --target ${TARGET}
 
 .PHONY: test-tsan
 test-tsan: export CFLAGS=-fsanitize=thread -O1
@@ -57,12 +66,35 @@ test-tsan: export CXXFLAGS=${CFLAGS}
 test-tsan: export RUSTDOCFLAGS=${RUSTFLAGS}
 test-tsan: export CARGO_PROFILE_SANITIZE_BUILD_OVERRIDE_RUSTFLAGS=-C linker=clang -Clink-arg=-fsanitize=thread
 test-tsan:  ## Run tests with tsan
-	cargo +${NIGHTLY_TOOLCHAIN} test -Z profile-rustflags -Z build-std --profile sanitize --target ${NIGHTLY_TARGET}
+	cargo +${NIGHTLY_TOOLCHAIN} test -Z profile-rustflags -Z build-std --profile sanitize --target ${TARGET}
+
+.PHONY: corpus
+corpus:
+	rm -rf target/corpus
+	mkdir -p target/corpus
+	(cd target/corpus && git clone --depth 1 --single-branch --filter=blob:none https://github.com/apache/lucene.git --branch releases/lucene/10.2.2)
+
+.PHONY: pgo-generate
+pgo-generate:
+	rm -rf ${PROFILE_DIR}
+	RUSTFLAGS="-Cprofile-generate=${PROFILE_DIR}" cargo build --release --target ${TARGET}
+
+.PHONY: pgo-train
+pgo-train:
+	target/${TARGET}/release/pegon check target/corpus > /dev/null || true
+
+.PHONY: pgo-merge
+pgo-merge:
+	${LLVM_PROFDATA} merge -o ${PROFILE_DIR}/merged.profdata ${PROFILE_DIR}/*.profraw
+
+.PHONY: pgo-use
+pgo-use:
+	RUSTFLAGS="-Cprofile-use=${PROFILE_DIR}/merged.profdata" cargo build --release --target=${TARGET}
 
 .PHONY: profile
 profile: ## Profile run with perf
 	RUSTFLAGS="-C force-frame-pointers=yes" cargo build --profile profiling
-	perf record -g target/profiling/pegon check ~/workspace/lucene > out.txt || true
+	perf record -g target/profiling/pegon check ~/workspace/lucene > /dev/null || true
 	perf report
 
 .PHONY: profile-queries
