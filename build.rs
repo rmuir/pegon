@@ -9,7 +9,7 @@ use std::{
     env::var,
     error::Error,
     ffi::OsStr,
-    fs::{read_dir, read_to_string, write},
+    fs::{DirEntry, read_dir, read_to_string, write},
     ops::Not as _,
     path::Path,
 };
@@ -19,7 +19,7 @@ use tree_sitter::{Language, Query, QueryPredicateArg};
 
 /// build script that regenerates output if the queries files change
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("cargo::rerun-if-changed=src/queries");
+    println!("cargo::rerun-if-changed=queries/java");
     let out = var("OUT_DIR")?;
     let out_dir = Path::new(&out);
 
@@ -123,8 +123,9 @@ fn queries(language: &Language, queries_dir: &Path) -> Result<String, Box<dyn Er
         }
     "}
     .to_owned();
-    for entry in read_dir(queries_dir)? {
-        let entry = entry?;
+    let mut entries: Vec<_> = read_dir(queries_dir)?.collect::<Result<_, _>>()?;
+    entries.sort_by_key(DirEntry::path);
+    for entry in entries {
         let path = entry.path();
         if path.extension().and_then(OsStr::to_str) == Some("scm") {
             let name = path
