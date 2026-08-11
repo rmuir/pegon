@@ -16,6 +16,8 @@ concurrency:
 env:
   # Not updated by dependabot
   MATURIN_VERSION: v1.14.1
+  MANYLINUX_CLANG_VERSION: 22.1.8.1
+  MACOS_LLVM_VERSION: llvm@22
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
@@ -72,10 +74,6 @@ jobs:
             maturin_target: ppc64le
             docker_target: linux/ppc64le
             target: powerpc64le-unknown-linux-gnu
-    env:
-      # for manylinux-install-clang
-      CLANG_VERSION: 22.1.8.1
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -92,7 +90,7 @@ jobs:
           manylinux: 2_28
           before-script-linux: |
             if command -v manylinux-install-clang &>/dev/null; then
-              manylinux-install-clang -v ${{ env.CLANG_VERSION }}
+              manylinux-install-clang -v ${{ env.MANYLINUX_CLANG_VERSION }}
               export PATH=/opt/clang/bin:$PATH
             fi
             clang --version
@@ -127,7 +125,7 @@ jobs:
           manylinux: 2_28
           before-script-linux: |
             if command -v manylinux-install-clang &>/dev/null; then
-              manylinux-install-clang -v ${{ env.CLANG_VERSION }}
+              manylinux-install-clang -v ${{ env.MANYLINUX_CLANG_VERSION }}
               export PATH=/opt/clang/bin:$PATH
             fi
             clang --version
@@ -313,6 +311,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Install clang
+        run: |
+          brew install "${MACOS_LLVM_VERSION}"
+          prefix=$(brew --prefix "${MACOS_LLVM_VERSION}")
+          echo "${prefix}/bin" >> "${GITHUB_PATH}"
+
+      - name: Report clang version
+        run: clang --version
 
       - name: Build instrumented
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
