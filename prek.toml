@@ -29,13 +29,7 @@ name = "Check Rust docs"
 priority = "checks"
 language = "system"
 entry = "cargo"
-args = [
-  "doc",
-  "--locked",
-  "--no-deps",
-  "--document-private-items",
-  "--all-features"
-]
+args = ["doc", "--locked", "--no-deps", "--document-private-items", "--all-features"]
 env.CARGO_BUILD_WARNINGS = "deny"
 require_serial = true
 # runs across all files if any are touched
@@ -123,13 +117,7 @@ name = "Check Dependabot Schema"
 priority = "checks"
 language = "system"
 entry = "uv"
-args = [
-  "run",
-  "--only-dev",
-  "check-jsonschema",
-  "--builtin-schema",
-  "vendor.dependabot"
-]
+args = ["run", "--only-dev", "check-jsonschema", "--builtin-schema", "vendor.dependabot"]
 env.UV_FROZEN = "1"
 types = ["yaml"]
 files.glob = [".github/dependabot.yml"]
@@ -140,13 +128,7 @@ name = "Check Release Schema"
 priority = "checks"
 language = "system"
 entry = "uv"
-args = [
-  "run",
-  "--only-dev",
-  "check-jsonschema",
-  "--schemafile",
-  "https://www.schemastore.org/github-release-config.json"
-]
+args = ["run", "--only-dev", "check-jsonschema", "--schemafile", "https://www.schemastore.org/github-release-config.json"]
 env.UV_FROZEN = "1"
 types = ["yaml"]
 files.glob = [".github/release.yml"]
@@ -158,13 +140,7 @@ priority = "checks"
 require_serial = true
 language = "system"
 entry = "uv"
-args = [
-  "run",
-  "--only-dev",
-  "check-jsonschema",
-  "--builtin-schema",
-  "vendor.github-workflows"
-]
+args = ["run", "--only-dev", "check-jsonschema", "--builtin-schema", "vendor.github-workflows"]
 env.UV_FROZEN = "1"
 types = ["yaml"]
 files.glob = [".github/workflows/*.{yml,yaml}"]
@@ -176,13 +152,7 @@ priority = "checks"
 require_serial = true
 language = "system"
 entry = "uv"
-args = [
-  "run",
-  "--only-dev",
-  "check-jsonschema",
-  "--builtin-schema",
-  "custom.github-workflows-require-timeout"
-]
+args = ["run", "--only-dev", "check-jsonschema", "--builtin-schema", "custom.github-workflows-require-timeout"]
 env.UV_FROZEN = "1"
 types = ["yaml"]
 files.glob = [".github/workflows/*.{yml,yaml}"]
@@ -193,17 +163,7 @@ name = "Check Workflows Security"
 priority = "checks"
 language = "system"
 entry = "uv"
-args = [
-  "run",
-  "--only-dev",
-  "zizmor",
-  "--no-progress",
-  "--strict-collection",
-  "--persona",
-  "auditor",
-  "--offline",
-  "."
-]
+args = ["run", "--only-dev", "zizmor", "--no-progress", "--strict-collection", "--persona", "auditor", "--offline", "."]
 env.UV_FROZEN = "1"
 # run across all actions if any are touched
 require_serial = true
@@ -310,14 +270,7 @@ id = "committed"
 name = "Check Commit message"
 language = "system"
 entry = "uv"
-args = [
-  "run",
-  "--only-dev",
-  "committed",
-  "--config",
-  ".committed.toml",
-  "--commit-file"
-]
+args = ["run", "--only-dev", "committed", "--config", ".committed.toml", "--commit-file"]
 env.UV_FROZEN = "1"
 stages = ["commit-msg"]
 

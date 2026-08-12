@@ -45,13 +45,13 @@ dev = [
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
-  "prek==0.4.12",
+  "prek==0.4.13",
   # markdown
-  "rumdl==0.2.52",
+  "rumdl==0.2.54",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml
-  "tombi==1.2.7",
+  "tombi==1.3.3",
   # spelling
   "typos==1.49.0",
   # this file
