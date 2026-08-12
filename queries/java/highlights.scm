@@ -212,7 +212,8 @@
 
 ; annotation type block start-end
 ((annotation_type_declaration
-  "@interface" @reference
+  "@" @reference
+  "interface" @reference
   name: (identifier) @reference
   body: (annotation_type_body
     "{" @range @reference
