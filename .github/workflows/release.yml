@@ -16,9 +16,12 @@ concurrency:
 env:
   # Not updated by dependabot
   MATURIN_VERSION: v1.14.1
+  MANYLINUX_CLANG_VERSION: 22.1.8.1
+  MACOS_LLVM_VERSION: llvm@22
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
+  PROFILE_DIR: "${{ github.workspace }}/target/pgo-data"
 
 jobs:
   # Creates a draft release that assets can be attached to
@@ -55,19 +58,19 @@ jobs:
             maturin_target: x86
             docker_target: linux/386
             target: i686-unknown-linux-gnu
-          - runner: ubuntu-24.04
+          - runner: ubuntu-24.04-arm
             maturin_target: aarch64
             docker_target: linux/arm64
             target: aarch64-unknown-linux-gnu
-          - runner: ubuntu-24.04
+          - runner: ubuntu-24.04-arm
             maturin_target: armv7
             docker_target: linux/arm/v7
             target: armv7-unknown-linux-gnueabihf
-          - runner: ubuntu-24.04
+          - runner: ubuntu-24.04-arm
             maturin_target: s390x
             docker_target: linux/s390x
             target: s390x-unknown-linux-gnu
-          - runner: ubuntu-24.04
+          - runner: ubuntu-24.04-arm
             maturin_target: ppc64le
             docker_target: linux/ppc64le
             target: powerpc64le-unknown-linux-gnu
@@ -76,6 +79,41 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Build instrumented
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.maturin_target }}
+          args: --release --locked --out dist --compatibility pypi
+          sccache: false
+          manylinux: 2_28
+          before-script-linux: |
+            if command -v manylinux-install-clang &>/dev/null; then
+              manylinux-install-clang -v ${{ env.MANYLINUX_CLANG_VERSION }}
+              export PATH=/opt/clang/bin:$PATH
+            fi
+            clang --version
+        env:
+          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+
+      - name: Train binary
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" --platform "${DOCKER_TARGET}" \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" -w "${GITHUB_WORKSPACE}" python:3.10 \
+            sh -c "make corpus pgo-train TARGET=${TARGET}"
+        env:
+          DOCKER_TARGET: ${{ matrix.docker_target }}
+          TARGET: ${{ matrix.target }}
+
+      - name: Install llvm-profdata
+        run: rustup component add llvm-tools-preview
+
+      - name: Merge results
+        run: make pgo-merge
 
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
@@ -86,16 +124,17 @@ jobs:
           sccache: false
           manylinux: 2_28
           before-script-linux: |
-            if command -v yum &>/dev/null; then
-              yum -y install clang
+            if command -v manylinux-install-clang &>/dev/null; then
+              manylinux-install-clang -v ${{ env.MANYLINUX_CLANG_VERSION }}
+              export PATH=/opt/clang/bin:$PATH
             fi
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+            clang --version
+        env:
+          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata"
 
       - name: Smoke-test binary
         run: |
-          docker run --rm --platform "${DOCKER_TARGET}" -v "${GITHUB_WORKSPACE}:/ws" python:3.10-slim \
+          docker run --rm --platform "${DOCKER_TARGET}" -v "${GITHUB_WORKSPACE}:/ws" python:3.10 \
             "/ws/target/${TARGET}/release/pegon" --help
         env:
           DOCKER_TARGET: ${{ matrix.docker_target }}
@@ -273,6 +312,34 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install clang
+        run: |
+          brew install "${MACOS_LLVM_VERSION}"
+          prefix=$(brew --prefix "${MACOS_LLVM_VERSION}")
+          echo "${prefix}/bin" >> "${GITHUB_PATH}"
+
+      - name: Report clang version
+        run: clang --version
+
+      - name: Build instrumented
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.maturin_target }}
+          args: --release --locked --out dist --compatibility pypi
+          sccache: false
+        env:
+          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }}"
+
+      - name: Train binary
+        run: make corpus pgo-train
+
+      - name: Install llvm-profdata
+        run: rustup component add llvm-tools-preview
+
+      - name: Merge results
+        run: make pgo-merge
+
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -280,6 +347,8 @@ jobs:
           target: ${{ matrix.maturin_target }}
           args: --release --locked --out dist --compatibility pypi
           sccache: false
+        env:
+          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata"
 
       - name: Smoke-test binary
         run: |
