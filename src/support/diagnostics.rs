@@ -30,8 +30,6 @@ pub struct Diagnostic {
     pub title: String,
     /// Formatted instructions to address the issue
     pub help: String,
-    /// Formatted Text describing the matching error range
-    pub label: Option<String>,
     /// Range that provides additional information
     pub context: Option<Range>,
 
@@ -86,16 +84,11 @@ pub fn lint(
     while let Some(hit) = matches.next() {
         let rule = pattern(hit.pattern_index);
 
+        // primary error node
         let node = hit
             .nodes_for_capture_index(captures::ERROR)
             .next()
             .context("error capture should exist")?;
-
-        let replacements = [node.utf8_text(data)?, node.kind()];
-        let label = rule
-            .label
-            .as_ref()
-            .map(|value| TEMPLATE_ENGINE.replace_all(value, &replacements));
 
         // explicitly marked context in the query
         let context = hit
@@ -119,12 +112,12 @@ pub fn lint(
             None
         };
 
+        let replacements = [node.utf8_text(data)?, node.kind()];
         lints.push(Diagnostic {
             pattern_id: hit.pattern_index,
             range: node.range(),
             title: TEMPLATE_ENGINE.replace_all(rule.title, &replacements),
             help: TEMPLATE_ENGINE.replace_all(rule.help, &replacements),
-            label,
             visible,
             context,
             top_context,
@@ -146,7 +139,7 @@ pub struct Pattern {
     pub title: &'static str,
     /// Template of instructions to address the issue
     pub help: &'static str,
-    /// Template describing the matching error range
+    /// Text describing the matching error range
     pub label: Option<&'static str>,
     /// Describes context ranges (applied to first one)
     pub context_label: Option<&'static str>,

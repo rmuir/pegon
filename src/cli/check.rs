@@ -299,7 +299,7 @@ impl<'scope> Worker<'scope> {
         let source = str::from_utf8(data)?;
         for diagnostic in errors {
             let rule = pattern(diagnostic.pattern_id);
-            let label = diagnostic.label.as_ref();
+            let label = rule.label;
             let bounds = diagnostic.bounds(source);
             let offset = bounds.range.start;
 

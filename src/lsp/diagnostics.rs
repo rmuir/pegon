@@ -105,10 +105,10 @@ fn encode(
                 });
             }
             // optional label maps to related information at node's position
-            if let Some(label) = &diagnostic.label {
+            if let Some(label) = rule.label {
                 related_information.push(DiagnosticRelatedInformation {
                     location: Location::new(uri.clone(), range),
-                    message: label.clone(),
+                    message: label.into(),
                 });
             }
             // help text maps to related information at node's position
