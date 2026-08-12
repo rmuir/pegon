@@ -249,7 +249,8 @@
 
 ; annotation type block start-end
 ((annotation_type_declaration
-  "@interface" @label
+  "@" @label
+  "interface" @label
   name: (identifier) @label @location
   body: (annotation_type_body
     "}" @position) @_region)
