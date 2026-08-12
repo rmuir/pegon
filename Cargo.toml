@@ -1,6 +1,6 @@
 [package]
 name = "pegon"
-version = "1.0.10"
+version = "1.0.11"
 edition = "2024"
 # version on github runners
 rust-version = "1.97.1"
