@@ -35,192 +35,96 @@
   (#set! diagnostic.severity "hint")
   (#set! diagnostic.fix.kind "escape_whitespace"))
 
-; Octal backspace escape instead of `\b`
+; Numeric backspace escape instead of `\b`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\010" "\\10")
-  (#set! diagnostic.name "octal-backspace")
-  (#set! diagnostic.title "Octal backspace escape: `{node.text}`")
+  (#any-of? @error "\\010" "\\10" "\\u0008")
+  (#set! diagnostic.name "numeric-backspace")
+  (#set! diagnostic.title "Numeric backspace escape: `{node.text}`")
   (#set! diagnostic.label "Backspace")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\b`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\b")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex backspace escape instead of `\b`
+; Numeric tab escape instead of `\t`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#eq? @error "\\u0008")
-  (#set! diagnostic.name "hex-backspace")
-  (#set! diagnostic.title "Hexadecimal backspace escape: `{node.text}`")
-  (#set! diagnostic.label "Backspace")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\b`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\b")
-  (#set! diagnostic.severity "hint"))
-
-; Octal tab escape instead of `\t`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\011" "\\11")
-  (#set! diagnostic.name "octal-tab")
-  (#set! diagnostic.title "Octal tab escape: `{node.text}`")
+  (#any-of? @error "\\011" "\\11" "\\u0009")
+  (#set! diagnostic.name "numeric-tab")
+  (#set! diagnostic.title "Numeric tab escape: `{node.text}`")
   (#set! diagnostic.label "Tab")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\t`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\t")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex tab escape instead of `\t`
+; Numeric newline escape instead of `\n`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#eq? @error "\\u0009")
-  (#set! diagnostic.name "hex-tab")
-  (#set! diagnostic.title "Hexadecimal tab escape: `{node.text}`")
-  (#set! diagnostic.label "Tab")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\t`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\t")
-  (#set! diagnostic.severity "hint"))
-
-; Octal newline escape instead of `\n`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\012" "\\12")
-  (#set! diagnostic.name "octal-newline")
-  (#set! diagnostic.title "Octal newline escape: `{node.text}`")
+  (#any-of? @error "\\012" "\\12" "\\u000a" "\\u000A")
+  (#set! diagnostic.name "numeric-newline")
+  (#set! diagnostic.title "Numeric newline escape: `{node.text}`")
   (#set! diagnostic.label "Newline")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\n`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\n")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex newline escape instead of `\n`
+; Numeric form feed escape instead of `\f`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u000a" "\\u000A")
-  (#set! diagnostic.name "hex-newline")
-  (#set! diagnostic.title "Hexadecimal newline escape: `{node.text}`")
-  (#set! diagnostic.label "Newline")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\n`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\n")
-  (#set! diagnostic.severity "hint"))
-
-; Octal form feed escape instead of `\f`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\014" "\\14")
-  (#set! diagnostic.name "octal-formfeed")
-  (#set! diagnostic.title "Octal form feed escape: `{node.text}`")
+  (#any-of? @error "\\014" "\\14" "\\u000c" "\\u000C")
+  (#set! diagnostic.name "numeric-formfeed")
+  (#set! diagnostic.title "Numeric form feed escape: `{node.text}`")
   (#set! diagnostic.label "Form feed")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\f`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\f")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex form feed escape instead of `\f`
+; Numeric carriage return escape instead of `\r`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u000c" "\\u000C")
-  (#set! diagnostic.name "hex-formfeed")
-  (#set! diagnostic.title "Hexadecimal form feed escape: `{node.text}`")
-  (#set! diagnostic.label "Form feed")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\f`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\f")
-  (#set! diagnostic.severity "hint"))
-
-; Octal carriage return escape instead of `\r`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\015" "\\15")
-  (#set! diagnostic.name "octal-return")
-  (#set! diagnostic.title "Octal carriage return escape: `{node.text}`")
+  (#any-of? @error "\\015" "\\15" "\\u000d" "\\u000D")
+  (#set! diagnostic.name "numeric-return")
+  (#set! diagnostic.title "Numeric carriage return escape: `{node.text}`")
   (#set! diagnostic.label "Carriage return")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\r`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\r")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex carriage return escape instead of `\r`
+; Numeric double-quote escape instead of `\"`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#any-of? @error "\\u000d" "\\u000D")
-  (#set! diagnostic.name "hex-return")
-  (#set! diagnostic.title "Hexadecimal carriage return escape: `{node.text}`")
-  (#set! diagnostic.label "Carriage return")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\r`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\r")
-  (#set! diagnostic.severity "hint"))
-
-; Octal double-quote escape instead of `\"`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\042" "\\42")
-  (#set! diagnostic.name "octal-double-quote")
-  (#set! diagnostic.title "Octal double quote escape: `{node.text}`")
+  (#any-of? @error "\\042" "\\42" "\\u0022")
+  (#set! diagnostic.name "numeric-double-quote")
+  (#set! diagnostic.title "Numeric double quote escape: `{node.text}`")
   (#set! diagnostic.label "Double quote")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\"`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\\"")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex double-quote escape instead of `\"`
+; Numeric single-quote escape instead of `\'`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#eq? @error "\\u0022")
-  (#set! diagnostic.name "hex-double-quote")
-  (#set! diagnostic.title "Hexadecimal double quote escape: `{node.text}`")
-  (#set! diagnostic.label "Double quote")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\"`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\\"")
-  (#set! diagnostic.severity "hint"))
-
-; Octal single-quote escape instead of `\'`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\047" "\\47")
-  (#set! diagnostic.name "octal-single-quote")
-  (#set! diagnostic.title "Octal single quote escape: `{node.text}`")
+  (#any-of? @error "\\047" "\\47" "\\u0027")
+  (#set! diagnostic.name "numeric-single-quote")
+  (#set! diagnostic.title "Numeric single quote escape: `{node.text}`")
   (#set! diagnostic.label "Single quote")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\'`")
   (#set! diagnostic.fix.kind "static")
   (#set! diagnostic.fix.arg "\\'")
   (#set! diagnostic.severity "hint"))
 
-; Unicode hex single-quote escape instead of `\'`
+; Numeric backslash escape instead of `\\`
 ; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
 ((escape_sequence) @error
-  (#eq? @error "\\u0027")
-  (#set! diagnostic.name "hex-single-quote")
-  (#set! diagnostic.title "Hexadecimal single quote escape: `{node.text}`")
-  (#set! diagnostic.label "Single quote")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\'`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\'")
-  (#set! diagnostic.severity "hint"))
-
-; Octal backslash escape instead of `\\`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#eq? @error "\\134")
-  (#set! diagnostic.name "octal-backslash")
-  (#set! diagnostic.title "Octal backslash escape: `{node.text}`")
-  (#set! diagnostic.label "Backslash")
-  (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\\`")
-  (#set! diagnostic.fix.kind "static")
-  (#set! diagnostic.fix.arg "\\\\")
-  (#set! diagnostic.severity "hint"))
-
-; Unicode hex backslash escape instead of `\\`
-; @see https://google.github.io/styleguide/javaguide.html#s2.3.2-special-escape-sequences
-((escape_sequence) @error
-  (#any-of? @error "\\u005c" "\\u005C")
-  (#set! diagnostic.name "hex-backslash")
-  (#set! diagnostic.title "Hexadecimal backslash escape: `{node.text}`")
+  (#any-of? @error "\\134" "\\u005c" "\\u005C")
+  (#set! diagnostic.name "numeric-backslash")
+  (#set! diagnostic.title "Numeric backslash escape: `{node.text}`")
   (#set! diagnostic.label "Backslash")
   (#set! diagnostic.help "Replace `{node.text}` with special escape `\\\\`")
   (#set! diagnostic.fix.kind "static")
