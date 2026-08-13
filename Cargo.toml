@@ -70,7 +70,7 @@ anyhow = "=1.0.104"
 # Generation of LSP result_id
 blake3 = { version = "=1.8.6" }
 # indexing support
-bstr = "=1.13.0"
+bstr = "=1.13.1"
 # CLI argument processing
 clap = { version = "=4.6.6", features = ["derive"] }
 # threading support
