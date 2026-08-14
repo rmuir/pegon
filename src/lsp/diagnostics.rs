@@ -10,7 +10,7 @@ use gen_lsp_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::support::diagnostics::{Diagnostic, Severity, lint, pattern};
+use crate::support::diagnostics::{Diagnostic, Severity, lint};
 
 use super::{Client, server::Document};
 
@@ -86,19 +86,20 @@ fn encode(
     results
         .iter()
         .map(|diagnostic| {
-            let rule = pattern(diagnostic.pattern_id);
+            let rule = diagnostic.pattern();
             let range = client
-                .encode_range(&diagnostic.range, &doc.line_index)
+                .encode_byte_range(&diagnostic.range(), &doc.line_index)
                 .context("invalid range")?;
             let lsp_severity = rule.severity.into();
+            let (title, help) = diagnostic.formatted(doc.text.as_bytes())?;
             let mut related_information: Vec<DiagnosticRelatedInformation> = Vec::with_capacity(3);
             // all the context ranges are related information
-            if let Some(related) = &diagnostic.context {
+            if let Some(related) = &diagnostic.context() {
                 related_information.push(DiagnosticRelatedInformation {
                     location: Location {
                         uri: uri.clone(),
                         range: client
-                            .encode_range(related, &doc.line_index)
+                            .encode_byte_range(related, &doc.line_index)
                             .context("invalid range")?,
                     },
                     message: rule.context_label.unwrap_or_default().into(),
@@ -114,22 +115,18 @@ fn encode(
             // help text maps to related information at node's position
             related_information.push(DiagnosticRelatedInformation {
                 location: Location::new(uri.clone(), range),
-                message: diagnostic.help.clone(),
+                message: help.clone(),
             });
             let message = if client.supports_markup_messages(push) {
                 Message::MarkupContent(MarkupContent {
                     kind: MarkupKind::Markdown,
-                    value: diagnostic.title.clone(),
+                    value: title,
                 })
             } else {
-                Message::String(diagnostic.title.clone())
+                Message::String(title)
             };
             let data = (client.supports_data(push) && rule.fix.is_some())
-                .then(|| {
-                    serde_json::to_value(CustomData {
-                        fix: diagnostic.help.clone(),
-                    })
-                })
+                .then(|| serde_json::to_value(CustomData { fix: help }))
                 .transpose()?;
             Ok(gen_lsp_types::Diagnostic {
                 range,

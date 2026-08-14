@@ -7,6 +7,7 @@ use anyhow::{Context as _, Error, bail};
 use core::fmt::{Display, Formatter};
 use core::sync::atomic::AtomicBool;
 use crossbeam_channel::{SendError, Sender};
+use line_index::LineIndex;
 
 use ignore::{DirEntry, WalkBuilder, WalkState, types::TypesBuilder};
 use std::{
@@ -18,7 +19,7 @@ use std::{
 use tree_sitter::Parser;
 
 use crate::support::{
-    diagnostics::{self, Diagnostic, Severity, pattern},
+    diagnostics::{self, Diagnostic, Severity},
     fix::{Edit, Fix},
 };
 
@@ -116,7 +117,7 @@ impl<'scope> Worker<'scope> {
     ) -> Self {
         let mut parser = Parser::new();
         parser
-            .set_language(&crate::support::language())
+            .set_language(&crate::support::LANGUAGE)
             .expect("parser should be included in the binary");
         Self {
             concise,
@@ -276,10 +277,10 @@ impl<'scope> Worker<'scope> {
         self.stats.add_file(1);
         if !result.is_empty() {
             for item in result.iter().as_ref() {
-                self.stats.add_problem(pattern(item.pattern_id).severity);
+                self.stats.add_problem(item.pattern().severity);
             }
             if self.concise {
-                self.render_concise(entry, result)?;
+                self.render_concise(entry, data, result)?;
             } else {
                 self.render_full(entry, data, result)?;
             }
@@ -297,37 +298,38 @@ impl<'scope> Worker<'scope> {
     ) -> Result<(), Error> {
         let filename = entry.path().to_str();
         let source = str::from_utf8(data)?;
+        let index = LineIndex::new(source);
         for diagnostic in errors {
-            let rule = pattern(diagnostic.pattern_id);
+            let rule = diagnostic.pattern();
             let label = rule.label;
             let bounds = diagnostic.bounds(source);
-            let offset = bounds.range.start;
+            let line_col = index
+                .try_line_col(bounds.start.try_into()?)
+                .context("valid bounds")?;
+            let offset = bounds.start;
+            let range = diagnostic.range();
 
             let annotations = [
                 // top context: e.g. what function are you in
-                diagnostic.top_context.map(|ctx| {
-                    AnnotationKind::Visible.span(ctx.start_byte - offset..ctx.end_byte - offset)
-                }),
+                diagnostic
+                    .top_context()
+                    .map(|ctx| AnnotationKind::Visible.span(ctx.start - offset..ctx.end - offset)),
                 // primary error annotation: as precise of a range as possible
                 Some(
                     AnnotationKind::Primary
-                        .span(
-                            diagnostic.range.start_byte - offset
-                                ..diagnostic.range.end_byte - offset,
-                        )
+                        .span(range.start - offset..range.end - offset)
                         .label(label)
                         .highlight_source(true),
                 ),
                 // explicitly marked context in the query
-                diagnostic.context.map(|context| {
+                diagnostic.context().map(|context| {
                     AnnotationKind::Context
-                        .span(context.start_byte - offset..context.end_byte - offset)
+                        .span(context.start - offset..context.end - offset)
                         .label(rule.context_label)
                 }),
                 // explicitly marked visible in the query
-                diagnostic.visible.map(|visible| {
-                    AnnotationKind::Visible
-                        .span(visible.start_byte - offset..visible.end_byte - offset)
+                diagnostic.visible().map(|visible| {
+                    AnnotationKind::Visible.span(visible.start - offset..visible.end - offset)
                 }),
             ];
 
@@ -339,23 +341,22 @@ impl<'scope> Worker<'scope> {
                 "help"
             };
 
+            let (title, help) = diagnostic.formatted(data)?;
+
+            // TODO: we should disable folding and just render using our line index
             let report = [
                 level
                     .with_name(rule.severity.as_str())
-                    .primary_title(&diagnostic.title)
+                    .primary_title(title)
                     .id(rule.name)
                     .id_url(rule.url())
                     .element(
-                        Snippet::source(source.get(bounds.range).context("valid bounds")?)
+                        Snippet::source(source.get(bounds).context("valid bounds")?)
                             .path(filename)
-                            .line_start(bounds.line_start + 1)
+                            .line_start(line_col.line as usize + 1)
                             .annotations(annotations.into_iter().flatten()),
                     ),
-                Group::with_title(
-                    Level::NOTE
-                        .with_name(help_name)
-                        .secondary_title(&diagnostic.help),
-                ),
+                Group::with_title(Level::NOTE.with_name(help_name).secondary_title(help)),
             ];
             let mut message = FULL.render(&report);
             message.push_str("\n\n");
@@ -365,24 +366,26 @@ impl<'scope> Worker<'scope> {
     }
 
     // fastest and easier to not use annotate-snippets for this
-    fn render_concise(&self, entry: &DirEntry, errors: &[Diagnostic]) -> Result<(), Error> {
+    fn render_concise(
+        &self,
+        entry: &DirEntry,
+        data: &[u8],
+        errors: &[Diagnostic],
+    ) -> Result<(), Error> {
         let filename = entry.path().to_string_lossy();
+        let source = str::from_utf8(data)?;
+        let index = LineIndex::new(source);
+
         for diagnostic in errors {
-            let rule = pattern(diagnostic.pattern_id);
-            let line = diagnostic
-                .range
-                .start_point
-                .row
-                .checked_add(1)
-                .context("no overflow")?;
-            let column = diagnostic
-                .range
-                .start_point
-                .column
-                .checked_add(1)
-                .context("no overflow")?;
+            let rule = diagnostic.pattern();
+            let range = diagnostic.range();
+            let line_col = index
+                .try_line_col(range.start.try_into()?)
+                .context("valid bounds")?;
+            let line = line_col.line.checked_add(1).context("no overflow")?;
+            let column = line_col.col.checked_add(1).context("no overflow")?;
             let severity = rule.severity.as_str();
-            let title = &diagnostic.title;
+            let (title, _) = diagnostic.formatted(data)?;
             let id = &rule.name;
             let message = format!("{filename}:{line}:{column}: {severity}[{id}]: {title}\n");
             self.sender.send(message)?;

@@ -211,7 +211,7 @@ pub static TOKEN_MODIFIERS: [&str; 5] = [
 /// compiled query that matches all semantic tokens patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::language(),
+        &crate::support::LANGUAGE,
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/tokens.scm"

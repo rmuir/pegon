@@ -55,17 +55,11 @@ impl Fix {
         let edits: Result<Vec<Edit>> = diagnostics
             .iter()
             .filter_map(|diagnostic| {
-                super::diagnostics::pattern(diagnostic.pattern_id)
+                diagnostic
+                    .pattern()
                     .fix
                     .as_ref()
-                    .map(|fix| {
-                        fix.generate(
-                            diagnostic.range.start_byte..diagnostic.range.end_byte,
-                            tree,
-                            data,
-                        )
-                        .transpose()
-                    })
+                    .map(|fix| fix.generate(diagnostic.range(), tree, data).transpose())
             })
             .flatten()
             .collect();

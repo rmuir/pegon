@@ -191,6 +191,23 @@ impl Client {
         })
     }
 
+    /// converts from a byte range to an LSP range
+    pub fn encode_byte_range(
+        &self,
+        range: &core::ops::Range<usize>,
+        line_index: &LineIndex,
+    ) -> Option<gen_lsp_types::Range> {
+        self.encode_range(
+            &tree_sitter::Range {
+                start_byte: range.start,
+                end_byte: range.end,
+                start_point: Self::to_point(range.start, line_index)?,
+                end_point: Self::to_point(range.end, line_index)?,
+            },
+            line_index,
+        )
+    }
+
     /// Client's preferred position encoding.
     ///
     /// This only speeds up the client: java and javascript clients

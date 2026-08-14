@@ -137,7 +137,7 @@ pub fn request(
 /// compiled query that matches all folding patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::language(),
+        &crate::support::LANGUAGE,
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/definitions.scm"

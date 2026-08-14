@@ -123,7 +123,7 @@ pub struct State {
 impl State {
     fn new(folders: &[WorkspaceFolder]) -> Result<Self> {
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(&crate::support::language())?;
+        parser.set_language(&crate::support::LANGUAGE)?;
         Ok(Self {
             parser,
             docs: FxHashMap::default(),

@@ -226,7 +226,7 @@ fn fix_all_with_intersections(
     let mut data = doc.text.as_bytes().to_owned();
     let mut edits = initial_edits;
     let mut parser = Parser::new();
-    parser.set_language(&crate::support::language())?;
+    parser.set_language(&crate::support::LANGUAGE)?;
     for _ in 1..10 {
         let mut previous = None;
         let mut all_fixed = true;
@@ -275,14 +275,8 @@ fn to_lsp_edit(
     doc: &Document,
     edit: &crate::support::fix::Edit,
 ) -> Result<TextEdit> {
-    let ts_range = tree_sitter::Range {
-        start_byte: edit.range.start,
-        end_byte: edit.range.end,
-        start_point: Client::to_point(edit.range.start, &doc.line_index).context("valid offset")?,
-        end_point: Client::to_point(edit.range.end, &doc.line_index).context("valid offset")?,
-    };
     let encoded = client
-        .encode_range(&ts_range, &doc.line_index)
+        .encode_byte_range(&edit.range, &doc.line_index)
         .context("valid range")?;
     Ok(TextEdit::new(encoded, edit.replacement.clone()))
 }

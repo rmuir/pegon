@@ -1,14 +1,16 @@
 use aho_corasick::{AhoCorasick, AhoCorasickKind};
 use anyhow::{Context as _, Error};
 use core::ops::ControlFlow;
+use core::ops::Range;
 use core::sync::atomic::{AtomicBool, Ordering};
+use line_index::{TextRange, TextSize};
 use rustc_hash::FxHashMap;
-use std::cmp::max;
+use std::cmp::{max, min};
+use std::num::TryFromIntError;
 use std::path::Path;
 use std::sync::LazyLock;
 use tree_sitter::{
-    Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, Range, StreamingIterator as _,
-    Tree,
+    Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _, Tree,
 };
 
 use crate::java_constants::{fields, kinds};
@@ -19,26 +21,6 @@ use crate::java_queries::diagnostics::properties::{
 };
 use crate::support::fix::Fix;
 use crate::support::queries::{KindSet, PredicateMatch as _, const_array_from_fn};
-
-/// Single diagnostic result
-pub struct Diagnostic {
-    /// Matched rule
-    pub pattern_id: usize,
-    /// Primary matching error node range
-    pub range: Range,
-    /// Formatted title of problem
-    pub title: String,
-    /// Formatted instructions to address the issue
-    pub help: String,
-    /// Range that provides additional information
-    pub context: Option<Range>,
-
-    // CLI only features that can't translate to LSP
-    /// Range that should be visible
-    pub visible: Option<Range>,
-    /// Computed top context (e.g. what function you are in)
-    pub top_context: Option<Range>,
-}
 
 /// Returns any lint errors found against the document.
 ///
@@ -82,8 +64,6 @@ pub fn lint(
             true
         });
     while let Some(hit) = matches.next() {
-        let rule = pattern(hit.pattern_index);
-
         // primary error node
         let node = hit
             .nodes_for_capture_index(captures::ERROR)
@@ -93,13 +73,13 @@ pub fn lint(
         // explicitly marked context in the query
         let context = hit
             .nodes_for_capture_index(captures::CONTEXT)
-            .map(|item| item.range())
+            .map(|item| item.byte_range())
             .next();
 
         // explicitly marked visible in the query
         let visible = if extras {
             hit.nodes_for_capture_index(captures::VISIBLE)
-                .map(|item| item.range())
+                .map(|item| item.byte_range())
                 .next()
         } else {
             None
@@ -112,16 +92,15 @@ pub fn lint(
             None
         };
 
-        let replacements = [node.utf8_text(data)?, node.kind()];
-        lints.push(Diagnostic {
-            pattern_id: hit.pattern_index,
-            range: node.range(),
-            title: TEMPLATE_ENGINE.replace_all(rule.title, &replacements),
-            help: TEMPLATE_ENGINE.replace_all(rule.help, &replacements),
-            visible,
+        lints.push(Diagnostic::new(
+            hit.pattern_index,
+            node.kind_id(),
+            node.byte_range(),
             context,
+            visible,
             top_context,
-        });
+        )?);
+
         // stop linting the document at the first ERROR or MISSING node
         // alerts to the issue, but prevents annoying cascade
         if hit.pattern_index < 2 {
@@ -184,7 +163,7 @@ impl Severity {
 
 /// Look up rule by pattern index
 #[expect(clippy::indexing_slicing, reason = "compile time safety")]
-pub const fn pattern(index: usize) -> &'static Pattern {
+const fn pattern(index: usize) -> &'static Pattern {
     &PATTERNS[index]
 }
 
@@ -281,7 +260,7 @@ pub fn pattern_by_name(name: &str) -> Option<&'static Pattern> {
 ///     │         ━━━━━━━━━━━
 ///     ╰╴
 /// ```
-fn top_context(root: Node, error_node: Node) -> Option<Range> {
+fn top_context(root: Node, error_node: Node) -> Option<Range<usize>> {
     let mut range = None;
     let mut node = root;
     while let Some(child) = node.child_with_descendant(error_node)
@@ -291,7 +270,7 @@ fn top_context(root: Node, error_node: Node) -> Option<Range> {
             && let Some(name) = child.child_by_field_id(fields::NAME)
             && name.start_position().row != error_node.start_position().row
         {
-            range = Some(name.range());
+            range = Some(name.byte_range());
         }
         node = child;
     }
@@ -312,7 +291,7 @@ const TOP_CONTEXT_KINDS: KindSet = KindSet::new(&[
 /// compiled query that matches all lint rules
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::language(),
+        &super::LANGUAGE,
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/diagnostics.scm"
@@ -337,54 +316,130 @@ static TEMPLATE_ENGINE: LazyLock<AhoCorasick> = LazyLock::new(|| {
         .expect("dfa should build")
 });
 
-impl Diagnostic {
-    /// compute diagnostic's bounding box for more efficient rendering
-    pub fn bounds(&self, source: &str) -> DiagnosticBounds {
-        // 4 possible ranges
-        let ranges = [
-            self.top_context.as_ref(),
-            Some(&self.range),
-            self.context.as_ref(),
-            self.visible.as_ref(),
-        ];
+/// Single diagnostic result
+pub struct Diagnostic {
+    // Primary matching error node range
+    range: TextRange,
+    // Range that provides additional information
+    context: TextRange,
+    // Range that should be visible
+    visible: TextRange,
+    // Computed top context (e.g. what function you are in)
+    top_context: TextRange,
+    // Matched rule
+    pattern_index: u16,
+    // Node kind of primary matching error
+    kind_id: u16,
+}
 
-        let mut start_byte = usize::MAX;
-        let mut line_start = 0;
+impl Diagnostic {
+    pub fn new(
+        pattern_index: usize,
+        kind_id: u16,
+        range: Range<usize>,
+        context: Option<Range<usize>>,
+        visible: Option<Range<usize>>,
+        top_context: Option<Range<usize>>,
+    ) -> Result<Self, TryFromIntError> {
+        Ok(Self {
+            pattern_index: pattern_index.try_into()?,
+            kind_id,
+            range: TextRange::new(range.start.try_into()?, range.end.try_into()?),
+            context: if let Some(context) = context {
+                TextRange::new(context.start.try_into()?, context.end.try_into()?)
+            } else {
+                TextRange::empty(TextSize::new(0))
+            },
+            visible: if let Some(visible) = visible {
+                TextRange::new(visible.start.try_into()?, visible.end.try_into()?)
+            } else {
+                TextRange::empty(TextSize::new(0))
+            },
+            top_context: if let Some(top_context) = top_context {
+                TextRange::new(top_context.start.try_into()?, top_context.end.try_into()?)
+            } else {
+                TextRange::empty(TextSize::new(0))
+            },
+        })
+    }
+    /// pattern associated with the diagnostic
+    pub const fn pattern(&self) -> &'static Pattern {
+        pattern(self.pattern_index as usize)
+    }
+
+    /// Primary matching error node range
+    pub fn range(&self) -> Range<usize> {
+        usize::from(self.range.start())..usize::from(self.range.end())
+    }
+
+    /// Range that provides additional information
+    pub fn context(&self) -> Option<Range<usize>> {
+        if self.context.is_empty() {
+            None
+        } else {
+            Some(usize::from(self.context.start())..usize::from(self.context.end()))
+        }
+    }
+
+    /// Range that should be visible
+    pub fn visible(&self) -> Option<Range<usize>> {
+        if self.visible.is_empty() {
+            None
+        } else {
+            Some(usize::from(self.visible.start())..usize::from(self.visible.end()))
+        }
+    }
+
+    /// Computed top context (e.g. what function you are in)
+    pub fn top_context(&self) -> Option<Range<usize>> {
+        if self.top_context.is_empty() {
+            None
+        } else {
+            Some(usize::from(self.top_context.start())..usize::from(self.top_context.end()))
+        }
+    }
+
+    /// formats the title and help based on the matching error text/kind
+    pub fn formatted(&self, data: &[u8]) -> Result<(String, String), Error> {
+        let rule = self.pattern();
+        let text = str::from_utf8(data.get(self.range()).context("valid range")?)?;
+        let kind = super::LANGUAGE
+            .node_kind_for_id(self.kind_id)
+            .context("valid node kind")?;
+        let replacements = [text, kind];
+        Ok((
+            TEMPLATE_ENGINE.replace_all(rule.title, &replacements),
+            TEMPLATE_ENGINE.replace_all(rule.help, &replacements),
+        ))
+    }
+
+    /// compute diagnostic's bounding box for more efficient rendering
+    pub fn bounds(&self, source: &str) -> Range<usize> {
+        // 4 possible ranges
+        let ranges = [self.top_context, self.range, self.context, self.visible];
+
+        let mut start_byte = u32::MAX;
         let mut end_byte = 0;
 
         // compute the box
-        for range in ranges.iter().flatten() {
-            if range.start_byte < start_byte {
-                start_byte = range.start_byte;
-                line_start = range.start_point.row;
-            }
-            end_byte = max(end_byte, range.end_byte);
+        for range in ranges.iter().filter(|range| !TextRange::is_empty(**range)) {
+            start_byte = min(start_byte, u32::from(range.start()));
+            end_byte = max(end_byte, u32::from(range.end()));
         }
 
         // expand the box so it includes full lines
         let start = source
-            .get(..start_byte)
+            .get(..start_byte as usize)
             .and_then(|text| text.rfind('\n'))
             .and_then(|offset| offset.checked_add(1))
             .unwrap_or_default();
         let end = source
-            .get(end_byte..)
+            .get(end_byte as usize..)
             .and_then(|text| text.find('\n'))
-            .and_then(|offset| offset.checked_add(end_byte))
+            .and_then(|offset| offset.checked_add(end_byte as usize))
             .and_then(|offset| offset.checked_add(1))
             .unwrap_or(source.len());
 
-        DiagnosticBounds {
-            range: start..end,
-            line_start,
-        }
+        start..end
     }
-}
-
-/// Bounding box of a diagnostic
-pub struct DiagnosticBounds {
-    /// byte range containing all the diagnostic info
-    pub range: std::ops::Range<usize>,
-    /// line number the diagnostic starts at
-    pub line_start: usize,
 }

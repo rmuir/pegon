@@ -180,7 +180,7 @@ const fn to_pattern(pattern: usize) -> Pattern {
 /// compiled query that matches all lint rules
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::language(),
+        &crate::support::LANGUAGE,
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/locals.scm"

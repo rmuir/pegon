@@ -110,7 +110,7 @@ fn imports(tree: &Tree, data: &[u8]) -> Result<Vec<Import>> {
 /// compiled query that matches all import patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::language(),
+        &crate::support::LANGUAGE,
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/imports.scm"

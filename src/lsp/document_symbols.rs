@@ -278,7 +278,7 @@ const fn to_kind(string: &str) -> SymbolKind {
 /// compiled query that matches all symbol patterns
 static QUERY: LazyLock<Query> = LazyLock::new(|| {
     Query::new(
-        &crate::support::language(),
+        &crate::support::LANGUAGE,
         include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/queries/java/symbols.scm"
