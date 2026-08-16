@@ -1,4 +1,4 @@
-use anyhow::{Context as _, Error};
+use anyhow::{Context as _, Error, bail};
 use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
@@ -21,6 +21,10 @@ pub fn format(
     buffer: &mut Vec<u8>,
     cancel: &AtomicBool,
 ) -> Result<(), Error> {
+    if tree.root_node().has_error() {
+        bail!("parse error");
+    }
+
     let mut cursor = QueryCursor::new();
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
