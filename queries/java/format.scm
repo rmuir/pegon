@@ -55,6 +55,14 @@
   (#set! "format.indent.delta" 1)
   (#set! "format.space.before" true))
 
+; empty block, allowed shorthand form
+((class_body
+  "{" @node
+  .
+  "}")
+  (#set! "format.indent.delta" 1)
+  (#set! "format.space.before" true))
+
 ; no newline after lambda close
 ((lambda_expression
   (block
