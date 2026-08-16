@@ -61,6 +61,12 @@
     "}" @node))
   (#set! "format.indent.delta" -1))
 
+; nor object creation expression
+((object_creation_expression
+  (class_body
+    "}" @node))
+  (#set! "format.indent.delta" -1))
+
 ; open block: increase indent
 ("{" @node
   (#set! "format.indent.delta" 1)
@@ -160,18 +166,6 @@
   (_) @node .)
   (#set! "format.space.before" true))
 
-(type_arguments
-  [
-    "<"
-    ">"
-  ] @node)
-
-(type_parameters
-  [
-    "<"
-    ">"
-  ] @node)
-
 ; no space between @interface
 ((annotation_type_declaration
   "@"
@@ -228,6 +222,22 @@
 ; nothing special
 (unary_expression
   operator: _ @node)
+
+; nothing special
+(type_arguments
+  [
+    "<"
+    ">"
+  ] @node)
+
+; nothing special
+(type_parameters
+  "<" @node)
+
+; space after
+((type_parameters
+  ">" @node)
+  (#set! "format.space.after" true))
 
 ([
   "abstract"
