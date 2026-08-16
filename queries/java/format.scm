@@ -162,22 +162,25 @@
   (#set! "format.space.after" true))
 
 ; no space after single-statement forms
-(break_statement
+((break_statement
   "break" @node
   .
   ";")
+  (#set! "format.space.before" true))
 
 ; no space after single-statement forms
-(continue_statement
+((continue_statement
   "continue" @node
   .
   ";")
+  (#set! "format.space.before" true))
 
 ; no space after single-statement forms
-(return_statement
+((return_statement
   "return" @node
   .
   ";")
+  (#set! "format.space.before" true))
 
 ; space after modifiers
 ((modifier
