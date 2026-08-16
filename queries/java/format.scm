@@ -1,12 +1,10 @@
 ; open block: increase indent
-((block
-  "{" @node)
+("{" @node
   (#set! "format.indent.delta" 1)
   (#set! "format.newline.after" true))
 
 ; close block: reduce indent
-((block
-  "}" @node)
+("}" @node
   (#set! "format.indent.delta" -1)
   (#set! "format.newline.after" true))
 

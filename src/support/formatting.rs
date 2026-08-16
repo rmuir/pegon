@@ -22,12 +22,6 @@ pub fn format(
     cancel: &AtomicBool,
 ) -> Result<(), Error> {
     let mut cursor = QueryCursor::new();
-    let indent_size = 2; // TODO
-    let newline = b"\n"; // TODO
-
-    let mut current_indent: i32 = 0;
-    let mut current_line_size = 0;
-
     // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
     let mut cancellation = |_: &QueryCursorState| {
         if cancel.load(Ordering::Relaxed) {
@@ -43,6 +37,13 @@ pub fn format(
         data,
         QueryCursorOptions::new().progress_callback(&mut cancellation),
     );
+
+    let indent_size = 2; // TODO
+    let newline = b"\n"; // TODO
+
+    let mut current_indent: i32 = 0;
+    let mut current_line_size = 0;
+
     while let Some(hit) = matches.next() {
         // primary node node
         let node = hit
