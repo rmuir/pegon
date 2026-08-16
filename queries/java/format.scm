@@ -211,21 +211,28 @@
   (#set! "format.space.after" true))
 
 ; space after modifiers
-((visibility
-  _ @node)
-  (#set! "format.space.after" true))
-
+;((visibility
+;  _ @node)
+;  (#set! "format.space.after" true))
 ; nothing special
 (class_literal
   "class" @node)
 
 ; nothing special
-(wildcard
-  "?" @node)
-
-; nothing special
 (asterisk
   "*" @node)
+
+((wildcard
+  [
+    (annotation)
+    (marker_annotation)
+  ]
+  "?" @node)
+  (#set! "format.space.before" true))
+
+; nothing special
+(wildcard
+  "?" @node)
 
 ; nothing special
 (unary_expression
@@ -358,6 +365,11 @@
 
 ((cast_expression
   ")" @node)
+  (#set! "format.space.after" true))
+
+((wildcard
+  (super) @node)
+  (#set! "format.space.before" true)
   (#set! "format.space.after" true))
 
 _ @node
