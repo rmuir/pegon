@@ -55,6 +55,12 @@
   (#set! "format.indent.delta" 1)
   (#set! "format.space.before" true))
 
+; no newline after lambda close
+((lambda_expression
+  (block
+    "}" @node))
+  (#set! "format.indent.delta" -1))
+
 ; open block: increase indent
 ("{" @node
   (#set! "format.indent.delta" 1)
@@ -137,6 +143,21 @@
 ; space between type and name
 ((resource
   name: (_) @node)
+  (#set! "format.space.before" true))
+
+; JEP 394
+((instanceof_expression
+  name: (_) @node)
+  (#set! "format.space.before" true))
+
+; JEP 440
+((record_pattern_component
+  (_) @node .)
+  (#set! "format.space.before" true))
+
+; JEP 441
+((type_pattern
+  (_) @node .)
   (#set! "format.space.before" true))
 
 (type_arguments
