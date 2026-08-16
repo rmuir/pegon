@@ -210,10 +210,6 @@
   _ @node)
   (#set! "format.space.after" true))
 
-; space after modifiers
-;((visibility
-;  _ @node)
-;  (#set! "format.space.after" true))
 ; nothing special
 (class_literal
   "class" @node)
