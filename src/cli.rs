@@ -4,6 +4,7 @@ use core::net::Ipv4Addr;
 
 mod analyze;
 mod check;
+mod format;
 mod generated;
 mod parser;
 
@@ -33,6 +34,7 @@ pub fn main() -> Result<(), Error> {
             *fix,
             stdin_filename.as_deref(),
         ),
+        Commands::Format { files } => format::format(files),
         Commands::Analyze { files } => analyze::analyze(files),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();

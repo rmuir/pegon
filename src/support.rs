@@ -6,6 +6,7 @@ use tree_sitter::Language;
 
 pub mod diagnostics;
 pub mod fix;
+pub mod formatting;
 pub mod index;
 pub mod organize_imports;
 pub mod queries;

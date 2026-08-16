@@ -31,7 +31,8 @@ impl PredicateMatch for Predicate {
                     .next()
                     .expect("valid capture");
                 let position = node.end_byte();
-                data.get(position).copied().unwrap_or(b'\n') == b'\n'
+                let byte = data.get(position).copied().unwrap_or(b'\n');
+                byte == b'\n' || byte == b'\r'
             }
             Self::NotEqualsFileName(capture) => {
                 let Some(path) = path else { return false };
@@ -71,6 +72,27 @@ pub const fn to_bool_const(string: &str) -> bool {
         b"false" => false,
         _ => panic!("invalid boolean"),
     }
+}
+
+/// parse an integer from a string
+pub const fn to_i32_const(string: &str) -> i32 {
+    let bytes = string.as_bytes();
+    let mut sign: i32 = 1;
+    let mut mag: i32 = 0;
+    let mut index = 0;
+    if bytes[0] == b'-' {
+        sign = -1;
+        index += 1;
+    } else if bytes[0] == b'+' {
+        index += 1;
+    }
+    while index < bytes.len() {
+        let byte = bytes[index];
+        assert!(b'0' <= byte && byte <= b'9', "invalid digit");
+        mag = mag * 10 + (byte - b'0') as i32;
+        index += 1;
+    }
+    sign * mag
 }
 
 // slow linear search at compile-time until rust lets us bsearch

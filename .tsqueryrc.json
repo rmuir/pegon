@@ -34,6 +34,9 @@
     "folds": {
       "range": "range of the folding region"
     },
+    "format": {
+      "node": "captured node to apply formatting rules to"
+    },
     "hints": {
       "label": "components of inlay hint text",
       "location": "source location for interactive features (hover/go-to-definition)",
@@ -164,6 +167,9 @@
               "diagnostic.title",
               "fold.kind",
               "fold.nextline",
+              "format.indent.before",
+              "format.indent.delta",
+              "format.newline.after",
               "hint.prefix",
               "hint.suffix",
               "hint.pad.left",

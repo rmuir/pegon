@@ -40,6 +40,14 @@ pub enum Commands {
         stdin_filename: Option<PathBuf>,
     },
 
+    /// Format java code
+    Format {
+        /// List of files or directories to check
+        ///
+        /// Use `-` for standard input. [default: CWD]
+        files: Vec<PathBuf>,
+    },
+
     /// Analyze java code
     Analyze {
         /// List of files or directories to check
