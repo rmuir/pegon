@@ -8,7 +8,7 @@ use tree_sitter::{
 
 use crate::java_queries::format::captures;
 use crate::java_queries::format::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
-use crate::support::queries::{const_array_from_fn, to_bool_const, to_i32_const};
+use crate::support::queries::{const_array_from_fn, to_bool_const, to_i8_const};
 
 /// Formats the document into `buffer`
 ///
@@ -31,7 +31,7 @@ pub fn format(
         }
     };
 
-    let mut matches = cursor.matches_with_options(
+    let mut captures = cursor.captures_with_options(
         &QUERY,
         tree.root_node(),
         data,
@@ -46,12 +46,18 @@ pub fn format(
     let mut previous_node_id = usize::MAX;
     let mut previous_space = false;
 
-    while let Some(hit) = matches.next() {
-        // primary node node
-        let node = hit
-            .nodes_for_capture_index(captures::NODE)
-            .next()
-            .context("error capture should exist")?;
+    while let Some((hit, capture_id)) = captures.next() {
+        // primary node captures only
+        let capture = hit.captures.get(*capture_id).context("valid capture_id")?;
+        if capture.index != captures::NODE {
+            continue;
+        }
+        let node = capture.node;
+
+        // terminal nodes only
+        if node.child_count() > 0 {
+            continue;
+        }
 
         // first pattern wins
         let node_id = node.id();
@@ -60,14 +66,9 @@ pub fn format(
         }
         previous_node_id = node_id;
 
-        // terminal nodes only
-        if node.child_count() > 0 {
-            continue;
-        }
-
         let pattern = pattern(hit.pattern_index);
 
-        current_indent += pattern.indent_delta;
+        current_indent += pattern.indent_delta as i32;
 
         if current_line_size == 0 {
             let indent = indent_size * current_indent as usize;
@@ -91,8 +92,10 @@ pub fn format(
             buffer.resize(buffer.len() + 1, b' ');
             current_line_size += 1;
             previous_space = true;
-        } else if pattern.newline_after {
-            buffer.extend_from_slice(newline);
+        } else if pattern.newline_after != 0 {
+            for _ in 0..pattern.newline_after {
+                buffer.extend_from_slice(newline);
+            }
             current_line_size = 0;
         }
     }
@@ -101,14 +104,14 @@ pub fn format(
 
 /// single pattern
 struct Pattern {
+    // adjust indentation level by delta
+    indent_delta: i8,
     // add newline after the node
-    newline_after: bool,
+    newline_after: i8,
     // add space after the node
     space_after: bool,
     // add space after the node
     space_before: bool,
-    // adjust indentation level by delta
-    indent_delta: i32,
 }
 
 /// Look up pattern by index
@@ -128,14 +131,14 @@ const fn to_pattern(pattern: usize) -> Pattern {
     let range = &PROPERTIES_BY_PATTERN[pattern];
     let mut index = range.start;
     let mut indent_delta = 0;
-    let mut newline_after = false;
+    let mut newline_after = 0;
     let mut space_after = false;
     let mut space_before = false;
     while index < range.end {
         let property = PROPERTIES[index];
         match property.0.as_bytes() {
-            b"format.indent.delta" => indent_delta = to_i32_const(property.1),
-            b"format.newline.after" => newline_after = to_bool_const(property.1),
+            b"format.indent.delta" => indent_delta = to_i8_const(property.1),
+            b"format.newline.after" => newline_after = to_i8_const(property.1),
             b"format.space.after" => space_after = to_bool_const(property.1),
             b"format.space.before" => space_before = to_bool_const(property.1),
             _ => panic!("unknown property key"),
@@ -144,9 +147,9 @@ const fn to_pattern(pattern: usize) -> Pattern {
     }
     Pattern {
         newline_after,
+        indent_delta,
         space_after,
         space_before,
-        indent_delta,
     }
 }
 

@@ -1,36 +1,110 @@
+; if-with-else, reduce indent, but don't force a newline
+((if_statement
+  consequence: (block
+    "}" @node .)
+  .
+  "else")
+  (#set! "format.indent.delta" -1))
+
+; try block followed by catch/finally, reduce indent, but don't force a newline
+((try_statement
+  body: (block
+    "}" @node .)
+  .
+  [
+    (catch_clause)
+    (finally_clause)
+  ])
+  (#set! "format.indent.delta" -1))
+
+; try-with-resources block followed by catch/finally, reduce indent, but don't force a newline
+((try_with_resources_statement
+  body: (block
+    "}" @node .)
+  .
+  [
+    (catch_clause)
+    (finally_clause)
+  ])
+  (#set! "format.indent.delta" -1))
+
+; catch block followed by catch/finally, reduce indent, but don't force a newline
+((catch_clause
+  body: (block
+    "}" @node .))
+  .
+  [
+    (catch_clause)
+    (finally_clause)
+  ]
+  (#set! "format.indent.delta" -1))
+
+; empty block, allowed shorthand form
+((block
+  "{" @node
+  .
+  "}")
+  (#set! "format.indent.delta" 1)
+  (#set! "format.space.before" true))
+
+; empty block, allowed shorthand form
+((constructor_body
+  "{" @node
+  .
+  "}")
+  (#set! "format.indent.delta" 1)
+  (#set! "format.space.before" true))
+
 ; open block: increase indent
 ("{" @node
   (#set! "format.indent.delta" 1)
-  (#set! "format.space.before" true)
-  (#set! "format.newline.after" true))
+  (#set! "format.newline.after" 1)
+  (#set! "format.space.before" true))
 
 ; close block: reduce indent
 ("}" @node
   (#set! "format.indent.delta" -1)
-  (#set! "format.newline.after" true))
+  (#set! "format.newline.after" 1))
+
+; end of package decl before another node, extra blank line
+((package_declaration
+  ";" @node)
+  .
+  (_)
+  (#set! "format.newline.after" 2))
+
+; keep on the same line if possible
+((for_statement
+  ";" @node)
+  (#set! "format.space.after" true))
 
 ; end of statement, newline
 (";" @node
-  (#set! "format.newline.after" true))
+  (#set! "format.newline.after" 1))
 
 ; marker annotation, newline
 ((marker_annotation
   name: (_) @node)
-  (#set! "format.newline.after" true))
+  (#set! "format.newline.after" 1))
 
 ; regular annotation, newline
 ((annotation_argument_list
   ")" @node .)
-  (#set! "format.newline.after" true))
+  (#set! "format.newline.after" 1))
 
 ; comments: indent them, newline them (for now)
 ([
   (line_comment)
   (block_comment)
 ] @node
-  (#set! "format.newline.after" true))
+  (#set! "format.newline.after" 1))
 
-; space after comment
+; newlines after enum constants
+(enum_body
+  "," @node
+  (#set! "format.newline.after" 1))
+
+; space after comma otherwise
 ("," @node
   (#set! "format.space.after" true))
 
@@ -54,17 +128,76 @@
   name: (_) @node)
   (#set! "format.space.before" true))
 
-(type_arguments
-  "<" @node)
+; space between type and name
+((resource
+  name: (_) @node)
+  (#set! "format.space.before" true))
 
 (type_arguments
-  ">" @node)
+  [
+    "<"
+    ">"
+  ] @node)
+
+(type_parameters
+  [
+    "<"
+    ">"
+  ] @node)
 
 ; no space between @interface
 ((annotation_type_declaration
   "@"
   "interface" @node)
   (#set! "format.space.after" true))
+
+; no space before new
+("new" @node
+  (#set! "format.space.after" true))
+
+; no space after single-statement forms
+(break_statement
+  "break" @node
+  .
+  ";")
+
+; no space after single-statement forms
+(continue_statement
+  "continue" @node
+  .
+  ";")
+
+; no space after single-statement forms
+(return_statement
+  "return" @node
+  .
+  ";")
+
+; space after modifiers
+((modifier
+  _ @node)
+  (#set! "format.space.after" true))
+
+; space after modifiers
+((visibility
+  _ @node)
+  (#set! "format.space.after" true))
+
+; nothing special
+(class_literal
+  "class" @node)
+
+; nothing special
+(wildcard
+  "?" @node)
+
+; nothing special
+(asterisk
+  "*" @node)
+
+; nothing special
+(unary_expression
+  operator: _ @node)
 
 ([
   "abstract"
@@ -118,7 +251,6 @@
   "while"
   "with"
   "yield"
-  "new"
   "instanceof"
   "="
   "+="
@@ -152,6 +284,7 @@
   ">>"
   ">>>"
   "->"
+  "?"
   ":"
 ] @node
   (#set! "format.space.before" true)
@@ -170,5 +303,13 @@
 ((method_declaration
   name: (identifier) @node)
   (#set! "format.space.before" true))
+
+((annotation_type_element_declaration
+  name: (identifier) @node)
+  (#set! "format.space.before" true))
+
+((cast_expression
+  ")" @node)
+  (#set! "format.space.after" true))
 
 _ @node

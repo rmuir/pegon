@@ -75,10 +75,10 @@ pub const fn to_bool_const(string: &str) -> bool {
 }
 
 /// parse an integer from a string
-pub const fn to_i32_const(string: &str) -> i32 {
+pub const fn to_i8_const(string: &str) -> i8 {
     let bytes = string.as_bytes();
-    let mut sign: i32 = 1;
-    let mut mag: i32 = 0;
+    let mut sign: i8 = 1;
+    let mut mag: i8 = 0;
     let mut index = 0;
     if bytes[0] == b'-' {
         sign = -1;
@@ -89,7 +89,7 @@ pub const fn to_i32_const(string: &str) -> i32 {
     while index < bytes.len() {
         let byte = bytes[index];
         assert!(b'0' <= byte && byte <= b'9', "invalid digit");
-        mag = mag * 10 + (byte - b'0') as i32;
+        mag = mag * 10 + (byte - b'0') as i8;
         index += 1;
     }
     sign * mag
