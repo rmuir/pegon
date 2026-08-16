@@ -43,6 +43,8 @@ pub fn format(
 
     let mut current_indent: i32 = 0;
     let mut current_line_size = 0;
+    let mut previous_node_id = usize::MAX;
+    let mut previous_space = false;
 
     while let Some(hit) = matches.next() {
         // primary node node
@@ -50,21 +52,46 @@ pub fn format(
             .nodes_for_capture_index(captures::NODE)
             .next()
             .context("error capture should exist")?;
+
+        // first pattern wins
+        let node_id = node.id();
+        if node_id == previous_node_id {
+            continue;
+        }
+        previous_node_id = node_id;
+
+        // terminal nodes only
+        if node.child_count() > 0 {
+            continue;
+        }
+
         let pattern = pattern(hit.pattern_index);
 
         current_indent += pattern.indent_delta;
+
         if current_line_size == 0 {
             let indent = indent_size * current_indent as usize;
             buffer.resize(buffer.len() + indent, b' ');
+            current_line_size += indent;
+        } else {
+            if pattern.space_before && !previous_space {
+                buffer.resize(buffer.len() + 1, b' ');
+                current_line_size += 1;
+            }
         }
 
         // write the node
         let bytes = data.get(node.byte_range()).context("valid range")?;
-        current_line_size += bytes.len();
         buffer.extend_from_slice(bytes);
+        current_line_size += bytes.len();
+        previous_space = false;
 
         // write newline after, if required
-        if pattern.newline_after {
+        if pattern.space_after {
+            buffer.resize(buffer.len() + 1, b' ');
+            current_line_size += 1;
+            previous_space = true;
+        } else if pattern.newline_after {
             buffer.extend_from_slice(newline);
             current_line_size = 0;
         }
@@ -76,8 +103,10 @@ pub fn format(
 struct Pattern {
     // add newline after the node
     newline_after: bool,
-    // apply indent after the node
-    indent_before: bool,
+    // add space after the node
+    space_after: bool,
+    // add space after the node
+    space_before: bool,
     // adjust indentation level by delta
     indent_delta: i32,
 }
@@ -98,22 +127,25 @@ const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATT
 const fn to_pattern(pattern: usize) -> Pattern {
     let range = &PROPERTIES_BY_PATTERN[pattern];
     let mut index = range.start;
-    let mut newline_after = false;
-    let mut indent_before = false;
     let mut indent_delta = 0;
+    let mut newline_after = false;
+    let mut space_after = false;
+    let mut space_before = false;
     while index < range.end {
         let property = PROPERTIES[index];
         match property.0.as_bytes() {
-            b"format.newline.after" => newline_after = to_bool_const(property.1),
-            b"format.indent.before" => indent_before = to_bool_const(property.1),
             b"format.indent.delta" => indent_delta = to_i32_const(property.1),
+            b"format.newline.after" => newline_after = to_bool_const(property.1),
+            b"format.space.after" => space_after = to_bool_const(property.1),
+            b"format.space.before" => space_before = to_bool_const(property.1),
             _ => panic!("unknown property key"),
         }
         index += 1;
     }
     Pattern {
         newline_after,
-        indent_before,
+        space_after,
+        space_before,
         indent_delta,
     }
 }
