@@ -78,6 +78,12 @@
   ";" @node)
   (#set! "format.space.after" true))
 
+; keep on the same line if possible
+((for_statement
+  init: (local_variable_declaration
+    ";" @node .))
+  (#set! "format.space.after" true))
+
 ; end of statement, newline
 (";" @node
   (#set! "format.newline.after" 1))
