@@ -110,6 +110,12 @@
 
 ; marker annotation, newline
 ((marker_annotation
+  name: (scoped_identifier
+    name: (_) @node))
+  (#set! "format.newline.after" 1))
+
+; marker annotation, newline
+((marker_annotation
   name: (_) @node)
   (#set! "format.newline.after" 1))
 

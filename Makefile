@@ -82,6 +82,7 @@ pgo-generate:
 .PHONY: pgo-train
 pgo-train:
 	target/${TARGET}/release/pegon check target/corpus > /dev/null || true
+	target/${TARGET}/release/pegon format --check target/corpus > /dev/null || true
 
 .PHONY: pgo-merge
 pgo-merge:
