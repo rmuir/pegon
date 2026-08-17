@@ -42,11 +42,11 @@ pub fn format(
         QueryCursorOptions::new().progress_callback(&mut cancellation),
     );
 
-    let indent_size = 2; // TODO
+    let indent_size: u8 = 2; // TODO
     let newline = b"\n"; // TODO
 
-    let mut current_indent: i32 = 0;
-    let mut current_line_size = 0;
+    let mut current_indent: u32 = 0;
+    let mut current_line_size: u32 = 0;
     let mut previous_node_id = usize::MAX;
     let mut previous_space = false;
 
@@ -72,29 +72,41 @@ pub fn format(
 
         let pattern = pattern(hit.pattern_index);
 
-        current_indent += pattern.indent_delta as i32;
+        current_indent = current_indent
+            .checked_add_signed(pattern.indent_delta.into())
+            .context("no overflow")?;
 
         if current_line_size == 0 {
-            let indent = indent_size * current_indent as usize;
-            buffer.resize(buffer.len() + indent, b' ');
-            current_line_size += indent;
-        } else {
-            if pattern.space_before && !previous_space {
-                buffer.resize(buffer.len() + 1, b' ');
-                current_line_size += 1;
-            }
+            let indent = current_indent
+                .checked_mul(indent_size.into())
+                .context("no overflow")?;
+            buffer.resize(
+                buffer
+                    .len()
+                    .checked_add(indent as usize)
+                    .context("no overflow")?,
+                b' ',
+            );
+            current_line_size = current_line_size
+                .checked_add(indent)
+                .context("no overflow")?;
+        } else if pattern.space_before && !previous_space {
+            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
+            current_line_size = current_line_size.checked_add(1).context("no overflow")?;
         }
 
         // write the node
         let bytes = data.get(node.byte_range()).context("valid range")?;
         buffer.extend_from_slice(bytes);
-        current_line_size += bytes.len();
+        current_line_size = current_line_size
+            .checked_add(bytes.len().try_into()?)
+            .context("no overflow")?;
         previous_space = false;
 
         // write newline after, if required
         if pattern.space_after {
-            buffer.resize(buffer.len() + 1, b' ');
-            current_line_size += 1;
+            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
+            current_line_size = current_line_size.checked_add(1).context("no overflow")?;
             previous_space = true;
         } else if pattern.newline_after != 0 {
             for _ in 0..pattern.newline_after {
@@ -150,8 +162,8 @@ const fn to_pattern(pattern: usize) -> Pattern {
         index += 1;
     }
     Pattern {
-        newline_after,
         indent_delta,
+        newline_after,
         space_after,
         space_before,
     }

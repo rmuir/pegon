@@ -75,6 +75,9 @@ pub const fn to_bool_const(string: &str) -> bool {
 }
 
 /// parse an integer from a string
+#[expect(clippy::indexing_slicing, reason = "compile time")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time")]
+#[expect(clippy::cast_possible_wrap, reason = "compile time")]
 pub const fn to_i8_const(string: &str) -> i8 {
     let bytes = string.as_bytes();
     let mut sign: i8 = 1;
