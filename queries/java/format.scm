@@ -4,7 +4,7 @@
     "}" @node .)
   .
   "else")
-  (#set! "format.indent.delta" -1))
+  (#set! "format.indent.before" -1))
 
 ; try block followed by catch/finally, reduce indent, but don't force a newline
 ((try_statement
@@ -15,7 +15,7 @@
     (catch_clause)
     (finally_clause)
   ])
-  (#set! "format.indent.delta" -1))
+  (#set! "format.indent.before" -1))
 
 ; try-with-resources block followed by catch/finally, reduce indent, but don't force a newline
 ((try_with_resources_statement
@@ -26,7 +26,7 @@
     (catch_clause)
     (finally_clause)
   ])
-  (#set! "format.indent.delta" -1))
+  (#set! "format.indent.before" -1))
 
 ; catch block followed by catch/finally, reduce indent, but don't force a newline
 ((catch_clause
@@ -37,14 +37,14 @@
     (catch_clause)
     (finally_clause)
   ]
-  (#set! "format.indent.delta" -1))
+  (#set! "format.indent.before" -1))
 
 ; empty block, allowed shorthand form
 ((block
   "{" @node
   .
   "}")
-  (#set! "format.indent.delta" 1)
+  (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
 ; empty block, allowed shorthand form
@@ -52,7 +52,7 @@
   "{" @node
   .
   "}")
-  (#set! "format.indent.delta" 1)
+  (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
 ; empty block, allowed shorthand form
@@ -60,30 +60,30 @@
   "{" @node
   .
   "}")
-  (#set! "format.indent.delta" 1)
+  (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
 ; no newline after lambda close
 ((lambda_expression
   (block
     "}" @node))
-  (#set! "format.indent.delta" -1))
+  (#set! "format.indent.before" -1))
 
 ; nor object creation expression
 ((object_creation_expression
   (class_body
     "}" @node))
-  (#set! "format.indent.delta" -1))
+  (#set! "format.indent.before" -1))
 
 ; open block: increase indent
 ("{" @node
-  (#set! "format.indent.delta" 1)
+  (#set! "format.indent.after" 1)
   (#set! "format.newline.after" 1)
   (#set! "format.space.before" true))
 
 ; close block: reduce indent
 ("}" @node
-  (#set! "format.indent.delta" -1)
+  (#set! "format.indent.before" -1)
   (#set! "format.newline.after" 1))
 
 ; end of package decl before another node, extra blank line

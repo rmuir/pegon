@@ -72,10 +72,12 @@ pub fn format(
 
         let pattern = pattern(hit.pattern_index);
 
+        // adjust indent before node
         current_indent = current_indent
-            .checked_add_signed(pattern.indent_delta.into())
+            .checked_add_signed(pattern.indent_before.into())
             .context("no overflow")?;
 
+        // write any indent/space before
         if current_line_size == 0 {
             let indent = current_indent
                 .checked_mul(indent_size.into())
@@ -103,7 +105,7 @@ pub fn format(
             .context("no overflow")?;
         previous_space = false;
 
-        // write newline after, if required
+        // write newline/space after, if required
         if pattern.space_after {
             buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
             current_line_size = current_line_size.checked_add(1).context("no overflow")?;
@@ -114,14 +116,21 @@ pub fn format(
             }
             current_line_size = 0;
         }
+
+        // adjust indent after node
+        current_indent = current_indent
+            .checked_add_signed(pattern.indent_after.into())
+            .context("no overflow")?;
     }
     Ok(())
 }
 
 /// single pattern
 struct Pattern {
-    // adjust indentation level by delta
-    indent_delta: i8,
+    // adjust indentation level after node by delta
+    indent_after: i8,
+    // adjust indentation level before node by delta
+    indent_before: i8,
     // add newline after the node
     newline_after: i8,
     // add space after the node
@@ -146,14 +155,16 @@ const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATT
 const fn to_pattern(pattern: usize) -> Pattern {
     let range = &PROPERTIES_BY_PATTERN[pattern];
     let mut index = range.start;
-    let mut indent_delta = 0;
+    let mut indent_after = 0;
+    let mut indent_before = 0;
     let mut newline_after = 0;
     let mut space_after = false;
     let mut space_before = false;
     while index < range.end {
         let property = PROPERTIES[index];
         match property.0.as_bytes() {
-            b"format.indent.delta" => indent_delta = to_i8_const(property.1),
+            b"format.indent.after" => indent_after = to_i8_const(property.1),
+            b"format.indent.before" => indent_before = to_i8_const(property.1),
             b"format.newline.after" => newline_after = to_i8_const(property.1),
             b"format.space.after" => space_after = to_bool_const(property.1),
             b"format.space.before" => space_before = to_bool_const(property.1),
@@ -162,7 +173,8 @@ const fn to_pattern(pattern: usize) -> Pattern {
         index += 1;
     }
     Pattern {
-        indent_delta,
+        indent_after,
+        indent_before,
         newline_after,
         space_after,
         space_before,
