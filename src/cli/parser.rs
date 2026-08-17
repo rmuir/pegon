@@ -47,7 +47,11 @@ pub enum Commands {
         /// Use `-` for standard input. [default: CWD]
         files: Vec<PathBuf>,
 
-        /// Verify output correctness after formatting
+        /// Check if files would be formatted without writing to disk
+        #[arg(long)]
+        check: bool,
+
+        /// Verify output correctness before writing to disk
         #[arg(long)]
         verify: bool,
     },

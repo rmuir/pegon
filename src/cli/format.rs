@@ -40,6 +40,7 @@ impl Stats {
 }
 
 struct Worker {
+    check: bool,
     verify: bool,
     parser: Parser,
     stats_sender: Sender<Stats>,
@@ -47,12 +48,13 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(verify: bool, stats_sender: Sender<Stats>) -> Self {
+    fn new(check: bool, verify: bool, stats_sender: Sender<Stats>) -> Self {
         let mut parser = Parser::new();
         parser
             .set_language(&crate::support::LANGUAGE)
             .expect("parser should be included in the binary");
         Self {
+            check,
             verify,
             parser,
             stats_sender,
@@ -131,7 +133,9 @@ impl Worker {
                 }
             }
             self.stats.fix_count = self.stats.fix_count.saturating_add(1);
-            Self::write_bytes(entry, &buffer)?;
+            if !self.check {
+                Self::write_bytes(entry, &buffer)?;
+            }
         }
         self.stats.add_file(1);
         Ok(())
@@ -149,7 +153,7 @@ impl Drop for Worker {
 /// # Errors
 ///
 /// Returns an error if any files had problems, or if internal errors were encountered.
-pub fn format(inputs: &[PathBuf], verify: bool) -> Result<(), Error> {
+pub fn format(inputs: &[PathBuf], check: bool, verify: bool) -> Result<(), Error> {
     let start_time = Instant::now();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
@@ -182,7 +186,7 @@ pub fn format(inputs: &[PathBuf], verify: bool) -> Result<(), Error> {
 
     let (stats_tx, stats_rx) = crossbeam_channel::unbounded();
     builder.build_parallel().run(|| {
-        let mut worker = Worker::new(verify, stats_tx.clone());
+        let mut worker = Worker::new(check, verify, stats_tx.clone());
         Box::new(move |result| worker.visit(result))
     });
 
@@ -210,11 +214,19 @@ pub fn format(inputs: &[PathBuf], verify: bool) -> Result<(), Error> {
         if fix_count > 0 {
             bail!("{files} files left unchanged in {millis} ms [{err_count} errors]");
         }
-        bail!("{files} files formatted in {millis} ms [{fix_count} changed, {err_count} errors]");
+        if check {
+            bail!(
+                "{files} files checked in {millis} ms [{fix_count} would be changed, {err_count} errors]"
+            );
+        }
+        bail!("{files} files checked in {millis} ms [{fix_count} changed, {err_count} errors]");
     }
 
     if fix_count > 0 {
-        eprintln!("Success: {files} files formatted in {millis} ms [{fix_count} changed]");
+        if check {
+            bail!("{files} files checked in {millis} ms [{fix_count} would be changed]");
+        }
+        eprintln!("Success: {files} files checked in {millis} ms [{fix_count} changed]");
     } else {
         eprintln!("Success: {files} files left unchanged in {millis} ms");
     }

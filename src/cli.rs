@@ -34,7 +34,11 @@ pub fn main() -> Result<(), Error> {
             *fix,
             stdin_filename.as_deref(),
         ),
-        Commands::Format { files, verify } => format::format(files, *verify),
+        Commands::Format {
+            files,
+            check,
+            verify,
+        } => format::format(files, *check, *verify),
         Commands::Analyze { files } => analyze::analyze(files),
         Commands::Server { socket: None, .. } => {
             let (connection, iothreads) = Connection::stdio();
