@@ -7,7 +7,8 @@ use gen_lsp_types::{
     DefinitionRegistrationOptions, DefinitionRequest, DiagnosticOptions, DiagnosticProvider,
     DiagnosticRegistrationOptions, DidChangeTextDocumentNotification,
     DidCloseTextDocumentNotification, DidOpenTextDocumentNotification, DocumentDiagnosticRequest,
-    DocumentFilter, DocumentHighlightOptions, DocumentHighlightProvider,
+    DocumentFilter, DocumentFormattingOptions, DocumentFormattingProvider,
+    DocumentFormattingRequest, DocumentHighlightOptions, DocumentHighlightProvider,
     DocumentHighlightRegistrationOptions, DocumentHighlightRequest, DocumentSymbolOptions,
     DocumentSymbolProvider, DocumentSymbolRequest, FoldingRangeOptions, FoldingRangeProvider,
     FoldingRangeRegistrationOptions, FoldingRangeRequest, Full, HoverOptions, HoverProvider,
@@ -62,6 +63,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         work_done_progress_options,
     };
     let definition_options = DefinitionOptions {
+        work_done_progress_options,
+    };
+    let document_formatting_options = DocumentFormattingOptions {
         work_done_progress_options,
     };
     let document_highlight_options = DocumentHighlightOptions {
@@ -146,6 +150,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 .then_some(DefinitionProvider::DefinitionOptions(definition_options)),
             diagnostic_provider: client.registers_diagnostics().not().then_some(
                 DiagnosticProvider::DiagnosticRegistrationOptions(diagnostic_options.clone()),
+            ),
+            document_formatting_provider: client.registers_document_formatting().not().then_some(
+                DocumentFormattingProvider::DocumentFormattingOptions(document_formatting_options),
             ),
             document_highlight_provider: client.registers_document_highlight().not().then_some(
                 DocumentHighlightProvider::DocumentHighlightOptions(document_highlight_options),
@@ -252,6 +259,13 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             id: DocumentDiagnosticRequest::METHOD.into(),
             method: DocumentDiagnosticRequest::METHOD.into(),
             register_options: Some(serde_json::to_value(diagnostic_options)?),
+        });
+    }
+    if client.registers_document_formatting() {
+        registrations.push(Registration {
+            id: DocumentFormattingRequest::METHOD.into(),
+            method: DocumentFormattingRequest::METHOD.into(),
+            register_options: Some(serde_json::to_value(document_formatting_options)?),
         });
     }
     if client.registers_document_highlight() {

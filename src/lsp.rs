@@ -11,6 +11,7 @@ mod client;
 mod code_action;
 mod definition;
 mod diagnostics;
+mod document_formatting;
 mod document_highlight;
 mod document_symbols;
 mod folding_range;
