@@ -40,18 +40,20 @@ impl Stats {
 }
 
 struct Worker {
+    verify: bool,
     parser: Parser,
     stats_sender: Sender<Stats>,
     stats: Stats,
 }
 
 impl Worker {
-    fn new(stats_sender: Sender<Stats>) -> Self {
+    fn new(verify: bool, stats_sender: Sender<Stats>) -> Self {
         let mut parser = Parser::new();
         parser
             .set_language(&crate::support::LANGUAGE)
             .expect("parser should be included in the binary");
         Self {
+            verify,
             parser,
             stats_sender,
             stats: Stats::default(),
@@ -109,8 +111,25 @@ impl Worker {
             .parser
             .parse(&data, None)
             .context("parser should be setup")?;
+        // differentiate these from real errors
+        if tree.root_node().has_error() {
+            return Ok(());
+        }
         formatting::format(&tree, &data, &mut buffer, &AtomicBool::new(false))?;
         if data != buffer {
+            if self.verify {
+                self.parser.reset();
+                let tree2 = self
+                    .parser
+                    .parse(&buffer, None)
+                    .context("parser should be setup")?;
+                let mut buffer2 = Vec::with_capacity(buffer.len());
+                formatting::format(&tree2, &buffer, &mut buffer2, &AtomicBool::new(false))
+                    .context("verify: parsing check failed")?;
+                if buffer != buffer2 {
+                    bail!("verify: idempotency check failed");
+                }
+            }
             self.stats.fix_count = self.stats.fix_count.saturating_add(1);
             Self::write_bytes(entry, &buffer)?;
         }
@@ -130,7 +149,7 @@ impl Drop for Worker {
 /// # Errors
 ///
 /// Returns an error if any files had problems, or if internal errors were encountered.
-pub fn format(inputs: &[PathBuf]) -> Result<(), Error> {
+pub fn format(inputs: &[PathBuf], verify: bool) -> Result<(), Error> {
     let start_time = Instant::now();
     let mut typesbuilder = TypesBuilder::new();
     // TODO: the default types for java are crazy and include JSP and properties
@@ -163,7 +182,7 @@ pub fn format(inputs: &[PathBuf]) -> Result<(), Error> {
 
     let (stats_tx, stats_rx) = crossbeam_channel::unbounded();
     builder.build_parallel().run(|| {
-        let mut worker = Worker::new(stats_tx.clone());
+        let mut worker = Worker::new(verify, stats_tx.clone());
         Box::new(move |result| worker.visit(result))
     });
 
@@ -176,16 +195,28 @@ pub fn format(inputs: &[PathBuf]) -> Result<(), Error> {
 
     let files = stats.files;
     let fix_count = stats.fix_count;
+    let err_count = stats.error_count;
 
     let elapsed = start_time.elapsed();
     let millis = elapsed.as_millis();
 
     if files == 0 {
+        if err_count > 0 {
+            bail!("Found no java files to check [{err_count} errors]");
+        }
         bail!("Found no java files to check");
     }
-    if fix_count > 0 {
-        bail!("Success: {files} files formatted in {millis} ms [{fix_count} changed]");
+    if err_count > 0 {
+        if fix_count > 0 {
+            bail!("{files} files left unchanged in {millis} ms [{err_count} errors]");
+        }
+        bail!("{files} files formatted in {millis} ms [{fix_count} changed, {err_count} errors]");
     }
-    eprintln!("Success: {files} files left unchanged in {millis} ms");
+
+    if fix_count > 0 {
+        eprintln!("Success: {files} files formatted in {millis} ms [{fix_count} changed]");
+    } else {
+        eprintln!("Success: {files} files left unchanged in {millis} ms");
+    }
     Ok(())
 }

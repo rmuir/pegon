@@ -46,6 +46,10 @@ pub enum Commands {
         ///
         /// Use `-` for standard input. [default: CWD]
         files: Vec<PathBuf>,
+
+        /// Verify output correctness after formatting
+        #[arg(long)]
+        verify: bool,
     },
 
     /// Analyze java code
