@@ -170,6 +170,7 @@
               "format.indent.after",
               "format.indent.before",
               "format.newline.after",
+              "format.newline.before",
               "format.space.after",
               "format.space.before",
               "hint.prefix",

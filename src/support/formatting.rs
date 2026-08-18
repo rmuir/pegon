@@ -77,6 +77,15 @@ pub fn format(
             .checked_add_signed(pattern.indent_before.into())
             .context("no overflow")?;
 
+        // write newline before, if required
+        // TODO: hack with the previous_space, maybe we should defer?
+        if current_line_size > 0 && pattern.newline_before > 0 && !previous_space {
+            for _ in 0..pattern.newline_before {
+                buffer.extend_from_slice(newline);
+            }
+            current_line_size = 0;
+        }
+
         // write any indent/space before
         if current_line_size == 0 {
             let indent = current_indent
@@ -133,6 +142,8 @@ struct Pattern {
     indent_before: i8,
     // add newline after the node
     newline_after: i8,
+    // add newline before the node
+    newline_before: i8,
     // add space after the node
     space_after: bool,
     // add space after the node
@@ -158,6 +169,7 @@ const fn to_pattern(pattern: usize) -> Pattern {
     let mut indent_after = 0;
     let mut indent_before = 0;
     let mut newline_after = 0;
+    let mut newline_before = 0;
     let mut space_after = false;
     let mut space_before = false;
     while index < range.end {
@@ -166,6 +178,7 @@ const fn to_pattern(pattern: usize) -> Pattern {
             b"format.indent.after" => indent_after = to_i8_const(property.1),
             b"format.indent.before" => indent_before = to_i8_const(property.1),
             b"format.newline.after" => newline_after = to_i8_const(property.1),
+            b"format.newline.before" => newline_before = to_i8_const(property.1),
             b"format.space.after" => space_after = to_bool_const(property.1),
             b"format.space.before" => space_before = to_bool_const(property.1),
             _ => panic!("unknown property key"),
@@ -176,6 +189,7 @@ const fn to_pattern(pattern: usize) -> Pattern {
         indent_after,
         indent_before,
         newline_after,
+        newline_before,
         space_after,
         space_before,
     }

@@ -47,6 +47,13 @@
   (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
+((block
+  "{"
+  .
+  "}" @node)
+  (#set! "format.indent.before" -1)
+  (#set! "format.newline.after" 1))
+
 ; empty block, allowed shorthand form
 ((constructor_body
   "{" @node
@@ -55,6 +62,13 @@
   (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
+((constructor_body
+  "{"
+  .
+  "}" @node)
+  (#set! "format.indent.before" -1)
+  (#set! "format.newline.after" 1))
+
 ; empty block, allowed shorthand form
 ((class_body
   "{" @node
@@ -62,6 +76,13 @@
   "}")
   (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
+
+((class_body
+  "{"
+  .
+  "}" @node)
+  (#set! "format.indent.before" -1)
+  (#set! "format.newline.after" 1))
 
 ; no newline after lambda close
 ((lambda_expression
@@ -84,6 +105,7 @@
 ; close block: reduce indent
 ("}" @node
   (#set! "format.indent.before" -1)
+  (#set! "format.newline.before" 1)
   (#set! "format.newline.after" 1))
 
 ; end of package decl before another node, extra blank line
