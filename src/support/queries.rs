@@ -45,6 +45,13 @@ impl PredicateMatch for Predicate {
                     .expect("valid capture");
                 Some(path.as_encoded_bytes()) != data.get(node.byte_range())
             }
+            Self::Terminal(capture) => {
+                let node = hit
+                    .nodes_for_capture_index(*capture)
+                    .next()
+                    .expect("valid capture");
+                node.child_count() == 0
+            }
         }
     }
 }

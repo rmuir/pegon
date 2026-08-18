@@ -111,6 +111,16 @@
       ],
       "description": "true if the text does not match the filename"
     },
+    "terminal": {
+      "not": false,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        }
+      ],
+      "description": "true if the node has no children"
+    },
     "any-of": {
       "parameters": [
         {

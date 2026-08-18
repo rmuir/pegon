@@ -7,8 +7,11 @@ use tree_sitter::{
 };
 
 use crate::java_queries::format::captures;
+use crate::java_queries::format::predicates::{PREDICATES, PREDICATES_BY_PATTERN};
 use crate::java_queries::format::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
-use crate::support::queries::{const_array_from_fn, to_bool_const, to_i8_const};
+use crate::support::queries::{
+    PredicateMatch as _, const_array_from_fn, to_bool_const, to_i8_const,
+};
 
 /// Formats the document into `buffer`
 ///
@@ -35,12 +38,23 @@ pub fn format(
         }
     };
 
-    let mut captures = cursor.captures_with_options(
-        &QUERY,
-        tree.root_node(),
-        data,
-        QueryCursorOptions::new().progress_callback(&mut cancellation),
-    );
+    #[expect(clippy::indexing_slicing, reason = "checked at compile-time")]
+    let mut captures = cursor
+        .captures_with_options(
+            &QUERY,
+            tree.root_node(),
+            data,
+            QueryCursorOptions::new().progress_callback(&mut cancellation),
+        )
+        .filter(|(hit, _)| {
+            let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
+            for index in list.start..list.end {
+                if !PREDICATES[index as usize].matches(hit, data, None) {
+                    return false;
+                }
+            }
+            true
+        });
 
     let indent_size: u8 = 2; // TODO
     let newline = b"\n"; // TODO
@@ -58,17 +72,16 @@ pub fn format(
         }
         let node = capture.node;
 
-        // terminal nodes only
-        if node.child_count() > 0 {
-            continue;
-        }
-
         // first pattern wins
         let node_id = node.id();
         if node_id == previous_node_id {
             continue;
         }
         previous_node_id = node_id;
+
+        // terminal nodes only (for now!)
+        let pattern_index = hit.pattern_index;
+        debug_assert!(node.child_count() == 0, "non-terminal at {pattern_index}");
 
         let pattern = pattern(hit.pattern_index);
 

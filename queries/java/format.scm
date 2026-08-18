@@ -139,6 +139,7 @@
 ; marker annotation, newline
 ((marker_annotation
   name: (_) @node)
+  (#terminal? @node)
   (#set! "format.newline.after" 1))
 
 ; regular annotation, newline
@@ -406,7 +407,7 @@
 
 ((if_statement
   condition: (parenthesized_expression
-    ")") @node)
+    ")" @node))
   (#set! "format.space.after" true))
 
 ((while_statement
@@ -449,4 +450,7 @@
 ] @node
   (#set! "format.newline.after" 1))
 
-_ @node
+; any otherwise listed terminal node
+; format-ignore
+([_] @node
+  (#terminal? @node))
