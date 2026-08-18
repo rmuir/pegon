@@ -165,6 +165,17 @@
   name: (_) @node)
   (#set! "format.space.before" true))
 
+; space between type and name
+((receiver_parameter
+  (type_identifier) @node)
+  (#set! "format.space.after" true))
+
+; space between type and name
+((receiver_parameter
+  (scoped_type_identifier
+    (type_identifier) @node))
+  (#set! "format.space.after" true))
+
 ; JEP 394
 ((instanceof_expression
   name: (_) @node)
@@ -235,6 +246,15 @@
 ; nothing special
 (wildcard
   "?" @node)
+
+; must insert space to disambiguate from an update expression
+((unary_expression
+  operator: _ @node
+  operand: [
+    (unary_expression)
+    (update_expression)
+  ])
+  (#set! "format.space.after" true))
 
 ; nothing special
 (unary_expression
@@ -381,6 +401,17 @@
 ((wildcard
   (super) @node)
   (#set! "format.space.before" true)
+  (#set! "format.space.after" true))
+
+; insane corner case, treesitter allows it with a space
+; but not with, so don't remove the space :)
+((field_access
+  object: [
+    (decimal_integer_literal)
+    (hex_integer_literal)
+    (octal_integer_literal)
+    (binary_integer_literal)
+  ] @node)
   (#set! "format.space.after" true))
 
 _ @node
