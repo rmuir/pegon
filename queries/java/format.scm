@@ -256,6 +256,15 @@
   ">" @node)
   (#set! "format.space.after" true))
 
+; no space before : in a switch
+((switch_block_statement_group
+  ":" @node)
+  (#set! "format.space.after" true))
+
+; no space after default label
+(switch_label
+  "default" @node)
+
 ([
   "abstract"
   "assert"
