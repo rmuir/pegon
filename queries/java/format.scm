@@ -404,6 +404,24 @@
   name: (identifier) @node)
   (#set! "format.space.before" true))
 
+((if_statement
+  condition: (parenthesized_expression
+    ")") @node)
+  (#set! "format.space.after" true))
+
+((while_statement
+  condition: (parenthesized_expression
+    ")" @node))
+  (#set! "format.space.after" true))
+
+((for_statement
+  ")" @node)
+  (#set! "format.space.after" true))
+
+((enhanced_for_statement
+  ")" @node)
+  (#set! "format.space.after" true))
+
 ((cast_expression
   ")" @node)
   (#set! "format.space.after" true))
