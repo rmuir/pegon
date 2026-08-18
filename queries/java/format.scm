@@ -396,16 +396,6 @@
   (#set! "format.space.before" true)
   (#set! "format.space.after" true))
 
-((assert_statement
-  ":" @node)
-  (#set! "format.space.before" true)
-  (#set! "format.space.after" true))
-
-((enhanced_for_statement
-  ":" @node)
-  (#set! "format.space.before" true)
-  (#set! "format.space.after" true))
-
 ((method_declaration
   name: (identifier) @node)
   (#set! "format.space.before" true))
