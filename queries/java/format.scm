@@ -52,7 +52,7 @@
   .
   "}" @node)
   (#set! "format.indent.before" -1)
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; empty block, allowed shorthand form
 ((constructor_body
@@ -67,7 +67,7 @@
   .
   "}" @node)
   (#set! "format.indent.before" -1)
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; empty block, allowed shorthand form
 ((class_body
@@ -82,7 +82,7 @@
   .
   "}" @node)
   (#set! "format.indent.before" -1)
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; no newline after lambda close
 ((lambda_expression
@@ -99,21 +99,14 @@
 ; open block: increase indent
 ("{" @node
   (#set! "format.indent.after" 1)
-  (#set! "format.newline.after" 1)
+  (#set! "format.newline.after" true)
   (#set! "format.space.before" true))
 
 ; close block: reduce indent
 ("}" @node
   (#set! "format.indent.before" -1)
-  (#set! "format.newline.before" 1)
-  (#set! "format.newline.after" 1))
-
-; end of package decl before another node, extra blank line
-((package_declaration
-  ";" @node)
-  .
-  (_)
-  (#set! "format.newline.after" 2))
+  (#set! "format.newline.before" true)
+  (#set! "format.newline.after" true))
 
 ; keep on the same line if possible
 ((for_statement
@@ -128,29 +121,29 @@
 
 ; end of statement, newline
 (";" @node
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; marker annotation, newline
 ((marker_annotation
   name: (scoped_identifier
     name: (_) @node))
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; marker annotation, newline
 ((marker_annotation
   name: (_) @node)
   (#terminal? @node)
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; regular annotation, newline
 ((annotation_argument_list
   ")" @node .)
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; newlines after enum constants
 (enum_body
   "," @node
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; space after comma otherwise
 ("," @node
@@ -295,7 +288,7 @@
 ; fallthrough switch
 ((switch_block_statement_group
   ":" @node .)
-  (#set! "format.newline.after" 1))
+  (#set! "format.newline.after" true))
 
 ; no space before : in a switch
 ((switch_block_statement_group
@@ -443,12 +436,22 @@
   ] @node)
   (#set! "format.space.after" true))
 
+; insane corner case, due to the nature of extras
+; don't treat these special in any way
+(string_literal
+  [
+    (line_comment)
+    (block_comment)
+  ] @node)
+
 ; comments: indent them, newline them (for now)
 ([
   (line_comment)
   (block_comment)
 ] @node
-  (#set! "format.newline.after" 1))
+  (#set! "format.comment" true)
+  (#set! "format.newline.after" true)
+  (#set! "format.space.before" true))
 
 ; any otherwise listed terminal node
 ; format-ignore

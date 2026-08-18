@@ -62,7 +62,9 @@ pub fn format(
     let mut current_indent: u32 = 0;
     let mut current_line_size: u32 = 0;
     let mut previous_node_id = usize::MAX;
-    let mut previous_space = false;
+    let mut previous_line = usize::MAX;
+    let mut pending_space = false;
+    let mut pending_newline = false;
 
     while let Some((hit, capture_id)) = captures.next() {
         // primary node captures only
@@ -85,6 +87,12 @@ pub fn format(
 
         let pattern = pattern(hit.pattern_index);
 
+        // let line comments be sticky
+        if pattern.comment && pending_newline && node.start_position().row == previous_line {
+            pending_newline = false;
+            pending_space = true;
+        }
+
         // adjust indent before node
         current_indent = current_indent
             .checked_add_signed(pattern.indent_before.into())
@@ -92,10 +100,8 @@ pub fn format(
 
         // write newline before, if required
         // TODO: hack with the previous_space, maybe we should defer?
-        if current_line_size > 0 && pattern.newline_before > 0 && !previous_space {
-            for _ in 0..pattern.newline_before {
-                buffer.extend_from_slice(newline);
-            }
+        if current_line_size > 0 && (pattern.newline_before || pending_newline) {
+            buffer.extend_from_slice(newline);
             current_line_size = 0;
         }
 
@@ -114,7 +120,7 @@ pub fn format(
             current_line_size = current_line_size
                 .checked_add(indent)
                 .context("no overflow")?;
-        } else if pattern.space_before && !previous_space {
+        } else if pattern.space_before || pending_space {
             buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
             current_line_size = current_line_size.checked_add(1).context("no overflow")?;
         }
@@ -125,18 +131,15 @@ pub fn format(
         current_line_size = current_line_size
             .checked_add(bytes.len().try_into()?)
             .context("no overflow")?;
-        previous_space = false;
+        pending_space = false;
+        pending_newline = false;
 
         // write newline/space after, if required
         if pattern.space_after {
-            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
-            current_line_size = current_line_size.checked_add(1).context("no overflow")?;
-            previous_space = true;
-        } else if pattern.newline_after != 0 {
-            for _ in 0..pattern.newline_after {
-                buffer.extend_from_slice(newline);
-            }
-            current_line_size = 0;
+            pending_space = true;
+        } else if pattern.newline_after {
+            pending_newline = true;
+            previous_line = node.end_position().row;
         }
 
         // adjust indent after node
@@ -144,23 +147,32 @@ pub fn format(
             .checked_add_signed(pattern.indent_after.into())
             .context("no overflow")?;
     }
+
+    // write any final pending newline
+    if current_line_size > 0 && pending_newline {
+        buffer.extend_from_slice(newline);
+    }
+
     Ok(())
 }
 
 /// single pattern
+#[expect(clippy::struct_excessive_bools, reason = "no excuse, just iterating")]
 struct Pattern {
     // adjust indentation level after node by delta
     indent_after: i8,
     // adjust indentation level before node by delta
     indent_before: i8,
     // add newline after the node
-    newline_after: i8,
+    newline_after: bool,
     // add newline before the node
-    newline_before: i8,
+    newline_before: bool,
     // add space after the node
     space_after: bool,
     // add space after the node
     space_before: bool,
+    // sticks to previous node, gets trimmed/indented
+    comment: bool,
 }
 
 /// Look up pattern by index
@@ -181,19 +193,21 @@ const fn to_pattern(pattern: usize) -> Pattern {
     let mut index = range.start;
     let mut indent_after = 0;
     let mut indent_before = 0;
-    let mut newline_after = 0;
-    let mut newline_before = 0;
+    let mut newline_after = false;
+    let mut newline_before = false;
     let mut space_after = false;
     let mut space_before = false;
+    let mut comment = false;
     while index < range.end {
         let property = PROPERTIES[index];
         match property.0.as_bytes() {
             b"format.indent.after" => indent_after = to_i8_const(property.1),
             b"format.indent.before" => indent_before = to_i8_const(property.1),
-            b"format.newline.after" => newline_after = to_i8_const(property.1),
-            b"format.newline.before" => newline_before = to_i8_const(property.1),
+            b"format.newline.after" => newline_after = to_bool_const(property.1),
+            b"format.newline.before" => newline_before = to_bool_const(property.1),
             b"format.space.after" => space_after = to_bool_const(property.1),
             b"format.space.before" => space_before = to_bool_const(property.1),
+            b"format.comment" => comment = to_bool_const(property.1),
             _ => panic!("unknown property key"),
         }
         index += 1;
@@ -205,6 +219,7 @@ const fn to_pattern(pattern: usize) -> Pattern {
         newline_before,
         space_after,
         space_before,
+        comment,
     }
 }
 

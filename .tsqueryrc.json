@@ -177,6 +177,7 @@
               "diagnostic.title",
               "fold.kind",
               "fold.nextline",
+              "format.comment",
               "format.indent.after",
               "format.indent.before",
               "format.newline.after",
