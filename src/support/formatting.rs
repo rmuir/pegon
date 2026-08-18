@@ -63,6 +63,7 @@ pub fn format(
     let mut current_line_size: u32 = 0;
     let mut previous_node_id = usize::MAX;
     let mut previous_line = usize::MAX;
+    let mut previous_comment = false;
     let mut pending_space = false;
     let mut pending_newline = false;
 
@@ -87,11 +88,15 @@ pub fn format(
 
         let pattern = pattern(hit.pattern_index);
 
-        // let line comments be sticky
-        if pattern.comment && pending_newline && node.start_position().row == previous_line {
+        // let comments be "sticky" / chain on the same line
+        if (pattern.comment || previous_comment)
+            && pending_newline
+            && node.start_position().row == previous_line
+        {
             pending_newline = false;
             pending_space = true;
         }
+        previous_comment = pattern.comment;
 
         // adjust indent before node
         current_indent = current_indent
@@ -99,7 +104,6 @@ pub fn format(
             .context("no overflow")?;
 
         // write newline before, if required
-        // TODO: hack with the previous_space, maybe we should defer?
         if current_line_size > 0 && (pattern.newline_before || pending_newline) {
             buffer.extend_from_slice(newline);
             current_line_size = 0;
@@ -171,7 +175,7 @@ struct Pattern {
     space_after: bool,
     // add space after the node
     space_before: bool,
-    // sticks to previous node, gets trimmed/indented
+    // sticks to previous and next node on same line
     comment: bool,
 }
 
