@@ -124,13 +124,6 @@
   ")" @node .)
   (#set! "format.newline.after" 1))
 
-; comments: indent them, newline them (for now)
-([
-  (line_comment)
-  (block_comment)
-] @node
-  (#set! "format.newline.after" 1))
-
 ; newlines after enum constants
 (enum_body
   "," @node
@@ -276,6 +269,11 @@
   ">" @node)
   (#set! "format.space.after" true))
 
+; fallthrough switch
+((switch_block_statement_group
+  ":" @node .)
+  (#set! "format.newline.after" 1))
+
 ; no space before : in a switch
 ((switch_block_statement_group
   ":" @node)
@@ -413,5 +411,12 @@
     (binary_integer_literal)
   ] @node)
   (#set! "format.space.after" true))
+
+; comments: indent them, newline them (for now)
+([
+  (line_comment)
+  (block_comment)
+] @node
+  (#set! "format.newline.after" 1))
 
 _ @node
