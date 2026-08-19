@@ -91,6 +91,12 @@
 (element_value_array_initializer
   "}" @node)
 
+(array_initializer
+  "{" @node)
+
+(array_initializer
+  "}" @node)
+
 ; no newline after lambda close
 ((lambda_expression
   (block
