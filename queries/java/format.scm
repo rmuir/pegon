@@ -26,6 +26,15 @@
     "}" @node .)) ; "while" is implicitly required by the grammar
   (#set! "format.indent.before" -1))
 
+; enum constant } followed by comma, reduce indent, but don't force a newline
+((enum_body
+  (enum_constant
+    body: (class_body
+      "}" @node .))
+  .
+  ",")
+  (#set! "format.indent.before" -1))
+
 ; try block followed by catch/finally, reduce indent, but don't force a newline
 ((try_statement
   body: (block
@@ -466,6 +475,13 @@
 ; space after cast
 ((cast_expression
   ")" @node)
+  (#set! "format.space.after" true))
+
+; space after array init's ]
+((array_creation_expression
+  dimensions: (dimensions
+    "]" @node)
+  value: (array_initializer))
   (#set! "format.space.after" true))
 
 ; treat super as a keyword inside bounds
