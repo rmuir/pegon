@@ -144,6 +144,22 @@
     "}" @node))
   (#set! "format.indent.before" -1))
 
+; extra switch block indentation
+((switch_block
+  "{" @node
+  (switch_block_statement_group)+)
+  (#set! "format.indent.after" 2)
+  (#set! "format.newline.after" true)
+  (#set! "format.space.before" true))
+
+; extra switch block de-indentation
+((switch_block
+  (switch_block_statement_group)+
+  "}" @node)
+  (#set! "format.indent.before" -2)
+  (#set! "format.newline.after" true)
+  (#set! "format.space.before" true))
+
 ; open block: increase indent
 ("{" @node
   (#set! "format.indent.after" 1)
@@ -334,19 +350,30 @@
   ">" @node)
   (#set! "format.space.after" true))
 
-; fallthrough switch
-((switch_block_statement_group
-  ":" @node .)
-  (#set! "format.newline.after" true))
-
-; no space before : in a switch
+; indent after the :
 ((switch_block_statement_group
   ":" @node)
+  (#set! "format.indent.after" 1)
+  (#set! "format.newline.after" true))
+
+; de-indent on keyword
+((switch_block_statement_group
+  (switch_label
+    "default" @node))
+  (#set! "format.indent.before" -1))
+
+; de-indent on keyword
+((switch_block_statement_group
+  (switch_label
+    "case" @node))
+  (#set! "format.indent.before" -1)
   (#set! "format.space.after" true))
 
-; no space after default label
-(switch_label
-  "default" @node)
+; TODO: i don't like this, but its what google does i guess?
+; space after, instead, makes for more readable code
+((labeled_statement
+  ":" @node)
+  (#set! "format.newline.after" true))
 
 ; put spaces around this big pile of keywords and operators
 ([
@@ -508,6 +535,19 @@
     (line_comment)
     (block_comment)
   ] @node)
+
+; comments inside a switch block: de-indent then reindent
+((switch_block
+  [
+    (line_comment)
+    (block_comment)
+  ] @node
+  (switch_block_statement_group)+)
+  (#set! "format.indent.before" -1)
+  (#set! "format.indent.after" 1)
+  (#set! "format.comment" true)
+  (#set! "format.newline.after" true)
+  (#set! "format.space.before" true))
 
 ; comments: indent them, newline them (for now)
 ([
