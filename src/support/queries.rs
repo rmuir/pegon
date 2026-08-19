@@ -1,3 +1,6 @@
+//! Shared query functions used by the different LSP and CLI functionality
+//!
+//! I hate "junk drawer" utility files, and hope to shrink this file
 use std::path::Path;
 
 use tree_sitter::QueryMatch;
@@ -14,6 +17,7 @@ pub trait PredicateMatch {
 impl PredicateMatch for Predicate {
     fn matches(&self, hit: &QueryMatch, data: &[u8], path: Option<&Path>) -> bool {
         match self {
+            // compare two node's binary order (that's unicode order)
             Self::LessThan(left, right) => {
                 let node1 = hit
                     .nodes_for_capture_index(*left)
@@ -25,6 +29,7 @@ impl PredicateMatch for Predicate {
                     .expect("valid capture");
                 data.get(node1.byte_range()) < data.get(node2.byte_range())
             }
+            // if the next byte is a return, newline or end of file
             Self::EndOfLine(capture) => {
                 let node = hit
                     .nodes_for_capture_index(*capture)
@@ -34,6 +39,7 @@ impl PredicateMatch for Predicate {
                 let byte = data.get(position).copied().unwrap_or(b'\n');
                 byte == b'\n' || byte == b'\r'
             }
+            // compares bytes against the provided path (if provided)
             Self::NotEqualsFileName(capture) => {
                 let Some(path) = path else { return false };
                 let Some(path) = path.file_stem() else {
@@ -45,6 +51,7 @@ impl PredicateMatch for Predicate {
                     .expect("valid capture");
                 Some(path.as_encoded_bytes()) != data.get(node.byte_range())
             }
+            // true if the captured node has no children at all
             Self::Terminal(capture) => {
                 let node = hit
                     .nodes_for_capture_index(*capture)
