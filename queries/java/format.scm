@@ -84,6 +84,13 @@
   (#set! "format.indent.before" -1)
   (#set! "format.newline.after" true))
 
+; annotation element array initializers, no space even
+(element_value_array_initializer
+  "{" @node)
+
+(element_value_array_initializer
+  "}" @node)
+
 ; no newline after lambda close
 ((lambda_expression
   (block
