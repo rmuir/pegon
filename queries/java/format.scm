@@ -20,6 +20,12 @@
   "else")
   (#set! "format.indent.before" -1))
 
+; do block end followed by while, reduce indent, but don't force a newline
+((do_statement
+  body: (block
+    "}" @node .)) ; "while" is implicitly required by the grammar
+  (#set! "format.indent.before" -1))
+
 ; try block followed by catch/finally, reduce indent, but don't force a newline
 ((try_statement
   body: (block
