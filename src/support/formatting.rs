@@ -105,6 +105,10 @@ pub fn format(
 
         // write newline before, if required
         if current_line_size > 0 && (pattern.newline_before || pending_newline) {
+            // preserve existing blank line separators
+            if pending_newline && node.start_position().row.saturating_sub(previous_line) > 1 {
+                buffer.extend_from_slice(newline);
+            }
             buffer.extend_from_slice(newline);
             current_line_size = 0;
         }
