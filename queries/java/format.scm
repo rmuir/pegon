@@ -1,3 +1,17 @@
+; Formatting patterns work a bit different than the others.
+; * only terminal nodes are captured (things that are written)
+; * first pattern to match "wins" for the node.
+; * the last pattern in this file matches any terminal node and simply writes it.
+;
+; The idea is to encode precisely where indents increase/decrease,
+; where spaces are needed, where newlines are needed.
+;
+; Spaces and newlines are merged automatically. So if there's AB, and A requires
+; a space after it, and B requires a space before it, there will only be one space.
+;
+; Comments have to be treated a bit special, to handle trailing comments, and even
+; "medial form" comments /* like this */ that sometimes happen.
+; ---
 ; if-with-else, reduce indent, but don't force a newline
 ((if_statement
   consequence: (block
@@ -39,7 +53,7 @@
   ]
   (#set! "format.indent.before" -1))
 
-; empty block, allowed shorthand form
+; empty block open, allowed shorthand form
 ((block
   "{" @node
   .
@@ -47,6 +61,7 @@
   (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
+; empty block close, allowed shorthand form
 ((block
   "{"
   .
@@ -54,7 +69,7 @@
   (#set! "format.indent.before" -1)
   (#set! "format.newline.after" true))
 
-; empty block, allowed shorthand form
+; empty block open, allowed shorthand form
 ((constructor_body
   "{" @node
   .
@@ -62,6 +77,7 @@
   (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
+; empty block close, allowed shorthand form
 ((constructor_body
   "{"
   .
@@ -69,7 +85,7 @@
   (#set! "format.indent.before" -1)
   (#set! "format.newline.after" true))
 
-; empty block, allowed shorthand form
+; empty block open, allowed shorthand form
 ((class_body
   "{" @node
   .
@@ -77,6 +93,7 @@
   (#set! "format.indent.after" 1)
   (#set! "format.space.before" true))
 
+; empty block close, allowed shorthand form
 ((class_body
   "{"
   .
@@ -84,16 +101,19 @@
   (#set! "format.indent.before" -1)
   (#set! "format.newline.after" true))
 
-; annotation element array initializers, no space even
+; annotation array init open, no spaces, nothing
 (element_value_array_initializer
   "{" @node)
 
+; annotation array init close, no spaces, nothing
 (element_value_array_initializer
   "}" @node)
 
+; array init open, no spaces, nothing
 (array_initializer
   "{" @node)
 
+; array init close, no spaces, nothing
 (array_initializer
   "}" @node)
 
@@ -257,6 +277,7 @@
 (asterisk
   "*" @node)
 
+; very rare, but possible annotation before
 ((wildcard
   [
     (annotation)
@@ -312,6 +333,7 @@
 (switch_label
   "default" @node)
 
+; put spaces around this big pile of keywords and operators
 ([
   "abstract"
   "assert"
@@ -403,36 +425,44 @@
   (#set! "format.space.before" true)
   (#set! "format.space.after" true))
 
+; space between type and name
 ((method_declaration
   name: (identifier) @node)
   (#set! "format.space.before" true))
 
+; space between type and name
 ((annotation_type_element_declaration
   name: (identifier) @node)
   (#set! "format.space.before" true))
 
+; space after if condition
 ((if_statement
   condition: (parenthesized_expression
     ")" @node))
   (#set! "format.space.after" true))
 
+; space after loop condition
 ((while_statement
   condition: (parenthesized_expression
     ")" @node))
   (#set! "format.space.after" true))
 
+; space after loop condition
 ((for_statement
   ")" @node)
   (#set! "format.space.after" true))
 
+; space after loop condition
 ((enhanced_for_statement
   ")" @node)
   (#set! "format.space.after" true))
 
+; space after cast
 ((cast_expression
   ")" @node)
   (#set! "format.space.after" true))
 
+; treat super as a keyword inside bounds
 ((wildcard
   (super) @node)
   (#set! "format.space.before" true)
@@ -467,6 +497,7 @@
   (#set! "format.space.before" true))
 
 ; any otherwise listed terminal node
+; this could be avoided, but it is convenient to ensure everything is written.
 ; format-ignore
 ([_] @node
   (#terminal? @node))
