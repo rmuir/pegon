@@ -2,8 +2,7 @@
 name = "pegon"
 version = "1.0.11"
 edition = "2024"
-# version on github runners
-rust-version = "1.97.1"
+rust-version = "1.98.0"
 description = "Fast Java language server"
 readme = "README.md"
 homepage = "https://github.com/rmuir/pegon"
