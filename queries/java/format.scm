@@ -183,10 +183,6 @@
     ";" @node .))
   (#set! "format.space.after" true))
 
-; end of statement, newline
-(";" @node
-  (#set! "format.newline.after" true))
-
 ; marker annotation, newline
 ((marker_annotation
   name: (scoped_identifier
@@ -208,10 +204,6 @@
 (enum_body
   "," @node
   (#set! "format.newline.after" true))
-
-; space after comma otherwise
-("," @node
-  (#set! "format.space.after" true))
 
 ; space between type and the name
 ((formal_parameter
@@ -378,6 +370,53 @@
 ((labeled_statement
   ":" @node)
   (#set! "format.newline.after" true))
+
+; google inserts a newline here always, and indents
+([
+  (opens_module_directive
+    "to" @node)
+  (exports_module_directive
+    "to" @node)
+  (provides_module_directive
+    "with" @node)
+]
+  (#set! "format.indent.after" 2)
+  (#set! "format.space.before" true)
+  (#set! "format.newline.after" true))
+
+; newline after any ,
+([
+  (opens_module_directive
+    "," @node)
+  (exports_module_directive
+    "," @node)
+  (provides_module_directive
+    "," @node)
+]
+  (#set! "format.newline.after" true))
+
+; dedent after the ;
+([
+  (opens_module_directive
+    "to"
+    ";" @node)
+  (exports_module_directive
+    "to"
+    ";" @node)
+  (provides_module_directive
+    "with"
+    ";" @node)
+]
+  (#set! "format.indent.after" -2)
+  (#set! "format.newline.after" true))
+
+; end of statement, newline
+(";" @node
+  (#set! "format.newline.after" true))
+
+; space after comma otherwise
+("," @node
+  (#set! "format.space.after" true))
 
 ; put spaces around this big pile of keywords and operators
 ([
