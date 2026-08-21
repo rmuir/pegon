@@ -270,6 +270,10 @@
   "interface" @node)
   (#set! "format.space.after" true))
 
+; no space after "new" when used as method reference
+(method_reference
+  "new" @node)
+
 ; no space before new
 ("new" @node
   (#set! "format.space.after" true))
