@@ -67,7 +67,7 @@ anstream = "=1.0.0"
 # Error handling
 anyhow = "=1.0.104"
 # Generation of LSP result_id
-blake3 = { version = "=1.8.6" }
+blake3 = { version = "=1.8.7" }
 # indexing support
 bstr = "=1.13.1"
 # CLI argument processing
@@ -91,7 +91,7 @@ regex = "=1.13.1"
 # indexing files
 regex-automata = "=0.4.18"
 # jimage support
-ristretto_jimage = "=0.32.1"
+ristretto_jimage = "=0.33.0"
 # faster hashing for symbols, etc
 rustc-hash = "=2.1.3"
 # serialization
@@ -103,7 +103,7 @@ tree-sitter = "=0.26.10"
 # Parser for java language
 tree-sitter-java-orchard = "=0.5.15"
 # jar support
-zip = { version = "=8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2", "deflate-flate2-zlib-rs"] }
 
 [build-dependencies]
 # indented string literals
