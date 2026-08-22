@@ -28,15 +28,14 @@ pub enum Fix {
 impl Fix {
     /// Generate an [`Edit`] if possible to fix the issue
     pub fn generate(&self, range: Range<usize>, tree: &Tree, data: &[u8]) -> Result<Option<Edit>> {
-        let old_text = from_utf8(data.get(range.clone()).context("valid range")?)?;
         Ok(match self {
             Self::EscapeWhitespace => Some(Edit {
-                range,
-                replacement: escape_whitespace(old_text),
+                range: range.clone(),
+                replacement: escape_whitespace(to_text(data, range)?),
             }),
             Self::LineUnwrap => Some(Edit {
-                range,
-                replacement: old_text.replace(['\r', '\n'], " "),
+                range: range.clone(),
+                replacement: to_text(data, range)?.replace(['\r', '\n'], " "),
             }),
             Self::OrganizeImports => super::organize_imports::organize(tree, data)?,
             Self::Static(replacement) => Some(Edit {
@@ -44,8 +43,8 @@ impl Fix {
                 replacement: (*replacement).into(),
             }),
             Self::ToUpper => Some(Edit {
-                range,
-                replacement: old_text.to_uppercase(),
+                range: range.clone(),
+                replacement: to_text(data, range)?.to_uppercase(),
             }),
         })
     }
@@ -132,4 +131,8 @@ fn to_surrogates(codepoint: u32) -> Result<(u16, u16)> {
         .context("valid low")?
         .try_into()?;
     Ok((high, low))
+}
+
+fn to_text(data: &[u8], range: Range<usize>) -> Result<&str> {
+    Ok(from_utf8(data.get(range).context("valid range")?)?)
 }
