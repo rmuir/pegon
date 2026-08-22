@@ -29,6 +29,9 @@
       "warn",
       "declaration"
     ],
+    "one-var": [
+      "off"
+    ],
     "no-ternary": [
       "off"
     ],
