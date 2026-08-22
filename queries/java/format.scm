@@ -18,13 +18,13 @@
     "}" @node .)
   .
   "else")
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; do block end followed by while, reduce indent, but don't force a newline
 ((do_statement
   body: (block
     "}" @node .)) ; "while" is implicitly required by the grammar
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; enum constant } followed by comma, reduce indent, but don't force a newline
 ((enum_body
@@ -33,7 +33,7 @@
       "}" @node .))
   .
   ",")
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; try block followed by catch/finally, reduce indent, but don't force a newline
 ((try_statement
@@ -44,7 +44,7 @@
     (catch_clause)
     (finally_clause)
   ])
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; try-with-resources block followed by catch/finally, reduce indent, but don't force a newline
 ((try_with_resources_statement
@@ -55,7 +55,7 @@
     (catch_clause)
     (finally_clause)
   ])
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; catch block followed by catch/finally, reduce indent, but don't force a newline
 ((catch_clause
@@ -66,55 +66,55 @@
     (catch_clause)
     (finally_clause)
   ]
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; empty block open, allowed shorthand form
 ((block
   "{" @node
   .
   "}")
-  (#set! "format.indent.after" 1)
-  (#set! "format.space.before" true))
+  (#set! format.indent.after 1)
+  (#set! format.space.before true))
 
 ; empty block close, allowed shorthand form
 ((block
   "{"
   .
   "}" @node)
-  (#set! "format.indent.before" -1)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.before -1)
+  (#set! format.newline.after true))
 
 ; empty block open, allowed shorthand form
 ((constructor_body
   "{" @node
   .
   "}")
-  (#set! "format.indent.after" 1)
-  (#set! "format.space.before" true))
+  (#set! format.indent.after 1)
+  (#set! format.space.before true))
 
 ; empty block close, allowed shorthand form
 ((constructor_body
   "{"
   .
   "}" @node)
-  (#set! "format.indent.before" -1)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.before -1)
+  (#set! format.newline.after true))
 
 ; empty block open, allowed shorthand form
 ((class_body
   "{" @node
   .
   "}")
-  (#set! "format.indent.after" 1)
-  (#set! "format.space.before" true))
+  (#set! format.indent.after 1)
+  (#set! format.space.before true))
 
 ; empty block close, allowed shorthand form
 ((class_body
   "{"
   .
   "}" @node)
-  (#set! "format.indent.before" -1)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.before -1)
+  (#set! format.newline.after true))
 
 ; annotation array init open, no spaces, nothing
 (element_value_array_initializer
@@ -136,131 +136,131 @@
 ((lambda_expression
   (block
     "}" @node))
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; nor object creation expression
 ((object_creation_expression
   (class_body
     "}" @node))
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; extra switch block indentation
 ((switch_block
   "{" @node
   (switch_block_statement_group)+)
-  (#set! "format.indent.after" 2)
-  (#set! "format.newline.after" true)
-  (#set! "format.space.before" true))
+  (#set! format.indent.after 2)
+  (#set! format.newline.after true)
+  (#set! format.space.before true))
 
 ; extra switch block de-indentation
 ((switch_block
   (switch_block_statement_group)+
   "}" @node)
-  (#set! "format.indent.before" -2)
-  (#set! "format.newline.after" true)
-  (#set! "format.space.before" true))
+  (#set! format.indent.before -2)
+  (#set! format.newline.after true)
+  (#set! format.space.before true))
 
 ; open block: increase indent
 ("{" @node
-  (#set! "format.indent.after" 1)
-  (#set! "format.newline.after" true)
-  (#set! "format.space.before" true))
+  (#set! format.indent.after 1)
+  (#set! format.newline.after true)
+  (#set! format.space.before true))
 
 ; close block: reduce indent
 ("}" @node
-  (#set! "format.indent.before" -1)
-  (#set! "format.newline.before" true)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.before -1)
+  (#set! format.newline.before true)
+  (#set! format.newline.after true))
 
 ; keep on the same line if possible
 ((for_statement
   ";" @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; keep on the same line if possible
 ((for_statement
   init: (local_variable_declaration
     ";" @node .))
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; marker annotation, newline
 ((marker_annotation
   name: (scoped_identifier
     name: (_) @node))
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; marker annotation, newline
 ((marker_annotation
   name: (_) @node)
   (#terminal? @node)
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; regular annotation, newline
 ((annotation_argument_list
   ")" @node .)
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; newlines after enum constants
 (enum_body
   "," @node
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; space between type and the name
 ((formal_parameter
   name: (_) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space between type and name
 ((catch_formal_parameter
   name: (_) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space between type and name
 ((variable_declarator
   name: (_) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space between type and name
 ((enhanced_for_statement
   name: (_) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space between type and name
 ((resource
   name: (_) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space between type and name
 ((receiver_parameter
   (type_identifier) @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; space between type and name
 ((receiver_parameter
   (scoped_type_identifier
     (type_identifier) @node))
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; JEP 394
 ((instanceof_expression
   name: (_) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; JEP 440
 ((record_pattern_component
   (_) @node .)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; JEP 441
 ((type_pattern
   (_) @node .)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; no space between @interface
 ((annotation_type_declaration
   "@"
   "interface" @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; no space after "new" when used as method reference
 (method_reference
@@ -268,33 +268,33 @@
 
 ; no space before new
 ("new" @node
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; no space after single-statement forms
 ((break_statement
   "break" @node
   .
   ";")
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; no space after single-statement forms
 ((continue_statement
   "continue" @node
   .
   ";")
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; no space after single-statement forms
 ((return_statement
   "return" @node
   .
   ";")
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space after modifiers
 ((modifier
   _ @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; nothing special
 (class_literal
@@ -311,7 +311,7 @@
     (marker_annotation)
   ]
   "?" @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; nothing special
 (wildcard
@@ -324,7 +324,7 @@
     (unary_expression)
     (update_expression)
   ])
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; nothing special
 (unary_expression
@@ -344,32 +344,32 @@
 ; space after
 ((type_parameters
   ">" @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; indent after the :
 ((switch_block_statement_group
   ":" @node)
-  (#set! "format.indent.after" 1)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.after 1)
+  (#set! format.newline.after true))
 
 ; de-indent on keyword
 ((switch_block_statement_group
   (switch_label
     "default" @node))
-  (#set! "format.indent.before" -1))
+  (#set! format.indent.before -1))
 
 ; de-indent on keyword
 ((switch_block_statement_group
   (switch_label
     "case" @node))
-  (#set! "format.indent.before" -1)
-  (#set! "format.space.after" true))
+  (#set! format.indent.before -1)
+  (#set! format.space.after true))
 
 ; TODO: i don't like this, but its what google does i guess?
 ; space after, instead, makes for more readable code
 ((labeled_statement
   ":" @node)
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; google inserts a newline here always, and indents
 ([
@@ -380,9 +380,9 @@
   (provides_module_directive
     "with" @node)
 ]
-  (#set! "format.indent.after" 2)
-  (#set! "format.space.before" true)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.after 2)
+  (#set! format.space.before true)
+  (#set! format.newline.after true))
 
 ; newline after any ,
 ([
@@ -393,7 +393,7 @@
   (provides_module_directive
     "," @node)
 ]
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; dedent after the ;
 ([
@@ -407,16 +407,16 @@
     "with"
     ";" @node)
 ]
-  (#set! "format.indent.after" -2)
-  (#set! "format.newline.after" true))
+  (#set! format.indent.after -2)
+  (#set! format.newline.after true))
 
 ; end of statement, newline
 (";" @node
-  (#set! "format.newline.after" true))
+  (#set! format.newline.after true))
 
 ; space after comma otherwise
 ("," @node
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; put spaces around this big pile of keywords and operators
 ([
@@ -507,58 +507,58 @@
   "?"
   ":"
 ] @node
-  (#set! "format.space.before" true)
-  (#set! "format.space.after" true))
+  (#set! format.space.before true)
+  (#set! format.space.after true))
 
 ; space between type and name
 ((method_declaration
   name: (identifier) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space between type and name
 ((annotation_type_element_declaration
   name: (identifier) @node)
-  (#set! "format.space.before" true))
+  (#set! format.space.before true))
 
 ; space after if condition
 ((if_statement
   condition: (parenthesized_expression
     ")" @node))
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; space after loop condition
 ((while_statement
   condition: (parenthesized_expression
     ")" @node))
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; space after loop condition
 ((for_statement
   ")" @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; space after loop condition
 ((enhanced_for_statement
   ")" @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; space after cast
 ((cast_expression
   ")" @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; space after array init's ]
 ((array_creation_expression
   dimensions: (dimensions
     "]" @node)
   value: (array_initializer))
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; treat super as a keyword inside bounds
 ((wildcard
   (super) @node)
-  (#set! "format.space.before" true)
-  (#set! "format.space.after" true))
+  (#set! format.space.before true)
+  (#set! format.space.after true))
 
 ; insane corner case, treesitter allows it with a space
 ; but not with, so don't remove the space :)
@@ -569,7 +569,7 @@
     (octal_integer_literal)
     (binary_integer_literal)
   ] @node)
-  (#set! "format.space.after" true))
+  (#set! format.space.after true))
 
 ; insane corner case, due to the nature of extras
 ; don't treat these special in any way
@@ -586,20 +586,20 @@
     (block_comment)
   ] @node
   (switch_block_statement_group)+)
-  (#set! "format.indent.before" -1)
-  (#set! "format.indent.after" 1)
-  (#set! "format.comment" true)
-  (#set! "format.newline.after" true)
-  (#set! "format.space.before" true))
+  (#set! format.indent.before -1)
+  (#set! format.indent.after 1)
+  (#set! format.comment true)
+  (#set! format.newline.after true)
+  (#set! format.space.before true))
 
 ; comments: indent them, newline them (for now)
 ([
   (line_comment)
   (block_comment)
 ] @node
-  (#set! "format.comment" true)
-  (#set! "format.newline.after" true)
-  (#set! "format.space.before" true))
+  (#set! format.comment true)
+  (#set! format.newline.after true)
+  (#set! format.space.before true))
 
 ; any otherwise listed terminal node
 ; this could be avoided, but it is convenient to ensure everything is written.
