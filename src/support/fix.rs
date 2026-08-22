@@ -36,7 +36,7 @@ impl Fix {
             }),
             Self::LineUnwrap => Some(Edit {
                 range,
-                replacement: old_text.replace('\n', " "),
+                replacement: old_text.replace(['\r', '\n'], " "),
             }),
             Self::OrganizeImports => super::organize_imports::organize(tree, data)?,
             Self::Static(replacement) => Some(Edit {

@@ -34,6 +34,9 @@
     "folds": {
       "range": "range of the folding region"
     },
+    "format": {
+      "node": "captured node to apply formatting rules to"
+    },
     "hints": {
       "label": "components of inlay hint text",
       "location": "source location for interactive features (hover/go-to-definition)",
@@ -108,6 +111,16 @@
       ],
       "description": "true if the text does not match the filename"
     },
+    "terminal": {
+      "not": false,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        }
+      ],
+      "description": "true if the node has no children"
+    },
     "any-of": {
       "parameters": [
         {
@@ -164,6 +177,13 @@
               "diagnostic.title",
               "fold.kind",
               "fold.nextline",
+              "format.comment",
+              "format.indent.after",
+              "format.indent.before",
+              "format.newline.after",
+              "format.newline.before",
+              "format.space.after",
+              "format.space.before",
               "hint.prefix",
               "hint.suffix",
               "hint.pad.left",

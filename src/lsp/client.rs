@@ -14,9 +14,10 @@ use core::convert::From;
 
 use gen_lsp_types::{
     ClientCapabilities, CodeActionClientCapabilities, DefinitionClientCapabilities,
-    DiagnosticClientCapabilities, DiagnosticsCapabilities, DocumentHighlightClientCapabilities,
-    DocumentSymbolClientCapabilities, FoldingRangeClientCapabilities, HoverClientCapabilities,
-    InitializeParams, InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
+    DiagnosticClientCapabilities, DiagnosticsCapabilities, DocumentFormattingClientCapabilities,
+    DocumentHighlightClientCapabilities, DocumentSymbolClientCapabilities,
+    FoldingRangeClientCapabilities, HoverClientCapabilities, InitializeParams,
+    InlayHintClientCapabilities, MarkupKind, Position, PositionEncodingKind,
     PublishDiagnosticsClientCapabilities, SelectionRangeClientCapabilities,
     SemanticTokensClientCapabilities, TextDocumentClientCapabilities,
     TextDocumentContentChangeEvent, WindowClientCapabilities, WorkspaceClientCapabilities,
@@ -395,6 +396,10 @@ impl Client {
         (|| self.pull_diagnostics()?.dynamic_registration)().unwrap_or_default()
     }
 
+    pub fn registers_document_formatting(&self) -> bool {
+        (|| self.document_formatting()?.dynamic_registration)().unwrap_or_default()
+    }
+
     /// Does the client support dynamic registration of document highlight?
     pub fn registers_document_highlight(&self) -> bool {
         (|| self.document_highlight()?.dynamic_registration)().unwrap_or_default()
@@ -477,6 +482,10 @@ impl Client {
 
     fn definition(&self) -> Option<&DefinitionClientCapabilities> {
         self.text_document()?.definition.as_ref()
+    }
+
+    fn document_formatting(&self) -> Option<&DocumentFormattingClientCapabilities> {
+        self.text_document()?.formatting.as_ref()
     }
 
     fn document_highlight(&self) -> Option<&DocumentHighlightClientCapabilities> {

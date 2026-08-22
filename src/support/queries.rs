@@ -1,3 +1,6 @@
+//! Shared query functions used by the different LSP and CLI functionality
+//!
+//! I hate "junk drawer" utility files, and hope to shrink this file
 use std::path::Path;
 
 use tree_sitter::QueryMatch;
@@ -14,6 +17,7 @@ pub trait PredicateMatch {
 impl PredicateMatch for Predicate {
     fn matches(&self, hit: &QueryMatch, data: &[u8], path: Option<&Path>) -> bool {
         match self {
+            // compare two node's binary order (that's unicode order)
             Self::LessThan(left, right) => {
                 let node1 = hit
                     .nodes_for_capture_index(*left)
@@ -25,14 +29,17 @@ impl PredicateMatch for Predicate {
                     .expect("valid capture");
                 data.get(node1.byte_range()) < data.get(node2.byte_range())
             }
+            // if the next byte is a return, newline or end of file
             Self::EndOfLine(capture) => {
                 let node = hit
                     .nodes_for_capture_index(*capture)
                     .next()
                     .expect("valid capture");
                 let position = node.end_byte();
-                data.get(position).copied().unwrap_or(b'\n') == b'\n'
+                let byte = data.get(position).copied().unwrap_or(b'\n');
+                byte == b'\n' || byte == b'\r'
             }
+            // compares bytes against the provided path (if provided)
             Self::NotEqualsFileName(capture) => {
                 let Some(path) = path else { return false };
                 let Some(path) = path.file_stem() else {
@@ -43,6 +50,14 @@ impl PredicateMatch for Predicate {
                     .next()
                     .expect("valid capture");
                 Some(path.as_encoded_bytes()) != data.get(node.byte_range())
+            }
+            // true if the captured node has no children at all
+            Self::Terminal(capture) => {
+                let node = hit
+                    .nodes_for_capture_index(*capture)
+                    .next()
+                    .expect("valid capture");
+                node.child_count() == 0
             }
         }
     }
@@ -71,6 +86,30 @@ pub const fn to_bool_const(string: &str) -> bool {
         b"false" => false,
         _ => panic!("invalid boolean"),
     }
+}
+
+/// parse an integer from a string
+#[expect(clippy::indexing_slicing, reason = "compile time")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time")]
+#[expect(clippy::cast_possible_wrap, reason = "compile time")]
+pub const fn to_i8_const(string: &str) -> i8 {
+    let bytes = string.as_bytes();
+    let mut sign: i8 = 1;
+    let mut mag: i8 = 0;
+    let mut index = 0;
+    if bytes[0] == b'-' {
+        sign = -1;
+        index += 1;
+    } else if bytes[0] == b'+' {
+        index += 1;
+    }
+    while index < bytes.len() {
+        let byte = bytes[index];
+        assert!(b'0' <= byte && byte <= b'9', "invalid digit");
+        mag = mag * 10 + (byte - b'0') as i8;
+        index += 1;
+    }
+    sign * mag
 }
 
 // slow linear search at compile-time until rust lets us bsearch

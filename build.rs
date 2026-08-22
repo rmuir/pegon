@@ -120,6 +120,8 @@ fn queries(language: &Language, queries_dir: &Path) -> Result<String, Box<dyn Er
             EndOfLine(u32),
             /// True if the node's text doesn't equal the filename
             NotEqualsFileName(u32),
+            /// True if the node has no children
+            Terminal(u32),
         }
     "}
     .to_owned();
@@ -217,6 +219,14 @@ fn query_predicates(query: &Query) -> Option<String> {
                     [QueryPredicateArg::Capture(capture)] => {
                         formatdoc! {"
                             Predicate::NotEqualsFileName({capture}),
+                        "}
+                    }
+                    _ => panic!("invalid predicate arguments"),
+                },
+                "terminal?" => match args {
+                    [QueryPredicateArg::Capture(capture)] => {
+                        formatdoc! {"
+                            Predicate::Terminal({capture}),
                         "}
                     }
                     _ => panic!("invalid predicate arguments"),

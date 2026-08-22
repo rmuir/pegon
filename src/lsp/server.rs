@@ -20,6 +20,8 @@ use std::{
 use anyhow::{Context as _, Error, Result, anyhow, bail};
 use crossbeam_channel::Sender;
 use gen_lsp_types::DidChangeWorkspaceFoldersParams;
+use gen_lsp_types::DocumentFormattingParams;
+use gen_lsp_types::DocumentFormattingRequest;
 use gen_lsp_types::LspNotificationMethod;
 use gen_lsp_types::LspRequestMethod;
 use gen_lsp_types::ProgressNotification;
@@ -344,6 +346,13 @@ impl Server {
                 let doc = java_document(state, &params.text_document.uri)?;
                 self.dispatch::<DocumentDiagnosticRequest, _>(id, cancel, move |cancel| {
                     super::diagnostics::pull(&client, &doc, &params, cancel)
+                })
+            }
+            LspRequestMethod::TextDocumentFormatting => {
+                let params: DocumentFormattingParams = serde_json::from_value(req.params)?;
+                let doc = java_document(state, &params.text_document.uri)?;
+                self.dispatch::<DocumentFormattingRequest, _>(id, cancel, move |cancel| {
+                    super::document_formatting::request(&client, &doc, &params, cancel)
                 })
             }
             LspRequestMethod::TextDocumentDocumentHighlight => {

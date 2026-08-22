@@ -1,0 +1,244 @@
+use anyhow::{Context as _, Error, bail};
+use core::ops::ControlFlow;
+use core::sync::atomic::{AtomicBool, Ordering};
+use std::sync::LazyLock;
+use tree_sitter::{
+    Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _, Tree,
+};
+
+use crate::java_queries::format::captures;
+use crate::java_queries::format::predicates::{PREDICATES, PREDICATES_BY_PATTERN};
+use crate::java_queries::format::properties::{PATTERN_COUNT, PROPERTIES, PROPERTIES_BY_PATTERN};
+use crate::support::queries::{
+    PredicateMatch as _, const_array_from_fn, to_bool_const, to_i8_const,
+};
+
+/// Formats the document into `buffer`
+///
+/// # Errors
+///
+/// This function will return an error if rules are misconfigured.
+pub fn format(
+    tree: &Tree,
+    data: &[u8],
+    buffer: &mut Vec<u8>,
+    cancel: &AtomicBool,
+) -> Result<(), Error> {
+    if tree.root_node().has_error() {
+        bail!("parse error");
+    }
+
+    let mut cursor = QueryCursor::new();
+    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+    let mut cancellation = |_: &QueryCursorState| {
+        if cancel.load(Ordering::Relaxed) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+
+    #[expect(clippy::indexing_slicing, reason = "checked at compile-time")]
+    let mut captures = cursor
+        .captures_with_options(
+            &QUERY,
+            tree.root_node(),
+            data,
+            QueryCursorOptions::new().progress_callback(&mut cancellation),
+        )
+        .filter(|(hit, _)| {
+            let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
+            for index in list.start..list.end {
+                if !PREDICATES[index as usize].matches(hit, data, None) {
+                    return false;
+                }
+            }
+            true
+        });
+
+    let indent_size: u8 = 2; // TODO
+    let newline = b"\n"; // TODO
+
+    let mut current_indent: u32 = 0;
+    let mut current_line_size: u32 = 0;
+    let mut previous_node_id = usize::MAX;
+    let mut previous_line = usize::MAX;
+    let mut previous_comment = false;
+    let mut pending_space = false;
+    let mut pending_newline = false;
+
+    while let Some((hit, capture_id)) = captures.next() {
+        // primary node captures only
+        let capture = hit.captures.get(*capture_id).context("valid capture_id")?;
+        if capture.index != captures::NODE {
+            continue;
+        }
+        let node = capture.node;
+
+        // first pattern wins
+        let node_id = node.id();
+        if node_id == previous_node_id {
+            continue;
+        }
+        previous_node_id = node_id;
+
+        // terminal nodes only (for now!)
+        let pattern_index = hit.pattern_index;
+        debug_assert!(node.child_count() == 0, "non-terminal at {pattern_index}");
+
+        let pattern = pattern(hit.pattern_index);
+
+        // let comments be "sticky" / chain on the same line
+        if (pattern.comment || previous_comment)
+            && pending_newline
+            && node.start_position().row == previous_line
+        {
+            pending_newline = false;
+            pending_space = true;
+        }
+        previous_comment = pattern.comment;
+
+        // adjust indent before node
+        current_indent = current_indent
+            .checked_add_signed(pattern.indent_before.into())
+            .context("no overflow")?;
+
+        // write newline before, if required
+        if current_line_size > 0 && (pattern.newline_before || pending_newline) {
+            // preserve existing blank line separators
+            if pending_newline && node.start_position().row.saturating_sub(previous_line) > 1 {
+                buffer.extend_from_slice(newline);
+            }
+            buffer.extend_from_slice(newline);
+            current_line_size = 0;
+        }
+
+        // write any indent/space before
+        if current_line_size == 0 {
+            let indent = current_indent
+                .checked_mul(indent_size.into())
+                .context("no overflow")?;
+            buffer.resize(
+                buffer
+                    .len()
+                    .checked_add(indent as usize)
+                    .context("no overflow")?,
+                b' ',
+            );
+            current_line_size = current_line_size
+                .checked_add(indent)
+                .context("no overflow")?;
+        } else if pattern.space_before || pending_space {
+            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
+            current_line_size = current_line_size.checked_add(1).context("no overflow")?;
+        }
+
+        // write the node
+        let bytes = data.get(node.byte_range()).context("valid range")?;
+        buffer.extend_from_slice(bytes);
+        current_line_size = current_line_size
+            .checked_add(bytes.len().try_into()?)
+            .context("no overflow")?;
+        pending_space = false;
+        pending_newline = false;
+
+        // write newline/space after, if required
+        if pattern.space_after {
+            pending_space = true;
+        } else if pattern.newline_after {
+            pending_newline = true;
+            previous_line = node.end_position().row;
+        }
+
+        // adjust indent after node
+        current_indent = current_indent
+            .checked_add_signed(pattern.indent_after.into())
+            .context("no overflow")?;
+    }
+
+    // write any final pending newline
+    if current_line_size > 0 && pending_newline {
+        buffer.extend_from_slice(newline);
+    }
+
+    Ok(())
+}
+
+/// single pattern
+#[expect(clippy::struct_excessive_bools, reason = "no excuse, just iterating")]
+struct Pattern {
+    // adjust indentation level after node by delta
+    indent_after: i8,
+    // adjust indentation level before node by delta
+    indent_before: i8,
+    // add newline after the node
+    newline_after: bool,
+    // add newline before the node
+    newline_before: bool,
+    // add space after the node
+    space_after: bool,
+    // add space after the node
+    space_before: bool,
+    // sticks to previous and next node on same line
+    comment: bool,
+}
+
+/// Look up pattern by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+const fn pattern(index: usize) -> &'static Pattern {
+    &PATTERNS[index]
+}
+
+/// array of pattern metadata from `QUERY` by index
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const PATTERNS: [Pattern; PATTERN_COUNT] = const_array_from_fn!(to_pattern, PATTERN_COUNT);
+
+#[expect(clippy::indexing_slicing, reason = "compile time safety")]
+#[expect(clippy::arithmetic_side_effects, reason = "compile time safety")]
+const fn to_pattern(pattern: usize) -> Pattern {
+    let range = &PROPERTIES_BY_PATTERN[pattern];
+    let mut index = range.start;
+    let mut indent_after = 0;
+    let mut indent_before = 0;
+    let mut newline_after = false;
+    let mut newline_before = false;
+    let mut space_after = false;
+    let mut space_before = false;
+    let mut comment = false;
+    while index < range.end {
+        let property = PROPERTIES[index];
+        match property.0.as_bytes() {
+            b"format.indent.after" => indent_after = to_i8_const(property.1),
+            b"format.indent.before" => indent_before = to_i8_const(property.1),
+            b"format.newline.after" => newline_after = to_bool_const(property.1),
+            b"format.newline.before" => newline_before = to_bool_const(property.1),
+            b"format.space.after" => space_after = to_bool_const(property.1),
+            b"format.space.before" => space_before = to_bool_const(property.1),
+            b"format.comment" => comment = to_bool_const(property.1),
+            _ => panic!("unknown property key"),
+        }
+        index += 1;
+    }
+    Pattern {
+        indent_after,
+        indent_before,
+        newline_after,
+        newline_before,
+        space_after,
+        space_before,
+        comment,
+    }
+}
+
+/// compiled query that matches all formatting rules
+static QUERY: LazyLock<Query> = LazyLock::new(|| {
+    Query::new(
+        &super::LANGUAGE,
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/queries/java/format.scm"
+        )),
+    )
+    .expect("query should compile")
+});
