@@ -262,12 +262,18 @@ fn fix_all_with_intersections(
         // deduplicate edits (e.g. organize imports)
         edits.dedup();
     }
-    // TODO: lets try a little harder?
-    let edit = Edit {
-        range: 0..doc.text.len(),
-        replacement: str::from_utf8(&data)?.into(),
-    };
-    Ok(Some(vec![to_lsp_edit(client, doc, &edit)?]))
+    let textedits = Edit::diff(doc.text.as_bytes(), &data)?
+        .into_iter()
+        .map(|edit| {
+            Ok(TextEdit {
+                range: client
+                    .encode_byte_range(&edit.range, &doc.line_index)
+                    .context("valid range")?,
+                new_text: edit.replacement,
+            })
+        })
+        .collect::<Result<_>>()?;
+    Ok(Some(textedits))
 }
 
 fn to_lsp_edit(

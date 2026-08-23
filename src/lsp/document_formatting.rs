@@ -3,6 +3,8 @@ use std::sync::atomic::AtomicBool;
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{DocumentFormattingParams, TextEdit};
 
+use crate::support::fix::Edit;
+
 use super::{Client, server::Document};
 
 pub fn request(
@@ -17,15 +19,19 @@ pub fn request(
     if buffer == data {
         Ok(None)
     } else {
-        // TODO: lets do better
-        let full_range = 0..data.len();
-        let edit = TextEdit {
-            range: client
-                .encode_byte_range(&full_range, &doc.line_index)
-                .context("valid range")?,
-            new_text: str::from_utf8(&buffer)?.into(),
-        };
-        Ok(Some(vec![edit]))
+        let edits = Edit::diff(data, &buffer)?;
+        let textedits = edits
+            .into_iter()
+            .map(|edit| {
+                Ok(TextEdit {
+                    range: client
+                        .encode_byte_range(&edit.range, &doc.line_index)
+                        .context("valid range")?,
+                    new_text: edit.replacement,
+                })
+            })
+            .collect::<Result<_>>()?;
+        Ok(Some(textedits))
     }
 }
 
@@ -67,16 +73,33 @@ mod tests {
             .unwrap();
         assert_eq!(
             result,
-            vec![TextEdit {
-                range: Range::new(Position::new(0, 0), Position::new(1, 0)),
-                new_text: indoc! {"
-                    @Something
-                    public class Foo {
-                      int field = 1;
-                    }
-                "}
-                .into()
-            }]
+            vec![
+                // replace space after @Something with newline
+                TextEdit {
+                    range: Range::new(Position::new(0, 10), Position::new(0, 11)),
+                    new_text: "\n".into()
+                },
+                // insert newline and additional space after Foo's {
+                TextEdit {
+                    range: Range::new(Position::new(0, 29), Position::new(0, 29)),
+                    new_text: "\n ".into(),
+                },
+                // insert space before = operator
+                TextEdit {
+                    range: Range::new(Position::new(0, 39), Position::new(0, 39)),
+                    new_text: " ".into(),
+                },
+                // insert space after = operator
+                TextEdit {
+                    range: Range::new(Position::new(0, 40), Position::new(0, 40)),
+                    new_text: " ".into(),
+                },
+                // replace space with newline before Foo's }
+                TextEdit {
+                    range: Range::new(Position::new(0, 42), Position::new(0, 43)),
+                    new_text: "\n".into(),
+                }
+            ]
         );
     }
 }
