@@ -153,6 +153,39 @@ impl TempDir {
     }
 }
 
+#[test]
+fn format_simple() {
+    let tempdir = TempDir::new();
+    tempdir.add_file(
+        "Format.java",
+        indoc! {"
+            public class Format {
+            int field=1;
+            }
+        "},
+    );
+
+    let output = Command::new(env!("CARGO_BIN_EXE_pegon"))
+        .args([
+            "format",
+            "--verify",
+            tempdir.0.to_str().expect("should be utf-8"),
+        ])
+        .output()
+        .expect("run pegon");
+
+    assert!(output.status.success());
+    let contents = fs::read_to_string(tempdir.0.join("Format.java")).expect("readable");
+    assert_eq!(
+        contents,
+        indoc! {"
+            public class Format {
+              int field = 1;
+            }
+        "}
+    );
+}
+
 impl Drop for TempDir {
     fn drop(&mut self) {
         fs::remove_dir_all(&self.0).unwrap();
