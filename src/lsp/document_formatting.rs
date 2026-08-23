@@ -74,31 +74,31 @@ mod tests {
         assert_eq!(
             result,
             vec![
-                // replace space after @Something with newline
+                // replace space with newline before Foo's }
                 TextEdit {
-                    range: Range::new(Position::new(0, 10), Position::new(0, 11)),
-                    new_text: "\n".into()
-                },
-                // insert newline and additional space after Foo's {
-                TextEdit {
-                    range: Range::new(Position::new(0, 29), Position::new(0, 29)),
-                    new_text: "\n ".into(),
-                },
-                // insert space before = operator
-                TextEdit {
-                    range: Range::new(Position::new(0, 39), Position::new(0, 39)),
-                    new_text: " ".into(),
+                    range: Range::new(Position::new(0, 42), Position::new(0, 43)),
+                    new_text: "\n".into(),
                 },
                 // insert space after = operator
                 TextEdit {
                     range: Range::new(Position::new(0, 40), Position::new(0, 40)),
                     new_text: " ".into(),
                 },
-                // replace space with newline before Foo's }
+                // insert space before = operator
                 TextEdit {
-                    range: Range::new(Position::new(0, 42), Position::new(0, 43)),
-                    new_text: "\n".into(),
-                }
+                    range: Range::new(Position::new(0, 39), Position::new(0, 39)),
+                    new_text: " ".into(),
+                },
+                // insert newline and additional space after Foo's {
+                TextEdit {
+                    range: Range::new(Position::new(0, 29), Position::new(0, 29)),
+                    new_text: "\n ".into(),
+                },
+                // replace space after @Something with newline
+                TextEdit {
+                    range: Range::new(Position::new(0, 10), Position::new(0, 11)),
+                    new_text: "\n".into()
+                },
             ]
         );
     }

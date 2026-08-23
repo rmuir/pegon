@@ -145,6 +145,13 @@ impl Edit {
                 }
             }
         }
+        // sort the edits backwards
+        result.sort_unstable_by(|right, left| {
+            left.range
+                .start
+                .cmp(&right.range.start)
+                .then_with(|| left.range.end.cmp(&right.range.end))
+        });
         Ok(result)
     }
 }
