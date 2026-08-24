@@ -1,8 +1,5 @@
 use core::sync::atomic::AtomicBool;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{Context as _, Result, bail};
 use gen_lsp_types::{
@@ -157,7 +154,9 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
             doc.text.as_bytes(),
         )?
     {
-        return Ok(Some(vec![to_lsp_edit(client, doc, &edit)?]));
+        let mut new = doc.text.as_bytes().to_owned();
+        new.splice(edit.range.clone(), edit.replacement.into_bytes());
+        return to_lsp_edits(client, doc, &new);
     }
 
     Ok(None)
@@ -165,18 +164,24 @@ fn quickfix(client: &Client, doc: &Document, params: &CodeAction) -> Result<Opti
 
 fn organize_imports(client: &Client, doc: &Document) -> Result<Option<Vec<TextEdit>>> {
     if let Some(edit) = organize(&doc.tree, doc.text.as_bytes())? {
-        return Ok(Some(vec![to_lsp_edit(client, doc, &edit)?]));
+        let mut new = doc.text.as_bytes().to_owned();
+        new.splice(edit.range.clone(), edit.replacement.into_bytes());
+        return to_lsp_edits(client, doc, &new);
     }
     Ok(None)
 }
 
-/// optimistic if there's no intersecting edits (which LSP spec can't handle)
-/// if there are, we bail to a slower approach
+/// optimistic if there's no intersecting edits
+/// if there are, we have to reparse and refix iteratively
 fn fix_all(client: &Client, doc: &Document, uri: &Uri) -> Result<Option<Vec<TextEdit>>> {
-    let data = doc.text.as_bytes();
-    let tree = &doc.tree;
     let path = super::server::uri_to_path(uri).map(PathBuf::from);
-    let diagnostics = lint(tree, data, &AtomicBool::new(false), false, path.as_deref())?;
+    let mut diagnostics = lint(
+        &doc.tree,
+        doc.text.as_bytes(),
+        &AtomicBool::new(false),
+        false,
+        path.as_deref(),
+    )?;
 
     // we're done if the file has no problems
     if diagnostics.is_empty() {
@@ -184,7 +189,7 @@ fn fix_all(client: &Client, doc: &Document, uri: &Uri) -> Result<Option<Vec<Text
     }
 
     // compute fixes: we need a vec to sort it
-    let mut edits = Fix::batch(&diagnostics, tree, data)?;
+    let mut edits = Fix::batch(&diagnostics, &doc.tree, doc.text.as_bytes())?;
 
     // we're done if there are no edits
     if edits.is_empty() {
@@ -194,37 +199,7 @@ fn fix_all(client: &Client, doc: &Document, uri: &Uri) -> Result<Option<Vec<Text
     // deduplicate edits (can happen easily for e.g. out of order imports)
     edits.dedup();
 
-    // if we intersect with a previous edit, bail to a slower approach
-    let mut previous = None;
-    for edit in &edits {
-        if previous
-            .as_ref()
-            .is_some_and(|previous| Edit::intersects(&edit.range, previous))
-        {
-            return fix_all_with_intersections(client, doc, path.as_deref(), edits);
-        }
-        previous = Some(edit.range.clone());
-    }
-
-    // convert to LSP edits
-    let textedits: Result<Vec<_>> = edits
-        .iter()
-        .map(|edit| to_lsp_edit(client, doc, edit))
-        .collect();
-    Ok(Some(textedits?))
-}
-
-// if we have intersections, we can't just convert Edit->TextEdit
-// iteratively apply edits to a vec, reparsing/querying until they are all applied
-// then recompute a diff based on the original document
-fn fix_all_with_intersections(
-    client: &Client,
-    doc: &Document,
-    path: Option<&Path>,
-    initial_edits: Vec<Edit>,
-) -> Result<Option<Vec<TextEdit>>> {
-    let mut data = doc.text.as_bytes().to_owned();
-    let mut edits = initial_edits;
+    let mut new = doc.text.as_bytes().to_owned();
     let mut parser = Parser::new();
     parser.set_language(&crate::support::LANGUAGE)?;
     for _ in 1..10 {
@@ -238,7 +213,7 @@ fn fix_all_with_intersections(
                 all_fixed = false;
                 continue;
             }
-            data.splice(edit.range.clone(), edit.replacement.into_bytes());
+            new.splice(edit.range.clone(), edit.replacement.into_bytes());
             previous = Some(edit.range);
         }
 
@@ -248,11 +223,9 @@ fn fix_all_with_intersections(
 
         // re-parse to iteratively apply more fixes
         // TODO: incremental?
-        let tree = parser
-            .parse(&data, None)
-            .context("parser should be setup")?;
-        let diagnostics = lint(&tree, &data, &AtomicBool::new(false), false, path)?;
-        edits = Fix::batch(&diagnostics, &tree, &data)?;
+        let tree = parser.parse(&new, None).context("parser should be setup")?;
+        diagnostics = lint(&tree, &new, &AtomicBool::new(false), false, path.as_deref())?;
+        edits = Fix::batch(&diagnostics, &tree, &new)?;
 
         // no more edits to make
         if edits.is_empty() {
@@ -262,7 +235,11 @@ fn fix_all_with_intersections(
         // deduplicate edits (e.g. organize imports)
         edits.dedup();
     }
-    let textedits = Edit::diff(doc.text.as_bytes(), &data)?
+    to_lsp_edits(client, doc, &new)
+}
+
+fn to_lsp_edits(client: &Client, doc: &Document, new: &[u8]) -> Result<Option<Vec<TextEdit>>> {
+    let textedits = Edit::diff(doc.text.as_bytes(), new)?
         .into_iter()
         .map(|edit| {
             Ok(TextEdit {
@@ -274,17 +251,6 @@ fn fix_all_with_intersections(
         })
         .collect::<Result<_>>()?;
     Ok(Some(textedits))
-}
-
-fn to_lsp_edit(
-    client: &Client,
-    doc: &Document,
-    edit: &crate::support::fix::Edit,
-) -> Result<TextEdit> {
-    let encoded = client
-        .encode_byte_range(&edit.range, &doc.line_index)
-        .context("valid range")?;
-    Ok(TextEdit::new(encoded, edit.replacement.clone()))
 }
 
 #[cfg(test)]
@@ -452,10 +418,8 @@ mod tests {
                 language_id: "java".into(),
                 version: 0,
                 text: indoc! {r"
-                    import b.c; // regular after
-                    import static d.e; // static after
-                    import a.b; // regular before
-                    import static c.d; // static before
+                    import b.c;
+                    import a.b;
                     public class Foo {}
                 "}
                 .into(),
@@ -496,17 +460,28 @@ mod tests {
             Some(WorkspaceEdit {
                 changes: Some(HashMap::from([(
                     Uri("file:///Foo.java".into()),
-                    vec![TextEdit {
-                        range: Range::new(Position::new(0, 0), Position::new(4, 0)),
-                        new_text: indoc! {r"
-                            import static c.d; // static before
-                            import static d.e; // static after
-
-                            import a.b; // regular before
-                            import b.c; // regular after
-                        "}
-                        .into()
-                    }]
+                    vec![
+                        // change a.b -> a.c
+                        TextEdit {
+                            range: Range::new(Position::new(1, 9), Position::new(1, 10)),
+                            new_text: "c".into(),
+                        },
+                        // change a.c -> b.c
+                        TextEdit {
+                            range: Range::new(Position::new(1, 7), Position::new(1, 8)),
+                            new_text: "b".into(),
+                        },
+                        // delete b.c -> b
+                        TextEdit {
+                            range: Range::new(Position::new(0, 8), Position::new(0, 10)),
+                            new_text: String::new(),
+                        },
+                        // insert a. -> a.b
+                        TextEdit {
+                            range: Range::new(Position::new(0, 7), Position::new(0, 7)),
+                            new_text: "a.".into(),
+                        },
+                    ]
                 )])),
                 document_changes: None,
                 change_annotations: None,
