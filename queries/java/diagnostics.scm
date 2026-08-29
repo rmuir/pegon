@@ -309,6 +309,62 @@
   (#set! diagnostic.help "Move `{node.text}` to separate `{node.text}.java` file")
   (#set! diagnostic.severity "warn"))
 
+; Use of optional braces
+; @see https://google.github.io/styleguide/javaguide.html#s4.1.1-braces-always-used
+((if_statement
+  "if" @context
+  consequence: (_) @error)
+  (#not-match? @error "^[{]")
+  (#set! diagnostic.name "missing-if-braces")
+  (#set! diagnostic.title "`if` statement body should have braces")
+  (#set! diagnostic.help "Add braces around `if` statement body")
+  (#set! diagnostic.severity "info"))
+
+; Use of optional braces
+; @see https://google.github.io/styleguide/javaguide.html#s4.1.1-braces-always-used
+((if_statement
+  "else" @context
+  alternative: (_) @error)
+  (#not-match? @error "^[{]")
+  (#not-match? @error "^if")
+  (#set! diagnostic.name "missing-else-braces")
+  (#set! diagnostic.title "`else` statement body should have braces")
+  (#set! diagnostic.help "Add braces around `else` statement body")
+  (#set! diagnostic.severity "info"))
+
+; Use of optional braces
+; @see https://google.github.io/styleguide/javaguide.html#s4.1.1-braces-always-used
+((do_statement
+  "do" @context
+  body: (_) @error)
+  (#not-match? @error "^[{]")
+  (#set! diagnostic.name "missing-do-braces")
+  (#set! diagnostic.title "`do` statement body should have braces")
+  (#set! diagnostic.help "Add braces around `do` statement body")
+  (#set! diagnostic.severity "info"))
+
+; Use of optional braces
+; @see https://google.github.io/styleguide/javaguide.html#s4.1.1-braces-always-used
+((for_statement
+  "for" @context
+  body: (_) @error)
+  (#not-match? @error "^[{]")
+  (#set! diagnostic.name "missing-for-braces")
+  (#set! diagnostic.title "`for` statement body should have braces")
+  (#set! diagnostic.help "Add braces around `for` statement body")
+  (#set! diagnostic.severity "info"))
+
+; Use of optional braces
+; @see https://google.github.io/styleguide/javaguide.html#s4.1.1-braces-always-used
+((while_statement
+  "while" @context
+  body: (_) @error)
+  (#not-match? @error "^[{]")
+  (#set! diagnostic.name "missing-while-braces")
+  (#set! diagnostic.title "`while` statement body should have braces")
+  (#set! diagnostic.help "Add braces around `while` statement body")
+  (#set! diagnostic.severity "info"))
+
 ; One variable per declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
 (block
