@@ -8,9 +8,10 @@ use gen_lsp_types::{
     DiagnosticRegistrationOptions, DidChangeTextDocumentNotification,
     DidCloseTextDocumentNotification, DidOpenTextDocumentNotification, DocumentDiagnosticRequest,
     DocumentFilter, DocumentFormattingOptions, DocumentFormattingProvider,
-    DocumentFormattingRequest, DocumentHighlightOptions, DocumentHighlightProvider,
-    DocumentHighlightRegistrationOptions, DocumentHighlightRequest, DocumentSymbolOptions,
-    DocumentSymbolProvider, DocumentSymbolRequest, FoldingRangeOptions, FoldingRangeProvider,
+    DocumentFormattingRegistrationOptions, DocumentFormattingRequest, DocumentHighlightOptions,
+    DocumentHighlightProvider, DocumentHighlightRegistrationOptions, DocumentHighlightRequest,
+    DocumentSymbolOptions, DocumentSymbolProvider, DocumentSymbolRegistrationOptions,
+    DocumentSymbolRequest, FoldingRangeOptions, FoldingRangeProvider,
     FoldingRangeRegistrationOptions, FoldingRangeRequest, Full, HoverOptions, HoverProvider,
     HoverRegistrationOptions, HoverRequest, InitializeResult, InlayHintOptions, InlayHintProvider,
     InlayHintRegistrationOptions, InlayHintRequest, Notification as _, Registration, Request as _,
@@ -21,7 +22,8 @@ use gen_lsp_types::{
     TextDocumentChangeRegistrationOptions, TextDocumentFilter, TextDocumentFilterLanguage,
     TextDocumentRegistrationOptions, TextDocumentSync, TextDocumentSyncKind,
     TextDocumentSyncOptions, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceOptions, WorkspaceSymbolOptions, WorkspaceSymbolProvider, WorkspaceSymbolRequest,
+    WorkspaceOptions, WorkspaceSymbolOptions, WorkspaceSymbolProvider,
+    WorkspaceSymbolRegistrationOptions, WorkspaceSymbolRequest,
 };
 
 use super::client::Client;
@@ -40,7 +42,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     let work_done_progress_options = WorkDoneProgressOptions {
         work_done_progress: None,
     };
-    let diagnostic_options = DiagnosticRegistrationOptions {
+    let diagnostic_registration_options = DiagnosticRegistrationOptions {
         diagnostic_options: DiagnosticOptions {
             identifier: Some(env!("CARGO_PKG_NAME").into()),
             inter_file_dependencies: false,
@@ -75,7 +77,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         label: None,
         work_done_progress_options,
     };
-    let folding_range_options = FoldingRangeRegistrationOptions {
+    let folding_range_registration_options = FoldingRangeRegistrationOptions {
         folding_range_options: FoldingRangeOptions::new(work_done_progress_options),
         static_registration_options: StaticRegistrationOptions {
             id: Some(FoldingRangeRequest::METHOD.into()),
@@ -85,7 +87,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
     let hover_options = HoverOptions {
         work_done_progress_options,
     };
-    let inlay_hint_options = InlayHintRegistrationOptions {
+    let inlay_hint_registration_options = InlayHintRegistrationOptions {
         inlay_hint_options: InlayHintOptions {
             resolve_provider: Some(true),
             work_done_progress_options,
@@ -95,7 +97,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         },
         text_document_registration_options: text_document_registration_options.clone(),
     };
-    let selection_range_options = SelectionRangeRegistrationOptions {
+    let selection_range_registration_options = SelectionRangeRegistrationOptions {
         selection_range_options: SelectionRangeOptions {
             work_done_progress_options,
         },
@@ -104,7 +106,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         },
         text_document_registration_options: text_document_registration_options.clone(),
     };
-    let semantic_tokens_options = SemanticTokensRegistrationOptions {
+    let semantic_tokens_registration_options = SemanticTokensRegistrationOptions {
         semantic_tokens_options: SemanticTokensOptions {
             legend: SemanticTokensLegend {
                 token_types: super::semantic_tokens::TOKEN_TYPES
@@ -127,7 +129,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         },
         text_document_registration_options: text_document_registration_options.clone(),
     };
-    let workspace_symbols_options = WorkspaceSymbolOptions {
+    let workspace_symbol_options = WorkspaceSymbolOptions {
         resolve_provider: Some(false),
         work_done_progress_options,
     };
@@ -149,7 +151,9 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 .not()
                 .then_some(DefinitionProvider::DefinitionOptions(definition_options)),
             diagnostic_provider: client.registers_diagnostics().not().then_some(
-                DiagnosticProvider::DiagnosticRegistrationOptions(diagnostic_options.clone()),
+                DiagnosticProvider::DiagnosticRegistrationOptions(
+                    diagnostic_registration_options.clone(),
+                ),
             ),
             document_formatting_provider: client.registers_document_formatting().not().then_some(
                 DocumentFormattingProvider::DocumentFormattingOptions(document_formatting_options),
@@ -162,7 +166,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
             ),
             folding_range_provider: client.registers_folding_range().not().then_some(
                 FoldingRangeProvider::FoldingRangeRegistrationOptions(
-                    folding_range_options.clone(),
+                    folding_range_registration_options.clone(),
                 ),
             ),
             hover_provider: client
@@ -170,17 +174,19 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 .not()
                 .then_some(HoverProvider::HoverOptions(hover_options)),
             inlay_hint_provider: client.registers_inlay_hints().not().then_some(
-                InlayHintProvider::InlayHintRegistrationOptions(inlay_hint_options.clone()),
+                InlayHintProvider::InlayHintRegistrationOptions(
+                    inlay_hint_registration_options.clone(),
+                ),
             ),
             position_encoding: Some(client.negotiated_encoding()),
             selection_range_provider: client.registers_selection_range().not().then_some(
                 SelectionRangeProvider::SelectionRangeRegistrationOptions(
-                    selection_range_options.clone(),
+                    selection_range_registration_options.clone(),
                 ),
             ),
             semantic_tokens_provider: client.registers_semantic_tokens().not().then_some(
                 SemanticTokensProvider::SemanticTokensRegistrationOptions(
-                    semantic_tokens_options.clone(),
+                    semantic_tokens_registration_options.clone(),
                 ),
             ),
             text_document_sync: client
@@ -202,7 +208,7 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
                 text_document_content: None, // TODO!
             }),
             workspace_symbol_provider: client.registers_workspace_symbols().not().then_some(
-                WorkspaceSymbolProvider::WorkspaceSymbolOptions(workspace_symbols_options),
+                WorkspaceSymbolProvider::WorkspaceSymbolOptions(workspace_symbol_options),
             ),
             ..ServerCapabilities::default()
         },
@@ -258,14 +264,19 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         registrations.push(Registration {
             id: DocumentDiagnosticRequest::METHOD.into(),
             method: DocumentDiagnosticRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(diagnostic_options)?),
+            register_options: Some(serde_json::to_value(diagnostic_registration_options)?),
         });
     }
     if client.registers_document_formatting() {
         registrations.push(Registration {
             id: DocumentFormattingRequest::METHOD.into(),
             method: DocumentFormattingRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(document_formatting_options)?),
+            register_options: Some(serde_json::to_value(
+                DocumentFormattingRegistrationOptions {
+                    text_document_registration_options: text_document_registration_options.clone(),
+                    document_formatting_options,
+                },
+            )?),
         });
     }
     if client.registers_document_highlight() {
@@ -284,14 +295,17 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         registrations.push(Registration {
             id: DocumentSymbolRequest::METHOD.into(),
             method: DocumentSymbolRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(document_symbol_options)?),
+            register_options: Some(serde_json::to_value(DocumentSymbolRegistrationOptions {
+                text_document_registration_options: text_document_registration_options.clone(),
+                document_symbol_options,
+            })?),
         });
     }
     if client.registers_folding_range() {
         registrations.push(Registration {
             id: FoldingRangeRequest::METHOD.into(),
             method: FoldingRangeRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(folding_range_options)?),
+            register_options: Some(serde_json::to_value(folding_range_registration_options)?),
         });
     }
     if client.registers_hover() {
@@ -308,28 +322,30 @@ pub fn init(client: &Client) -> Result<(InitializeResult, Vec<Registration>)> {
         registrations.push(Registration {
             id: InlayHintRequest::METHOD.into(),
             method: InlayHintRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(inlay_hint_options)?),
+            register_options: Some(serde_json::to_value(inlay_hint_registration_options)?),
         });
     }
     if client.registers_selection_range() {
         registrations.push(Registration {
             id: SelectionRangeRequest::METHOD.into(),
             method: SelectionRangeRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(selection_range_options)?),
+            register_options: Some(serde_json::to_value(selection_range_registration_options)?),
         });
     }
     if client.registers_semantic_tokens() {
         registrations.push(Registration {
             id: SemanticTokensRequest::METHOD.into(),
             method: "textDocument/semanticTokens".into(), // must be this ID
-            register_options: Some(serde_json::to_value(semantic_tokens_options)?),
+            register_options: Some(serde_json::to_value(semantic_tokens_registration_options)?),
         });
     }
     if client.registers_workspace_symbols() {
         registrations.push(Registration {
             id: WorkspaceSymbolRequest::METHOD.into(),
             method: WorkspaceSymbolRequest::METHOD.into(),
-            register_options: Some(serde_json::to_value(workspace_symbols_options)?),
+            register_options: Some(serde_json::to_value(WorkspaceSymbolRegistrationOptions {
+                workspace_symbol_options,
+            })?),
         });
     }
     Ok((result, registrations))
