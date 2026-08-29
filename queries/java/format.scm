@@ -183,6 +183,11 @@
     ";" @node .))
   (#set! format.space.after true))
 
+; keep on the same line if possible
+((resource_specification
+  ";" @node)
+  (#set! format.space.after true))
+
 ; marker annotation, newline
 ((marker_annotation
   name: (scoped_identifier
