@@ -14,7 +14,7 @@ use std::{
 };
 use tree_sitter::Parser;
 
-use crate::support::formatting;
+use crate::support::formatting::JavaFormatter;
 
 #[derive(Clone, Copy, Default)]
 struct Stats {
@@ -45,6 +45,7 @@ struct Worker {
     parser: Parser,
     stats_sender: Sender<Stats>,
     stats: Stats,
+    formatter: JavaFormatter,
 }
 
 impl Worker {
@@ -59,6 +60,7 @@ impl Worker {
             parser,
             stats_sender,
             stats: Stats::default(),
+            formatter: JavaFormatter::new(2, b"\n"),
         }
     }
 
@@ -117,7 +119,8 @@ impl Worker {
         if tree.root_node().has_error() {
             return Ok(());
         }
-        formatting::format(&tree, &data, &mut buffer, &AtomicBool::new(false))?;
+        self.formatter
+            .format(&tree, &data, &mut buffer, &AtomicBool::new(false))?;
         if data != buffer {
             if self.verify {
                 self.parser.reset();
@@ -126,7 +129,8 @@ impl Worker {
                     .parse(&buffer, None)
                     .context("parser should be setup")?;
                 let mut buffer2 = Vec::with_capacity(buffer.len());
-                formatting::format(&tree2, &buffer, &mut buffer2, &AtomicBool::new(false))
+                self.formatter
+                    .format(&tree2, &buffer, &mut buffer2, &AtomicBool::new(false))
                     .context("verify: parsing check failed")?;
                 if buffer != buffer2 {
                     bail!("verify: idempotency check failed");

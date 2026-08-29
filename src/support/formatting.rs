@@ -13,155 +13,170 @@ use crate::support::queries::{
     PredicateMatch as _, const_array_from_fn, to_bool_const, to_i8_const,
 };
 
-/// Formats the document into `buffer`
-///
-/// # Errors
-///
-/// This function will return an error if rules are misconfigured.
-pub fn format(
-    tree: &Tree,
-    data: &[u8],
-    buffer: &mut Vec<u8>,
-    cancel: &AtomicBool,
-) -> Result<(), Error> {
-    if tree.root_node().has_error() {
-        bail!("parse error");
+pub struct JavaFormatter {
+    /// number of spaces to indent
+    indent_size: u8,
+    /// sequence to represent newline (e.g. '\n' or '\r\n')
+    newline: &'static [u8],
+}
+
+impl JavaFormatter {
+    /// Creates new formatter with specified settings
+    pub const fn new(indent_size: u8, newline: &'static [u8]) -> Self {
+        Self {
+            indent_size,
+            newline,
+        }
     }
 
-    let mut cursor = QueryCursor::new();
-    // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
-    let mut cancellation = |_: &QueryCursorState| {
-        if cancel.load(Ordering::Relaxed) {
-            ControlFlow::Break(())
-        } else {
-            ControlFlow::Continue(())
+    /// Formats the document into `buffer`
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if rules are misconfigured.
+    pub fn format(
+        &self,
+        tree: &Tree,
+        data: &[u8],
+        buffer: &mut Vec<u8>,
+        cancel: &AtomicBool,
+    ) -> Result<(), Error> {
+        if tree.root_node().has_error() {
+            bail!("parse error");
         }
-    };
 
-    #[expect(clippy::indexing_slicing, reason = "checked at compile-time")]
-    let mut captures = cursor
-        .captures_with_options(
-            &QUERY,
-            tree.root_node(),
-            data,
-            QueryCursorOptions::new().progress_callback(&mut cancellation),
-        )
-        .filter(|(hit, _)| {
-            let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
-            for index in list.start..list.end {
-                if !PREDICATES[index as usize].matches(hit, data, None) {
-                    return false;
+        let mut cursor = QueryCursor::new();
+        // this callback MUST be a separate let-binding. do *NOT* factor into anonymous closure!
+        let mut cancellation = |_: &QueryCursorState| {
+            if cancel.load(Ordering::Relaxed) {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        };
+
+        #[expect(clippy::indexing_slicing, reason = "checked at compile-time")]
+        let mut captures = cursor
+            .captures_with_options(
+                &QUERY,
+                tree.root_node(),
+                data,
+                QueryCursorOptions::new().progress_callback(&mut cancellation),
+            )
+            .filter(|(hit, _)| {
+                let list = &PREDICATES_BY_PATTERN[hit.pattern_index];
+                for index in list.start..list.end {
+                    if !PREDICATES[index as usize].matches(hit, data, None) {
+                        return false;
+                    }
                 }
+                true
+            });
+
+        let mut current_indent: u32 = 0;
+        let mut current_line_size: u32 = 0;
+        let mut previous_node_id = usize::MAX;
+        let mut previous_line = usize::MAX;
+        let mut previous_comment = false;
+        let mut pending_space = false;
+        let mut pending_newline = false;
+
+        while let Some((hit, capture_id)) = captures.next() {
+            // primary node captures only
+            let capture = hit.captures.get(*capture_id).context("valid capture_id")?;
+            if capture.index != captures::NODE {
+                continue;
             }
-            true
-        });
+            let node = capture.node;
 
-    let indent_size: u8 = 2; // TODO
-    let newline = b"\n"; // TODO
-
-    let mut current_indent: u32 = 0;
-    let mut current_line_size: u32 = 0;
-    let mut previous_node_id = usize::MAX;
-    let mut previous_line = usize::MAX;
-    let mut previous_comment = false;
-    let mut pending_space = false;
-    let mut pending_newline = false;
-
-    while let Some((hit, capture_id)) = captures.next() {
-        // primary node captures only
-        let capture = hit.captures.get(*capture_id).context("valid capture_id")?;
-        if capture.index != captures::NODE {
-            continue;
-        }
-        let node = capture.node;
-
-        // first pattern wins
-        let node_id = node.id();
-        if node_id == previous_node_id {
-            continue;
-        }
-        previous_node_id = node_id;
-
-        // terminal nodes only (for now!)
-        let pattern_index = hit.pattern_index;
-        debug_assert!(node.child_count() == 0, "non-terminal at {pattern_index}");
-
-        let pattern = pattern(hit.pattern_index);
-
-        // let comments be "sticky" / chain on the same line
-        if (pattern.comment || previous_comment)
-            && pending_newline
-            && node.start_position().row == previous_line
-        {
-            pending_newline = false;
-            pending_space = true;
-        }
-        previous_comment = pattern.comment;
-
-        // adjust indent before node
-        current_indent = current_indent
-            .checked_add_signed(pattern.indent_before.into())
-            .context("no overflow")?;
-
-        // write newline before, if required
-        if current_line_size > 0 && (pattern.newline_before || pending_newline) {
-            // preserve existing blank line separators
-            if pending_newline && node.start_position().row.saturating_sub(previous_line) > 1 {
-                buffer.extend_from_slice(newline);
+            // first pattern wins
+            let node_id = node.id();
+            if node_id == previous_node_id {
+                continue;
             }
-            buffer.extend_from_slice(newline);
-            current_line_size = 0;
-        }
+            previous_node_id = node_id;
 
-        // write any indent/space before
-        if current_line_size == 0 {
-            let indent = current_indent
-                .checked_mul(indent_size.into())
+            // terminal nodes only (for now!)
+            let pattern_index = hit.pattern_index;
+            debug_assert!(node.child_count() == 0, "non-terminal at {pattern_index}");
+
+            let pattern = pattern(hit.pattern_index);
+
+            // let comments be "sticky" / chain on the same line
+            if (pattern.comment || previous_comment)
+                && pending_newline
+                && node.start_position().row == previous_line
+            {
+                pending_newline = false;
+                pending_space = true;
+            }
+            previous_comment = pattern.comment;
+
+            // adjust indent before node
+            current_indent = current_indent
+                .checked_add_signed(pattern.indent_before.into())
                 .context("no overflow")?;
-            buffer.resize(
-                buffer
-                    .len()
-                    .checked_add(indent as usize)
-                    .context("no overflow")?,
-                b' ',
-            );
+
+            // write newline before, if required
+            if current_line_size > 0 && (pattern.newline_before || pending_newline) {
+                // preserve existing blank line separators
+                if pending_newline && node.start_position().row.saturating_sub(previous_line) > 1 {
+                    buffer.extend_from_slice(self.newline);
+                }
+                buffer.extend_from_slice(self.newline);
+                current_line_size = 0;
+            }
+
+            // write any indent/space before
+            if current_line_size == 0 {
+                let indent = current_indent
+                    .checked_mul(self.indent_size.into())
+                    .context("no overflow")?;
+                buffer.resize(
+                    buffer
+                        .len()
+                        .checked_add(indent as usize)
+                        .context("no overflow")?,
+                    b' ',
+                );
+                current_line_size = current_line_size
+                    .checked_add(indent)
+                    .context("no overflow")?;
+            } else if pattern.space_before || pending_space {
+                buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
+                current_line_size = current_line_size.checked_add(1).context("no overflow")?;
+            }
+
+            // write the node
+            let bytes = data.get(node.byte_range()).context("valid range")?;
+            buffer.extend_from_slice(bytes);
             current_line_size = current_line_size
-                .checked_add(indent)
+                .checked_add(bytes.len().try_into()?)
                 .context("no overflow")?;
-        } else if pattern.space_before || pending_space {
-            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
-            current_line_size = current_line_size.checked_add(1).context("no overflow")?;
+            pending_space = false;
+            pending_newline = false;
+
+            // write newline/space after, if required
+            if pattern.space_after {
+                pending_space = true;
+            } else if pattern.newline_after {
+                pending_newline = true;
+                previous_line = node.end_position().row;
+            }
+
+            // adjust indent after node
+            current_indent = current_indent
+                .checked_add_signed(pattern.indent_after.into())
+                .context("no overflow")?;
         }
 
-        // write the node
-        let bytes = data.get(node.byte_range()).context("valid range")?;
-        buffer.extend_from_slice(bytes);
-        current_line_size = current_line_size
-            .checked_add(bytes.len().try_into()?)
-            .context("no overflow")?;
-        pending_space = false;
-        pending_newline = false;
-
-        // write newline/space after, if required
-        if pattern.space_after {
-            pending_space = true;
-        } else if pattern.newline_after {
-            pending_newline = true;
-            previous_line = node.end_position().row;
+        // write any final pending newline
+        if current_line_size > 0 && pending_newline {
+            buffer.extend_from_slice(self.newline);
         }
 
-        // adjust indent after node
-        current_indent = current_indent
-            .checked_add_signed(pattern.indent_after.into())
-            .context("no overflow")?;
+        Ok(())
     }
-
-    // write any final pending newline
-    if current_line_size > 0 && pending_newline {
-        buffer.extend_from_slice(newline);
-    }
-
-    Ok(())
 }
 
 /// single pattern

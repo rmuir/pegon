@@ -3,19 +3,20 @@ use std::sync::atomic::AtomicBool;
 use anyhow::{Context as _, Result};
 use gen_lsp_types::{DocumentFormattingParams, TextEdit};
 
-use crate::support::fix::Edit;
+use crate::support::{fix::Edit, formatting::JavaFormatter};
 
 use super::{Client, server::Document};
 
 pub fn request(
     client: &Client,
     doc: &Document,
-    _params: &DocumentFormattingParams,
+    params: &DocumentFormattingParams,
     cancel: &AtomicBool,
 ) -> Result<Option<Vec<TextEdit>>> {
     let data = doc.text.as_bytes();
     let mut buffer = Vec::with_capacity(doc.text.len());
-    crate::support::formatting::format(&doc.tree, data, &mut buffer, cancel)?;
+    let formatter = JavaFormatter::new(params.options.tab_size.try_into()?, b"\n");
+    formatter.format(&doc.tree, data, &mut buffer, cancel)?;
     if buffer == data {
         Ok(None)
     } else {
