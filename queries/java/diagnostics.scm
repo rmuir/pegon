@@ -164,14 +164,14 @@
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-(program
+((program
   (import_declaration
     "static"
     (scoped_identifier) @error)
   .
   (import_declaration
     "static"
-    (scoped_identifier) @context)
+    (scoped_identifier) @context))
   (#lt? @context @error)
   (#set! diagnostic.name "unsorted-static-import")
   (#set! diagnostic.title "Static import out of order: `{node.text}`")
@@ -183,7 +183,7 @@
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-(program
+((program
   (import_declaration
     "static"
     (scoped_identifier) @error)
@@ -195,7 +195,7 @@
   .
   (import_declaration
     "static"
-    (scoped_identifier) @context)
+    (scoped_identifier) @context))
   (#lt? @context @error)
   (#set! diagnostic.name "unsorted-static-import")
   (#set! diagnostic.title "Static import out of order: `{node.text}`")
@@ -207,12 +207,12 @@
 
 ; Unsorted imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-(program
+((program
   (import_declaration
     (scoped_identifier) @error) @_node1
   .
   (import_declaration
-    (scoped_identifier) @context) @_node2
+    (scoped_identifier) @context) @_node2)
   (#not-match? @_node1 "^import\\s+static")
   (#not-match? @_node2 "^import\\s+static")
   (#lt? @context @error)
@@ -226,7 +226,7 @@
 
 ; Unsorted imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-(program
+((program
   (import_declaration
     (scoped_identifier) @error) @_node1
   .
@@ -236,7 +236,7 @@
   ]+
   .
   (import_declaration
-    (scoped_identifier) @context) @_node2
+    (scoped_identifier) @context) @_node2)
   (#not-match? @_node1 "^import\\s+static")
   (#not-match? @_node2 "^import\\s+static")
   (#lt? @context @error)
@@ -250,13 +250,13 @@
 
 ; Unsorted static imports
 ; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-(program
+((program
   (import_declaration
     (scoped_identifier) @error) @_node1
   .
   (import_declaration
     "static"
-    (scoped_identifier) @context)
+    (scoped_identifier) @context))
   (#not-match? @_node1 "^import\\s+static")
   (#set! diagnostic.name "unsorted-import-group")
   (#set! diagnostic.title "Static import after regular import: `{node.text}`")
@@ -266,7 +266,7 @@
   (#set! diagnostic.context.label "sorts before")
   (#set! diagnostic.severity "hint"))
 
-(program
+((program
   (import_declaration
     (scoped_identifier) @error) @_node1
   .
@@ -277,7 +277,7 @@
   .
   (import_declaration
     "static"
-    (scoped_identifier) @context)
+    (scoped_identifier) @context))
   (#not-match? @_node1 "^import\\s+static")
   (#set! diagnostic.name "unsorted-import-group")
   (#set! diagnostic.title "Static import after regular import: `{node.text}`")
@@ -290,7 +290,7 @@
 ; Top-level class belongs in its own file with a matching name
 ; @see https://google.github.io/styleguide/javaguide.html#s2.1-file-name
 ; @see https://google.github.io/styleguide/javaguide.html#s3.4.1-one-top-level-class
-(program
+((program
   [
     (class_declaration
       name: (identifier) @error)
@@ -302,7 +302,7 @@
       name: (identifier) @error)
     (annotation_type_declaration
       name: (identifier) @error)
-  ]
+  ])
   (#not-eq-filename? @error)
   (#set! diagnostic.name "wrong-filename")
   (#set! diagnostic.title "Top-level class belongs in `{node.text}.java`")
@@ -367,7 +367,7 @@
 
 ; One variable per declaration
 ; @see https://google.github.io/styleguide/javaguide.html#s4.8.2-variable-declarations
-(block
+((block
   (local_variable_declaration
     type: (_)
     .
@@ -375,7 +375,7 @@
       name: (identifier) @context)
     .
     (variable_declarator
-      name: (identifier) @error))
+      name: (identifier) @error)))
   (#set! diagnostic.name "multiple-declaration")
   (#set! diagnostic.title "Multiple variable declaration: `{node.text}`")
   (#set! diagnostic.label "Additional variable")
@@ -413,8 +413,8 @@
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
-(package_declaration
-  (identifier) @error
+((package_declaration
+  (identifier) @error)
   (#match? @error "[A-Z]")
   (#set! diagnostic.name "uppercase-package")
   (#set! diagnostic.title "Uppercase in package: `{node.text}`")
@@ -423,8 +423,8 @@
 
 ; Package names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
-(package_declaration
-  (identifier) @error
+((package_declaration
+  (identifier) @error)
   (#match? @error "[_]")
   (#set! diagnostic.name "underscore-package")
   (#set! diagnostic.title "Underscore in package: `{node.text}`")
@@ -433,8 +433,8 @@
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
-(module_declaration
-  (identifier) @error
+((module_declaration
+  (identifier) @error)
   (#match? @error "[A-Z]")
   (#set! diagnostic.name "uppercase-module")
   (#set! diagnostic.title "Uppercase in module: `{node.text}`")
@@ -443,8 +443,8 @@
 
 ; Module names should be lowercase and digits only
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.1-package-names
-(module_declaration
-  (identifier) @error
+((module_declaration
+  (identifier) @error)
   (#match? @error "[_]")
   (#set! diagnostic.name "underscore-module")
   (#set! diagnostic.title "Underscore in module: `{node.text}`")
@@ -453,8 +453,8 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-(class_declaration
-  name: (identifier) @error
+((class_declaration
+  name: (identifier) @error)
   (#match? @error "^[a-z]")
   (#set! diagnostic.name "lowercase-class")
   (#set! diagnostic.title "Lowercase class: `{node.text}`")
@@ -463,8 +463,8 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-(record_declaration
-  name: (identifier) @error
+((record_declaration
+  name: (identifier) @error)
   (#match? @error "^[a-z]")
   (#set! diagnostic.name "lowercase-record")
   (#set! diagnostic.title "Lowercase record: `{node.text}`")
@@ -473,8 +473,8 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-(enum_declaration
-  name: (identifier) @error
+((enum_declaration
+  name: (identifier) @error)
   (#match? @error "^[a-z]")
   (#set! diagnostic.name "lowercase-enum")
   (#set! diagnostic.title "Lowercase enum: `{node.text}`")
@@ -483,8 +483,8 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-(interface_declaration
-  name: (identifier) @error
+((interface_declaration
+  name: (identifier) @error)
   (#match? @error "^[a-z]")
   (#set! diagnostic.name "lowercase-interface")
   (#set! diagnostic.title "Lowercase interface: `{node.text}`")
@@ -493,8 +493,8 @@
 
 ; Class names should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.2-class-names
-(annotation_type_declaration
-  name: (identifier) @error
+((annotation_type_declaration
+  name: (identifier) @error)
   (#match? @error "^[a-z]")
   (#set! diagnostic.name "lowercase-annotation")
   (#set! diagnostic.title "Lowercase annotation: `{node.text}`")
@@ -503,8 +503,8 @@
 
 ; Method names should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
-(method_declaration
-  name: (identifier) @error
+((method_declaration
+  name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-method")
   (#set! diagnostic.title "Uppercase method: `{node.text}`")
@@ -513,8 +513,8 @@
 
 ; Method names should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.3-method-names
-(annotation_type_element_declaration
-  name: (identifier) @error
+((annotation_type_element_declaration
+  name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-element")
   (#set! diagnostic.title "Uppercase annotation element: `{node.text}`")
@@ -523,8 +523,8 @@
 
 ; Enumerated type constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
-(enum_constant
-  name: (identifier) @error
+((enum_constant
+  name: (identifier) @error)
   (#match? @error "[a-z]")
   (#set! diagnostic.name "lowercase-enum-constant")
   (#set! diagnostic.title "Lowercase in enum constant: `{node.text}`")
@@ -533,7 +533,7 @@
 
 ; Primitive type constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
-(field_declaration
+((field_declaration
   (modifiers) @_modifiers
   type: [
     (boolean_type)
@@ -541,7 +541,7 @@
     (floating_point_type)
   ] @context
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
@@ -554,11 +554,11 @@
 
 ; String constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
-(field_declaration
+((field_declaration
   (modifiers) @_modifiers
   type: (type_identifier) @_type @context
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
@@ -571,11 +571,11 @@
 
 ; Null constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
-(field_declaration
+((field_declaration
   (modifiers) @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error
-    value: (null_literal) @context)
+    value: (null_literal) @context))
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
@@ -587,15 +587,15 @@
 
 ; Empty array constants should be UPPER_SNAKE_CASE
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.4-constant-names
-(field_declaration
+((field_declaration
   (modifiers) @_modifiers
   declarator: (variable_declarator
     name: (identifier) @error
-    value: (array_initializer) @_array @context)
+    value: (array_initializer) @context))
   (#match? @_modifiers "final")
   (#match? @_modifiers "static")
   (#match? @error "[a-z]")
-  (#match? @_array "^[{]\\s*[}]$")
+  (#match? @context "^[{]\\s*[}]$")
   (#set! diagnostic.name "lowercase-array-constant")
   (#set! diagnostic.title "Lowercase in constant field: `{node.text}`")
   (#set! diagnostic.context.label "Immutable")
@@ -604,11 +604,11 @@
 
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
-(field_declaration
+((field_declaration
   (modifiers)? @_modifiers
   type: (_) @context
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @error "^[A-Z]")
   (#not-match? @_modifiers "final")
   (#not-match? @_modifiers "static")
@@ -620,11 +620,11 @@
 
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
-(field_declaration
+((field_declaration
   (modifiers) @_modifiers
   type: (_) @context
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @_modifiers "static")
   (#not-match? @_modifiers "final")
   (#match? @error "^[A-Z]")
@@ -636,11 +636,11 @@
 
 ; non-constants should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.5-non-constant-field-names
-(field_declaration
+((field_declaration
   (modifiers) @_modifiers
   type: (_) @context
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @_modifiers "final")
   (#not-match? @_modifiers "static")
   (#match? @error "^[A-Z]")
@@ -652,8 +652,8 @@
 
 ; Parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-(formal_parameter
-  name: (identifier) @error
+((formal_parameter
+  name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-param")
   (#set! diagnostic.title "Uppercase parameter: `{node.text}`")
@@ -662,9 +662,9 @@
 
 ; Varargs parameter should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-(spread_parameter
+((spread_parameter
   (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-vararg")
   (#set! diagnostic.title "Uppercase vararg: `{node.text}`")
@@ -673,8 +673,8 @@
 
 ; Catch parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-(catch_formal_parameter
-  name: (identifier) @error
+((catch_formal_parameter
+  name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-catch-param")
   (#set! diagnostic.title "Uppercase catch parameter: `{node.text}`")
@@ -683,8 +683,8 @@
 
 ; Try-with-resource parameters should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.6-parameter-names
-(resource
-  name: (identifier) @error
+((resource
+  name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-resource")
   (#set! diagnostic.title "Uppercase resource: `{node.text}`")
@@ -693,11 +693,11 @@
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
-(local_variable_declaration
+((local_variable_declaration
   .
   type: (_)
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-local")
   (#set! diagnostic.title "Uppercase local variable: `{node.text}`")
@@ -706,11 +706,11 @@
 
 ; Local variables should be lowerCamelCase (final variant)
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
-(local_variable_declaration
+((local_variable_declaration
   .
   (modifiers) @_modifiers @context
   declarator: (variable_declarator
-    name: (identifier) @error)
+    name: (identifier) @error))
   (#match? @error "^[A-Z]")
   (#match? @_modifiers "final")
   (#set! diagnostic.name "uppercase-final-local")
@@ -721,8 +721,8 @@
 
 ; Local variables should be lowerCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.7-local-variable-names
-(enhanced_for_statement
-  name: (identifier) @error
+((enhanced_for_statement
+  name: (identifier) @error)
   (#match? @error "^[A-Z]")
   (#set! diagnostic.name "uppercase-for-local")
   (#set! diagnostic.title "Uppercase local variable: `{node.text}`")
@@ -731,8 +731,8 @@
 
 ; Type variables should be UpperCamelCase
 ; @see https://google.github.io/styleguide/javaguide.html#s5.2.8-type-variable-names
-(type_parameter
-  (type_identifier) @error
+((type_parameter
+  (type_identifier) @error)
   (#match? @error "^[a-z]")
   (#set! diagnostic.name "lowercase-type")
   (#set! diagnostic.title "Lowercase type parameter: `{node.text}`")
@@ -741,11 +741,11 @@
 
 ; Caught exceptions: not ignored
 ; @see https://google.github.io/styleguide/javaguide.html#s6.2-caught-exceptions
-(catch_clause
+((catch_clause
   (catch_formal_parameter
     (catch_type)
     name: (identifier) @error)
-  body: (block) @_block
+  body: (block) @_block)
   ; unnamed variable
   (#not-any-of? @error "_" "ignored" "tolerated" "accepted" "acceptable" "ok" "success" "optional")
   (#not-match? @error "^expected.*")
@@ -760,11 +760,11 @@
 
 ; Finalizers: not used
 ; @see https://google.github.io/styleguide/javaguide.html#s6.4-finalizers
-(method_declaration
+((method_declaration
   type: (void_type) @visible
   ; body could be large
   name: (identifier) @error
-  parameters: (formal_parameters) @_params
+  parameters: (formal_parameters) @_params)
   (#eq? @error "finalize")
   ; only parentheses
   (#match? @_params "^[\\s]*[(][\\s]*[)][\\s]*$")
