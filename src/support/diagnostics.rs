@@ -374,7 +374,7 @@ impl Diagnostic {
 
     /// Range that provides additional information
     pub fn context(&self) -> Option<Range<usize>> {
-        if self.context.is_empty() {
+        if Self::is_empty(self.context) {
             None
         } else {
             Some(usize::from(self.context.start())..usize::from(self.context.end()))
@@ -383,7 +383,7 @@ impl Diagnostic {
 
     /// Range that should be visible
     pub fn visible(&self) -> Option<Range<usize>> {
-        if self.visible.is_empty() {
+        if Self::is_empty(self.visible) {
             None
         } else {
             Some(usize::from(self.visible.start())..usize::from(self.visible.end()))
@@ -392,7 +392,7 @@ impl Diagnostic {
 
     /// Computed top context (e.g. what function you are in)
     pub fn top_context(&self) -> Option<Range<usize>> {
-        if self.top_context.is_empty() {
+        if Self::is_empty(self.top_context) {
             None
         } else {
             Some(usize::from(self.top_context.start())..usize::from(self.top_context.end()))
@@ -413,6 +413,11 @@ impl Diagnostic {
         ))
     }
 
+    /// true if a range is really empty. That's 0-0 here.
+    fn is_empty(range: TextRange) -> bool {
+        range.is_empty() && usize::from(range.start()) == 0
+    }
+
     /// compute diagnostic's bounding box for more efficient rendering
     pub fn bounds(&self, source: &str) -> Range<usize> {
         // 4 possible ranges
@@ -422,7 +427,7 @@ impl Diagnostic {
         let mut end_byte = 0;
 
         // compute the box
-        for range in ranges.iter().filter(|range| !TextRange::is_empty(**range)) {
+        for range in ranges.iter().filter(|range| !Self::is_empty(**range)) {
             start_byte = min(start_byte, u32::from(range.start()));
             end_byte = max(end_byte, u32::from(range.end()));
         }
