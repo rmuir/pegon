@@ -18,6 +18,7 @@ env:
   MATURIN_VERSION: v1.15.0
   MANYLINUX_CLANG_VERSION: 22.1.8.1
   MACOS_LLVM_VERSION: llvm@22
+  WINDOWS_LLVM_VERSION: 22.1.7
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
@@ -255,8 +256,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install clang
+        run: choco install llvm --version="${WINDOWS_LLVM_VERSION}" --no-progress -y
+        shell: bash
+
       - name: Report clang version
         run: clang --version
+        shell: bash
 
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
