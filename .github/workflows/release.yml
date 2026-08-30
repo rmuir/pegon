@@ -272,7 +272,7 @@ jobs:
           args: --release --locked --out dist --compatibility pypi
           sccache: false
         env:
-          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }}"
+          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }} -C link-arg=-fuse-ld=lld"
 
       - name: Train binary
         run: make corpus pgo-train
@@ -294,7 +294,7 @@ jobs:
           args: --release --locked --out dist --compatibility pypi
           sccache: false
         env:
-          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata -Ctarget-feature=+crt-static"
+          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata -Ctarget-feature=+crt-static -C link-arg=-fuse-ld=lld"
 
       - name: Smoke-test binary
         run: |
