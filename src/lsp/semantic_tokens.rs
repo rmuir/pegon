@@ -104,7 +104,10 @@ pub fn tokens(
     let mut previous_line = 0;
     let mut previous_start = 0;
     while let Some((hit, capture_id)) = captures.next() {
-        let capture = hit.captures.get(*capture_id).context("valid capture id")?;
+        let capture = hit
+            .captures()
+            .get(*capture_id)
+            .context("valid capture id")?;
         if capture.index != captures::RANGE {
             continue;
         }

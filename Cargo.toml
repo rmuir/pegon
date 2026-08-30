@@ -101,7 +101,7 @@ serde_json = "=1.0.151"
 # diffs
 similar = { version = "=3.2.0", features = ["bytes"] }
 # Parser framework
-tree-sitter = "=0.26.10"
+tree-sitter = "=0.27.0"
 # Parser for java language
 tree-sitter-java-orchard = "=0.5.15"
 # jar support
@@ -111,7 +111,7 @@ zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate
 # indented string literals
 indoc = "=2.0.7"
 # Parser framework
-tree-sitter = "=0.26.10"
+tree-sitter = "=0.27.0"
 # Parser for java language
 tree-sitter-java-orchard = "=0.5.15"
 
