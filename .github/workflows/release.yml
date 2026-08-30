@@ -247,7 +247,7 @@ jobs:
           - runner: windows-2025
             maturin_target: x86
             target: i686-pc-windows-msvc
-          - runner: windows-11-vs2026-arm
+          - runner: windows-11-arm
             maturin_target: aarch64
             target: aarch64-pc-windows-msvc
     steps:
