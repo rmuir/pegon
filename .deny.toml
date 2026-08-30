@@ -6,10 +6,43 @@ allow = [
   "Zlib",
 ]
 confidence-threshold = 1.0
+include-dev = true
+
+[advisories]
+yanked = "deny"
 
 [bans]
 multiple-versions = "deny"
+multiple-versions-include-dev = true
 wildcards = "deny"
+
+[bans.build]
+allow-build-scripts = [
+  "anyhow",
+  "blake3",
+  "crc32fast",
+  "crossbeam-deque",
+  "crossbeam-epoch",
+  "crossbeam-utils",
+  "libc",
+  "proc-macro2",
+  "quote",
+  "rustversion",
+  "serde",
+  "serde_core",
+  "serde_json",
+  "thiserror",
+  "tree-sitter",
+  "tree-sitter-java-orchard",
+  "tree-sitter-language",
+  "zmij",
+]
+# tree-sitter parser will get compiled
+executables = "allow"
+
+[bans.std-replacements]
+level = "deny"
+rust-version = "1.98"
 
 [sources]
 unknown-registry = "deny"
