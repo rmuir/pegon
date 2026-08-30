@@ -38,7 +38,7 @@ impl JavaFormatter {
         &self,
         tree: &Tree,
         data: &[u8],
-        buffer: &mut Vec<u8>,
+        newdata: &mut Vec<u8>,
         cancel: &AtomicBool,
     ) -> Result<(), Error> {
         if tree.root_node().has_error() {
@@ -73,13 +73,20 @@ impl JavaFormatter {
                 true
             });
 
+        // current indentation LEVEL.
         let mut current_indent: u32 = 0;
-        let mut current_line_size: u32 = 0;
+        // previous iterated node id, to only handle a node with one pattern
         let mut previous_node_id = usize::MAX;
+        // previous line (row)
         let mut previous_line = usize::MAX;
+        // if the previous terminal node was a comment node
         let mut previous_comment = false;
+        // if there's a pending space from after the previous node
         let mut pending_space = false;
+        // if there's a pending newline from after the previous node
         let mut pending_newline = false;
+        // temporary per "line" buffer
+        let mut buffer = Vec::with_capacity(256);
 
         while let Some((hit, capture_id)) = captures.next() {
             // primary node captures only
@@ -99,10 +106,6 @@ impl JavaFormatter {
             }
             previous_node_id = node_id;
 
-            // terminal nodes only (for now!)
-            let pattern_index = hit.pattern_index;
-            debug_assert!(node.child_count() == 0, "non-terminal at {pattern_index}");
-
             let pattern = pattern(hit.pattern_index);
 
             // let comments be "sticky" / chain on the same line
@@ -121,17 +124,18 @@ impl JavaFormatter {
                 .context("no overflow")?;
 
             // write newline before, if required
-            if current_line_size > 0 && (pattern.newline_before || pending_newline) {
+            if !buffer.is_empty() && (pattern.newline_before || pending_newline) {
                 // preserve existing blank line separators
                 if pending_newline && node.start_position().row.saturating_sub(previous_line) > 1 {
                     buffer.extend_from_slice(self.newline);
                 }
                 buffer.extend_from_slice(self.newline);
-                current_line_size = 0;
+                newdata.extend_from_slice(&buffer);
+                buffer.clear();
             }
 
             // write any indent/space before
-            if current_line_size == 0 {
+            if buffer.is_empty() {
                 let indent = current_indent
                     .checked_mul(self.indent_size.into())
                     .context("no overflow")?;
@@ -142,20 +146,13 @@ impl JavaFormatter {
                         .context("no overflow")?,
                     b' ',
                 );
-                current_line_size = current_line_size
-                    .checked_add(indent)
-                    .context("no overflow")?;
             } else if pattern.space_before || pending_space {
                 buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
-                current_line_size = current_line_size.checked_add(1).context("no overflow")?;
             }
 
             // write the node
             let bytes = data.get(node.byte_range()).context("valid range")?;
             buffer.extend_from_slice(bytes);
-            current_line_size = current_line_size
-                .checked_add(bytes.len().try_into()?)
-                .context("no overflow")?;
             pending_space = false;
             pending_newline = false;
 
@@ -174,8 +171,9 @@ impl JavaFormatter {
         }
 
         // write any final pending newline
-        if current_line_size > 0 && pending_newline {
+        if !buffer.is_empty() && pending_newline {
             buffer.extend_from_slice(self.newline);
+            newdata.extend_from_slice(&buffer);
         }
 
         Ok(())
