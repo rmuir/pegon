@@ -169,29 +169,10 @@
     "static"
     (scoped_identifier) @error)
   .
-  (import_declaration
-    "static"
-    (scoped_identifier) @context))
-  (#lt? @context @error)
-  (#set! diagnostic.name "unsorted-static-import")
-  (#set! diagnostic.title "Static import out of order: `{node.text}`")
-  (#set! diagnostic.help "Organize Imports")
-  (#set! diagnostic.fix.kind "organize_imports")
-  (#set! diagnostic.label "sorts after")
-  (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "hint"))
-
-; Unsorted static imports
-; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-((program
-  (import_declaration
-    "static"
-    (scoped_identifier) @error)
-  .
   [
     (block_comment)
     (line_comment)
-  ]+
+  ]*
   .
   (import_declaration
     "static"
@@ -211,29 +192,10 @@
   (import_declaration
     (scoped_identifier) @error) @_node1
   .
-  (import_declaration
-    (scoped_identifier) @context) @_node2)
-  (#not-match? @_node1 "^import\\s+static")
-  (#not-match? @_node2 "^import\\s+static")
-  (#lt? @context @error)
-  (#set! diagnostic.name "unsorted-import")
-  (#set! diagnostic.title "Import out of order: `{node.text}`")
-  (#set! diagnostic.help "Organize Imports")
-  (#set! diagnostic.fix.kind "organize_imports")
-  (#set! diagnostic.label "sorts after")
-  (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "hint"))
-
-; Unsorted imports
-; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-((program
-  (import_declaration
-    (scoped_identifier) @error) @_node1
-  .
   [
     (block_comment)
     (line_comment)
-  ]+
+  ]*
   .
   (import_declaration
     (scoped_identifier) @context) @_node2)
@@ -248,24 +210,6 @@
   (#set! diagnostic.context.label "sorts before")
   (#set! diagnostic.severity "hint"))
 
-; Unsorted static imports
-; @see https://google.github.io/styleguide/javaguide.html#s3.3.3-import-ordering-and-spacing
-((program
-  (import_declaration
-    (scoped_identifier) @error) @_node1
-  .
-  (import_declaration
-    "static"
-    (scoped_identifier) @context))
-  (#not-match? @_node1 "^import\\s+static")
-  (#set! diagnostic.name "unsorted-import-group")
-  (#set! diagnostic.title "Static import after regular import: `{node.text}`")
-  (#set! diagnostic.help "Organize Imports")
-  (#set! diagnostic.fix.kind "organize_imports")
-  (#set! diagnostic.label "sorts after")
-  (#set! diagnostic.context.label "sorts before")
-  (#set! diagnostic.severity "hint"))
-
 ((program
   (import_declaration
     (scoped_identifier) @error) @_node1
@@ -273,7 +217,7 @@
   [
     (block_comment)
     (line_comment)
-  ]+
+  ]*
   .
   (import_declaration
     "static"

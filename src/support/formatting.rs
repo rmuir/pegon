@@ -83,7 +83,10 @@ impl JavaFormatter {
 
         while let Some((hit, capture_id)) = captures.next() {
             // primary node captures only
-            let capture = hit.captures.get(*capture_id).context("valid capture_id")?;
+            let capture = hit
+                .captures()
+                .get(*capture_id)
+                .context("valid capture_id")?;
             if capture.index != captures::NODE {
                 continue;
             }

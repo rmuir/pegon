@@ -7,7 +7,7 @@ permissions: {}
 # nothing tree-sitter-related plays well with dependabot :)
 env:
   TS_QUERY_LS_VERSION: "v3.15.1"
-  TREE_SITTER_VERSION: "v0.26.12"
+  TREE_SITTER_VERSION: "v0.27.0"
   TREE_SITTER_JAVA_ORCHARD_VERSION: "v0.5.15"
   NIGHTLY_VERSION: "2026-08-19"
   CARGO_INCREMENTAL: 0
