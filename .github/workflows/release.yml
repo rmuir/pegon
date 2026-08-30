@@ -250,6 +250,8 @@ jobs:
           - runner: windows-11-arm
             maturin_target: aarch64
             target: aarch64-pc-windows-msvc
+    env:
+      CARGO_LINKER: lld-link
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -272,7 +274,7 @@ jobs:
           args: --release --locked --out dist --compatibility pypi
           sccache: false
         env:
-          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }} -C link-arg=-fuse-ld=lld"
+          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }}"
 
       - name: Train binary
         run: make corpus pgo-train
@@ -294,7 +296,7 @@ jobs:
           args: --release --locked --out dist --compatibility pypi
           sccache: false
         env:
-          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata -Ctarget-feature=+crt-static -C link-arg=-fuse-ld=lld"
+          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata -Ctarget-feature=+crt-static"
 
       - name: Smoke-test binary
         run: |
