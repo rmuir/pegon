@@ -345,9 +345,14 @@
 
 ; Use of optional braces
 ; @see https://google.github.io/styleguide/javaguide.html#s4.1.1-braces-always-used
-((for_statement
-  "for" @context
-  body: (_) @error)
+([
+  (for_statement
+    "for" @context
+    body: (_) @error)
+  (enhanced_for_statement
+    "for" @context
+    body: (_) @error)
+]
   (#not-match? @error "^[{]")
   (#set! diagnostic.name "missing-for-braces")
   (#set! diagnostic.title "`for` statement body should have braces")
@@ -773,3 +778,49 @@
   (#set! diagnostic.help
     "Migrate to other resource management such as try-with-resources or cleaners")
   (#set! diagnostic.severity "warn"))
+
+; Stray semicolons serve no purpose
+; https://errorprone.info/bugpattern/UnnecessarySemicolon
+([
+  (program
+    ";" @error)
+  (class_body
+    ";" @error)
+  (block
+    ";" @error)
+]
+  (#set! diagnostic.name "stray-semicolon")
+  (#set! diagnostic.title "Stray semicolon")
+  (#set! diagnostic.help "Remove the `;`")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "")
+  (#set! diagnostic.severity "hint"))
+
+; Semicolon as body of control flow should be replaced with {}
+; https://errorprone.info/bugpattern/UnnecessarySemicolon
+([
+  (if_statement
+    "if" @context
+    consequence: ";" @error)
+  (if_statement
+    "else" @context
+    alternative: ";" @error)
+  (do_statement
+    "do" @context
+    body: ";" @error)
+  (for_statement
+    "for" @context
+    body: ";" @error)
+  (enhanced_for_statement
+    "for" @context
+    body: ";" @error)
+  (while_statement
+    "while" @context
+    body: ";" @error)
+]
+  (#set! diagnostic.name "body-semicolon")
+  (#set! diagnostic.title "Semicolon used as control-flow statement body")
+  (#set! diagnostic.help "Replace the `;` with `{}`")
+  (#set! diagnostic.fix.kind "static")
+  (#set! diagnostic.fix.arg "{}")
+  (#set! diagnostic.severity "hint"))
