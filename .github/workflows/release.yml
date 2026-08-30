@@ -355,6 +355,10 @@ jobs:
       - name: Report clang version
         run: clang --version
 
+      - name: Find profile library
+        run: find "/c/Program Files/LLVM" -name "*profile*.lib" 2>/dev/null
+        shell: bash
+
       - name: Build instrumented
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
