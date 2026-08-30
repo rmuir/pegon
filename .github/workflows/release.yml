@@ -315,6 +315,7 @@ jobs:
       - name: Install clang
         run: |
           brew install "${MACOS_LLVM_VERSION}"
+          brew link "${MACOS_LLVM_VERSION}"
           prefix=$(brew --prefix "${MACOS_LLVM_VERSION}")
           echo "${prefix}/bin" >> "${GITHUB_PATH}"
 
