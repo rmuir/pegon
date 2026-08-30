@@ -51,9 +51,9 @@ dev = [
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml
-  "tombi==1.4.1",
+  "tombi==1.5.0",
   # spelling
-  "typos==1.49.1",
+  "typos==1.50.0",
   # this file
   "validate-pyproject[all]==0.26",
   # yaml linting
@@ -63,7 +63,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["maturin==1.14.1"]
+requires = ["maturin==1.15.0"]
 build-backend = "maturin"
 
 [tool.maturin]
