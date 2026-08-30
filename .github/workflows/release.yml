@@ -260,6 +260,10 @@ jobs:
         run: choco install llvm --version="${WINDOWS_LLVM_VERSION}" --no-progress -y
         shell: bash
 
+      - name: Find profiling libraries
+        run: find "/c/Program Files/LLVM" -name "*profile*.lib" 2>/dev/null
+        shell: bash
+
       - name: Report clang version
         run: clang --version
         shell: bash
