@@ -264,6 +264,28 @@ jobs:
         run: clang --version
         shell: bash
 
+      - name: Build instrumented
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.maturin_target }}
+          args: --release --locked --out dist --compatibility pypi
+          sccache: false
+        env:
+          RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }}"
+
+      - name: Train binary
+        run: make corpus pgo-train
+        shell: bash
+
+      - name: Install llvm-profdata
+        run: rustup component add llvm-tools-preview
+        shell: bash
+
+      - name: Merge results
+        run: make pgo-merge
+        shell: bash
+
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -271,6 +293,8 @@ jobs:
           target: ${{ matrix.maturin_target }}
           args: --release --locked --out dist --compatibility pypi
           sccache: false
+        env:
+          RUSTFLAGS: "-Cprofile-use=${{ env.PROFILE_DIR }}/merged.profdata -Ctarget-feature=+crt-static"
 
       - name: Smoke-test binary
         run: |
