@@ -15,7 +15,7 @@ concurrency:
 
 env:
   # Not updated by dependabot
-  MATURIN_VERSION: v1.14.1
+  MATURIN_VERSION: v1.15.0
   MANYLINUX_CLANG_VERSION: 22.1.8.1
   MACOS_LLVM_VERSION: llvm@22
   CARGO_INCREMENTAL: 0
