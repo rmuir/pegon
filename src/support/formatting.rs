@@ -3,7 +3,7 @@ use core::ops::ControlFlow;
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
 use tree_sitter::{
-    Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _, Tree,
+    Node, Query, QueryCursor, QueryCursorOptions, QueryCursorState, StreamingIterator as _, Tree,
 };
 
 use crate::java_queries::format::captures;
@@ -96,70 +96,7 @@ impl JavaFormatter {
             state.previous_node_id = node_id;
 
             let pattern = pattern(hit.pattern_index);
-
-            // let comments be "sticky" / chain on the same line
-            if (pattern.comment || state.previous_comment)
-                && state.pending_newline
-                && node.start_position().row == state.previous_line
-            {
-                state.pending_newline = false;
-                state.pending_space = true;
-            }
-            state.previous_comment = pattern.comment;
-
-            // adjust indent before node
-            state.adjust_indent(pattern.indent_before)?;
-
-            // write newline before, if required
-            if !buffer.is_empty() && (pattern.newline_before || state.pending_newline) {
-                // preserve existing blank line separators
-                if state.pending_newline
-                    && node
-                        .start_position()
-                        .row
-                        .saturating_sub(state.previous_line)
-                        > 1
-                {
-                    buffer.extend_from_slice(self.newline);
-                }
-                buffer.extend_from_slice(self.newline);
-                newdata.extend_from_slice(&buffer);
-                buffer.clear();
-            }
-
-            // write any indent/space before
-            if buffer.is_empty() {
-                let indent = state
-                    .current_indent
-                    .checked_mul(self.indent_size.into())
-                    .context("no overflow")?;
-                buffer.resize(
-                    buffer
-                        .len()
-                        .checked_add(indent as usize)
-                        .context("no overflow")?,
-                    b' ',
-                );
-            } else if pattern.space_before || state.pending_space {
-                buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
-            }
-
-            // write the node
-            let bytes = data.get(node.byte_range()).context("valid range")?;
-            buffer.extend_from_slice(bytes);
-            state.pending_space = false;
-            state.pending_newline = false;
-
-            // write newline/space after, if required
-            if pattern.space_after {
-                state.pending_space = true;
-            } else if pattern.newline_after {
-                state.pending_newline = true;
-                state.previous_line = node.end_position().row;
-            }
-
-            // adjust indent after node
-            state.adjust_indent(pattern.indent_after)?;
+            self.nonterminal(&node, pattern, data, newdata, &mut state, &mut buffer)?;
         }
 
         // write any final pending newline
@@ -169,6 +106,82 @@ impl JavaFormatter {
             }
             newdata.extend_from_slice(&buffer);
         }
+
+        Ok(())
+    }
+
+    fn nonterminal(
+        &self,
+        node: &Node,
+        pattern: &Pattern,
+        data: &[u8],
+        newdata: &mut Vec<u8>,
+        state: &mut GroupState,
+        buffer: &mut Vec<u8>,
+    ) -> Result<(), Error> {
+        // let comments be "sticky" / chain on the same line
+        if (pattern.comment || state.previous_comment)
+            && state.pending_newline
+            && node.start_position().row == state.previous_line
+        {
+            state.pending_newline = false;
+            state.pending_space = true;
+        }
+        state.previous_comment = pattern.comment;
+
+        // adjust indent before node
+        state.adjust_indent(pattern.indent_before)?;
+
+        // write newline before, if required
+        if !buffer.is_empty() && (pattern.newline_before || state.pending_newline) {
+            // preserve existing blank line separators
+            if state.pending_newline
+                && node
+                    .start_position()
+                    .row
+                    .saturating_sub(state.previous_line)
+                    > 1
+            {
+                buffer.extend_from_slice(self.newline);
+            }
+            buffer.extend_from_slice(self.newline);
+            newdata.extend_from_slice(buffer);
+            buffer.clear();
+        }
+
+        // write any indent/space before
+        if buffer.is_empty() {
+            let indent = state
+                .current_indent
+                .checked_mul(self.indent_size.into())
+                .context("no overflow")?;
+            buffer.resize(
+                buffer
+                    .len()
+                    .checked_add(indent as usize)
+                    .context("no overflow")?,
+                b' ',
+            );
+        } else if pattern.space_before || state.pending_space {
+            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
+        }
+
+        // write the node
+        let bytes = data.get(node.byte_range()).context("valid range")?;
+        buffer.extend_from_slice(bytes);
+        state.pending_space = false;
+        state.pending_newline = false;
+
+        // write newline/space after, if required
+        if pattern.space_after {
+            state.pending_space = true;
+        } else if pattern.newline_after {
+            state.pending_newline = true;
+            state.previous_line = node.end_position().row;
+        }
+
+        // adjust indent after node
+        state.adjust_indent(pattern.indent_after)?;
 
         Ok(())
     }
