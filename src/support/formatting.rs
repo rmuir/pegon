@@ -76,8 +76,6 @@ impl JavaFormatter {
         let mut state = GroupState::new();
         // temporary per "line" buffer
         let mut buffer = Vec::with_capacity(256);
-        // function to write actual data from buffer
-        let mut write = |contents: &[u8]| newdata.extend_from_slice(contents);
 
         while let Some((hit, capture_id)) = captures.next() {
             // primary node captures only
@@ -98,32 +96,29 @@ impl JavaFormatter {
             state.previous_node_id = node_id;
 
             let pattern = pattern(hit.pattern_index);
-            self.nonterminal(&node, pattern, data, &mut write, &mut state, &mut buffer)?;
+            self.nonterminal(&node, pattern, data, newdata, &mut state, &mut buffer)?;
         }
 
         // write any final pending newline
         if !buffer.is_empty() {
-            write(&buffer);
+            newdata.extend_from_slice(&buffer);
             if state.pending_newline {
-                write(self.newline);
+                newdata.extend_from_slice(self.newline);
             }
         }
 
         Ok(())
     }
 
-    fn nonterminal<F>(
+    fn nonterminal(
         &self,
         node: &Node,
         pattern: &Pattern,
         data: &[u8],
-        write: &mut F,
+        newdata: &mut Vec<u8>,
         state: &mut GroupState,
         buffer: &mut Vec<u8>,
-    ) -> Result<(), Error>
-    where
-        F: FnMut(&[u8]),
-    {
+    ) -> Result<(), Error> {
         // let comments be "sticky" / chain on the same line
         if (pattern.comment || state.previous_comment)
             && state.pending_newline
@@ -139,8 +134,8 @@ impl JavaFormatter {
 
         // write newline before, if required
         if !buffer.is_empty() && (pattern.newline_before || state.pending_newline) {
-            write(buffer);
-            write(self.newline);
+            newdata.extend_from_slice(buffer);
+            newdata.extend_from_slice(self.newline);
             // preserve existing blank line separators
             if state.pending_newline
                 && node
@@ -149,7 +144,7 @@ impl JavaFormatter {
                     .saturating_sub(state.previous_line)
                     > 1
             {
-                write(self.newline);
+                newdata.extend_from_slice(self.newline);
             }
             buffer.clear();
         }
