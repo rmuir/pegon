@@ -76,6 +76,8 @@ impl JavaFormatter {
         let mut state = GroupState::new();
         // temporary per "line" buffer
         let mut buffer = Vec::with_capacity(256);
+        // function to write actual data from buffer
+        let mut write = |contents: &[u8]| newdata.extend_from_slice(contents);
 
         while let Some((hit, capture_id)) = captures.next() {
             // primary node captures only
@@ -96,7 +98,7 @@ impl JavaFormatter {
             state.previous_node_id = node_id;
 
             let pattern = pattern(hit.pattern_index);
-            self.nonterminal(&node, pattern, data, newdata, &mut state, &mut buffer)?;
+            self.nonterminal(&node, pattern, data, &mut write, &mut state, &mut buffer)?;
         }
 
         // write any final pending newline
@@ -104,21 +106,24 @@ impl JavaFormatter {
             if state.pending_newline {
                 buffer.extend_from_slice(self.newline);
             }
-            newdata.extend_from_slice(&buffer);
+            write(&buffer);
         }
 
         Ok(())
     }
 
-    fn nonterminal(
+    fn nonterminal<F>(
         &self,
         node: &Node,
         pattern: &Pattern,
         data: &[u8],
-        newdata: &mut Vec<u8>,
+        write: &mut F,
         state: &mut GroupState,
         buffer: &mut Vec<u8>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error>
+    where
+        F: FnMut(&[u8]),
+    {
         // let comments be "sticky" / chain on the same line
         if (pattern.comment || state.previous_comment)
             && state.pending_newline
@@ -145,7 +150,7 @@ impl JavaFormatter {
                 buffer.extend_from_slice(self.newline);
             }
             buffer.extend_from_slice(self.newline);
-            newdata.extend_from_slice(buffer);
+            write(buffer);
             buffer.clear();
         }
 
