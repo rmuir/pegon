@@ -108,10 +108,7 @@ impl JavaFormatter {
             state.previous_comment = pattern.comment;
 
             // adjust indent before node
-            state.current_indent = state
-                .current_indent
-                .checked_add_signed(pattern.indent_before.into())
-                .context("no overflow")?;
+            state.adjust_indent(pattern.indent_before)?;
 
             // write newline before, if required
             if !buffer.is_empty() && (pattern.newline_before || state.pending_newline) {
@@ -162,10 +159,7 @@ impl JavaFormatter {
             }
 
             // adjust indent after node
-            state.current_indent = state
-                .current_indent
-                .checked_add_signed(pattern.indent_after.into())
-                .context("no overflow")?;
+            state.adjust_indent(pattern.indent_after)?;
         }
 
         // write any final pending newline
@@ -205,6 +199,15 @@ impl GroupState {
             pending_space: false,
             pending_newline: false,
         }
+    }
+
+    /// adjusts current indentation by the delta
+    fn adjust_indent(&mut self, delta: i8) -> Result<(), Error> {
+        self.current_indent = self
+            .current_indent
+            .checked_add_signed(delta.into())
+            .context("no overflow")?;
+        Ok(())
     }
 }
 
