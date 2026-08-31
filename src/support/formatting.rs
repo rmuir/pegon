@@ -77,6 +77,7 @@ impl JavaFormatter {
         // temporary per "line" buffer
         let mut buffer = Vec::with_capacity(256);
 
+        let mut previous_node_id = usize::MAX;
         while let Some((hit, capture_id)) = captures.next() {
             // primary node captures only
             let capture = hit
@@ -90,10 +91,10 @@ impl JavaFormatter {
 
             // first pattern wins
             let node_id = node.id();
-            if node_id == state.previous_node_id {
+            if node_id == previous_node_id {
                 continue;
             }
-            state.previous_node_id = node_id;
+            previous_node_id = node_id;
 
             let pattern = pattern(hit.pattern_index);
             self.nonterminal(&node, pattern, data, newdata, &mut state, &mut buffer)?;
@@ -192,8 +193,6 @@ impl JavaFormatter {
 struct GroupState {
     /// current indentation LEVEL.
     current_indent: u32,
-    /// previous iterated node id, to only handle a node with one pattern
-    previous_node_id: usize,
     /// previous line (row)
     previous_line: usize,
     /// if the previous terminal node was a comment node
@@ -208,7 +207,6 @@ impl GroupState {
     const fn new() -> Self {
         Self {
             current_indent: 0,
-            previous_node_id: usize::MAX,
             previous_line: usize::MAX,
             previous_comment: false,
             pending_space: false,
