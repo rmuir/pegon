@@ -163,8 +163,10 @@ impl JavaFormatter {
         }
 
         // write any final pending newline
-        if !buffer.is_empty() && state.pending_newline {
-            buffer.extend_from_slice(self.newline);
+        if !buffer.is_empty() {
+            if state.pending_newline {
+                buffer.extend_from_slice(self.newline);
+            }
             newdata.extend_from_slice(&buffer);
         }
 
