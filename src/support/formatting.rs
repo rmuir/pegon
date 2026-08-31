@@ -103,10 +103,10 @@ impl JavaFormatter {
 
         // write any final pending newline
         if !buffer.is_empty() {
-            if state.pending_newline {
-                buffer.extend_from_slice(self.newline);
-            }
             write(&buffer);
+            if state.pending_newline {
+                write(self.newline);
+            }
         }
 
         Ok(())
@@ -139,6 +139,8 @@ impl JavaFormatter {
 
         // write newline before, if required
         if !buffer.is_empty() && (pattern.newline_before || state.pending_newline) {
+            write(buffer);
+            write(self.newline);
             // preserve existing blank line separators
             if state.pending_newline
                 && node
@@ -147,10 +149,8 @@ impl JavaFormatter {
                     .saturating_sub(state.previous_line)
                     > 1
             {
-                buffer.extend_from_slice(self.newline);
+                write(self.newline);
             }
-            buffer.extend_from_slice(self.newline);
-            write(buffer);
             buffer.clear();
         }
 
