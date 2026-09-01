@@ -124,7 +124,7 @@ jobs:
       # Mutates tags, so just track master.
       - name: Set up tree-sitter
         if: ${{ steps.cache-tree-sitter-java-orchard.outputs.cache-hit != 'true' }}
-        uses: tree-sitter/setup-action/cli@1868a545ffb91bdc221d14a168b5b6d8de4a28b3 # master
+        uses: tree-sitter/setup-action/cli@49f8c1f20b60102eae8c033bb7c7f6cd056f6086 # master
         with:
           tree-sitter-ref: ${{ env.TREE_SITTER_VERSION }}
 
@@ -149,7 +149,7 @@ jobs:
         working-directory: ${{ runner.temp }}/tree-sitter-java-orchard
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
           prune-cache: false
