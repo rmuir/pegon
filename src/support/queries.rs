@@ -39,6 +39,25 @@ impl PredicateMatch for Predicate {
                 let byte = data.get(position).copied().unwrap_or(b'\n');
                 byte == b'\n' || byte == b'\r'
             }
+            // if the next bytes are optional whitespace and then ';'
+            Self::EndOfStatement(capture) => {
+                let node = hit
+                    .nodes_for_capture_index(*capture)
+                    .next()
+                    .expect("valid capture");
+                let mut position = node.end_byte();
+                while position < data.len() {
+                    let byte = data.get(position).copied().unwrap_or(b'X');
+                    if byte == b';' {
+                        return true;
+                    }
+                    if !byte.is_ascii_whitespace() {
+                        return false;
+                    }
+                    position = position.checked_add(1).expect("no overflow");
+                }
+                false
+            }
             // compares bytes against the provided path (if provided)
             Self::NotEqualsFileName(capture) => {
                 let Some(path) = path else { return false };

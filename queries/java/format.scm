@@ -160,6 +160,14 @@
   (#set! format.newline.after true)
   (#set! format.space.before true))
 
+; no newline after switch EXPRESSION block close
+((switch_block
+  (switch_rule)+
+  "}" @node)
+  (#eos? @node)
+  (#set! format.indent.before -1)
+  (#set! format.newline.before true))
+
 ; open block: increase indent
 ("{" @node
   (#set! format.indent.after 1)

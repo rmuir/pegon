@@ -87,6 +87,16 @@
       ],
       "description": "true if the node ends with a newline"
     },
+    "eos": {
+      "not": false,
+      "parameters": [
+        {
+          "type": "capture",
+          "arity": "required"
+        }
+      ],
+      "description": "true if the node ends a statement"
+    },
     "lt": {
       "not": false,
       "parameters": [
