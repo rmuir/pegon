@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Error, bail};
-use core::ops::ControlFlow;
+use core::ops::{ControlFlow, Range};
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
 use tree_sitter::{
@@ -29,11 +29,11 @@ impl JavaFormatter {
         }
     }
 
-    /// Formats the document into `buffer`
+    /// Formats the document into `newdata`
     ///
     /// # Errors
     ///
-    /// This function will return an error if rules are misconfigured.
+    /// This function will return an error if the parse has errors
     pub fn format(
         &self,
         tree: &Tree,
@@ -73,9 +73,7 @@ impl JavaFormatter {
                 true
             });
 
-        let mut state = GroupState::new();
-        // temporary per "line" buffer
-        let mut buffer = Vec::with_capacity(256);
+        let mut state = State::new();
 
         let mut previous_node_id = usize::MAX;
         while let Some((hit, capture_id)) = captures.next() {
@@ -97,12 +95,12 @@ impl JavaFormatter {
             previous_node_id = node_id;
 
             let pattern = pattern(hit.pattern_index);
-            self.nonterminal(&node, pattern, data, newdata, &mut state, &mut buffer)?;
+            self.nonterminal(&node, pattern, data, newdata, &mut state)?;
         }
 
         // write any final pending newline
-        if !buffer.is_empty() {
-            newdata.extend_from_slice(&buffer);
+        if state.group_started() {
+            state.end_group(newdata);
             if state.pending_newline {
                 newdata.extend_from_slice(self.newline);
             }
@@ -117,8 +115,7 @@ impl JavaFormatter {
         pattern: &Pattern,
         data: &[u8],
         newdata: &mut Vec<u8>,
-        state: &mut GroupState,
-        buffer: &mut Vec<u8>,
+        state: &mut State,
     ) -> Result<(), Error> {
         // let comments be "sticky" / chain on the same line
         if (pattern.comment || state.previous_comment)
@@ -133,9 +130,9 @@ impl JavaFormatter {
         // adjust indent before node
         state.adjust_indent(pattern.indent_before)?;
 
-        // write newline before, if required
-        if !buffer.is_empty() && (pattern.newline_before || state.pending_newline) {
-            newdata.extend_from_slice(buffer);
+        // write previous group, if required
+        if state.group_started() && (pattern.newline_before || state.pending_newline) {
+            state.end_group(newdata);
             newdata.extend_from_slice(self.newline);
             // preserve existing blank line separators
             if state.pending_newline
@@ -147,29 +144,17 @@ impl JavaFormatter {
             {
                 newdata.extend_from_slice(self.newline);
             }
-            buffer.clear();
         }
 
-        // write any indent/space before
-        if buffer.is_empty() {
-            let indent = state
-                .current_indent
-                .checked_mul(self.indent_size.into())
-                .context("no overflow")?;
-            buffer.resize(
-                buffer
-                    .len()
-                    .checked_add(indent as usize)
-                    .context("no overflow")?,
-                b' ',
-            );
+        if !state.group_started() {
+            // initialize new group
+            state.start_group(self)?;
         } else if pattern.space_before || state.pending_space {
-            buffer.resize(buffer.len().checked_add(1).context("no overflow")?, b' ');
+            state.add_hard_space()?;
         }
 
         // write the node
-        let bytes = data.get(node.byte_range()).context("valid range")?;
-        buffer.extend_from_slice(bytes);
+        state.add_text(data, node.byte_range())?;
         state.pending_space = false;
         state.pending_newline = false;
 
@@ -188,9 +173,8 @@ impl JavaFormatter {
     }
 }
 
-/// state per "group"
-/// should fit on one line if possible.
-struct GroupState {
+/// incremental state while iterating the document
+struct State {
     /// current indentation LEVEL.
     current_indent: u32,
     /// previous line (row)
@@ -201,17 +185,72 @@ struct GroupState {
     pending_space: bool,
     /// if there's a pending newline from after the previous node
     pending_newline: bool,
+    /// temporary buffer for writing results directly
+    buffer: Vec<u8>,
+    /// indentation level of the current group
+    group_indent: u32,
+    /// formatting ast arena of the current group
+    nodes: Vec<ASTNode>,
 }
 
-impl GroupState {
-    const fn new() -> Self {
+impl State {
+    fn new() -> Self {
         Self {
             current_indent: 0,
             previous_line: usize::MAX,
             previous_comment: false,
             pending_space: false,
             pending_newline: false,
+            buffer: Vec::with_capacity(256),
+            group_indent: 0,
+            nodes: Vec::with_capacity(64),
         }
+    }
+
+    /// Starts a new group
+    fn start_group(&mut self, options: &JavaFormatter) -> Result<(), Error> {
+        self.group_indent = self
+            .current_indent
+            .checked_mul(options.indent_size.into())
+            .context("no overflow")?;
+        let len = self
+            .buffer
+            .len()
+            .checked_add(self.group_indent as usize)
+            .context("no overflow")?;
+        self.buffer.resize(len, b' ');
+        Ok(())
+    }
+
+    /// renders and ends existing group
+    fn end_group(&mut self, newdata: &mut Vec<u8>) {
+        // fast-path that uses pre-rendered buffer: 90% case
+        newdata.extend_from_slice(&self.buffer);
+        self.nodes.clear();
+        self.buffer.clear();
+    }
+
+    /// true if there is a current group
+    const fn group_started(&self) -> bool {
+        !self.nodes.is_empty()
+    }
+
+    /// adds a text node
+    fn add_text(&mut self, data: &[u8], range: Range<usize>) -> Result<(), Error> {
+        let bytes = data.get(range.clone()).context("valid range")?;
+        self.buffer.extend_from_slice(bytes);
+        self.nodes.push(ASTNode::Text(
+            range.start.try_into()?..range.end.try_into()?,
+        ));
+        Ok(())
+    }
+
+    /// adds a hard space
+    fn add_hard_space(&mut self) -> Result<(), Error> {
+        let len = self.buffer.len().checked_add(1).context("no overflow")?;
+        self.buffer.resize(len, b' ');
+        self.nodes.push(ASTNode::HardSpace);
+        Ok(())
     }
 
     /// adjusts current indentation by the delta
@@ -221,6 +260,27 @@ impl GroupState {
             .checked_add_signed(delta.into())
             .context("no overflow")?;
         Ok(())
+    }
+}
+
+/// Formatting AST node
+/// See [blog](https://yorickpeterse.com/articles/how-to-write-a-code-formatter)
+#[expect(dead_code, reason = "wip")]
+enum ASTNode {
+    /// Range of text in the source
+    Text(Range<u32>),
+    /// Always a space and doesn't wrap
+    HardSpace,
+}
+
+impl ASTNode {
+    #[expect(clippy::arithmetic_side_effects, reason = "checked before")]
+    #[expect(dead_code, reason = "wip")]
+    const fn width(&self) -> usize {
+        match self {
+            Self::Text(range) => (range.end - range.start) as usize,
+            Self::HardSpace => 1,
+        }
     }
 }
 
