@@ -45,7 +45,7 @@ dev = [
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
-  "prek==0.5.0",
+  "prek==0.5.1",
   # markdown
   "rumdl==0.2.62",
   # bash in github actions
@@ -53,7 +53,7 @@ dev = [
   # toml
   "tombi==1.5.0",
   # spelling
-  "typos==1.50.0",
+  "typos==1.50.1",
   # this file
   "validate-pyproject[all]==0.26",
   # yaml linting
