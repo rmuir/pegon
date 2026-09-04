@@ -92,6 +92,10 @@ jobs:
             if command -v manylinux-install-clang &>/dev/null; then
               manylinux-install-clang -v ${{ env.MANYLINUX_CLANG_VERSION }}
               export PATH=/opt/clang/bin:$PATH
+            else
+              apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+              apt update
+              apt install clang
             fi
             clang --version
         env:
