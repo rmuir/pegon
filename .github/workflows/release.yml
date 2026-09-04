@@ -93,7 +93,7 @@ jobs:
               manylinux-install-clang -v ${{ env.MANYLINUX_CLANG_VERSION }}
               export PATH=/opt/clang/bin:$PATH
             else
-              apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+              echo "deb [trusted=yes] http://llvm.org llvm-toolchain-jammy-22 main" > /etc/apt/sources.list.d/llvm-toolchain-jammy-22.list
               apt update
               apt install clang
             fi
