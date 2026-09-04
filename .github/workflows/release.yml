@@ -95,7 +95,7 @@ jobs:
             else
               apt-add-repository "deb [trusted=yes] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
               apt update
-              apt install clang
+              apt install clang-22
             fi
             clang --version
         env:
