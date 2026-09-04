@@ -85,7 +85,7 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.maturin_target }}
-          args: --release --locked --out dist --compatibility pypi
+          args: --release --locked --out dist --compatibility pypi -- -vv
           sccache: false
           manylinux: 2_28
           before-script-linux: |
@@ -126,7 +126,7 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.maturin_target }}
-          args: --release --locked --out dist --compatibility pypi -vv
+          args: --release --locked --out dist --compatibility pypi
           sccache: false
           manylinux: 2_28
           before-script-linux: |
