@@ -101,6 +101,7 @@ jobs:
             clang --version
         env:
           RUSTFLAGS: "-Cprofile-generate=${{ env.PROFILE_DIR }}"
+          CC_ENABLE_DEBUG_OUTPUT: true
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
@@ -125,7 +126,7 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.maturin_target }}
-          args: --release --locked --out dist --compatibility pypi
+          args: --release --locked --out dist --compatibility pypi -vv
           sccache: false
           manylinux: 2_28
           before-script-linux: |
