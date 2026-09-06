@@ -27,13 +27,11 @@
   "implements"
   "import"
   "interface"
-  "native"
   "new"
   "package"
   "private"
   "protected"
   "public"
-  "return"
   "short"
   "static"
   "strictfp"
@@ -41,11 +39,8 @@
   "switch"
   "synchronized"
   (this)
-  "throw"
   "throws"
-  "transient"
   (void_type)
-  "volatile"
   "while"
 ] @range
   (#set! hover.kind "spec")
@@ -293,6 +288,40 @@
   (#set! hover.spec.description
     "Try statement with automatic resource closure, `catch` blocks for resource exception handling, and a `finally` block that is always executed.")
   (#set! hover.spec.reference "14.20.3.2"))
+
+; field modifier only
+("transient" @range
+  (#set! hover.kind "spec")
+  (#set! hover.spec.summary "transient field modifier")
+  (#set! hover.spec.description "excludes the field from serialization")
+  (#set! hover.spec.reference "8.3.1.3"))
+
+; field modifier only
+("volatile" @range
+  (#set! hover.kind "spec")
+  (#set! hover.spec.summary "volatile field modifier")
+  (#set! hover.spec.description "ensures visibility across multiple threads")
+  (#set! hover.spec.reference "8.3.1.4"))
+
+; method modifier only
+("native" @range
+  (#set! hover.kind "spec")
+  (#set! hover.spec.summary "native method modifier")
+  (#set! hover.spec.description "indicates method is implemented with platform-dependent code")
+  (#set! hover.spec.reference "8.4.3.4"))
+
+; TODO: could be split into the two kinds...
+("return" @range
+  (#set! hover.kind "spec")
+  (#set! hover.spec.summary "return statement")
+  (#set! hover.spec.description "returns control to the caller")
+  (#set! hover.spec.reference "14.17"))
+
+("throw" @range
+  (#set! hover.kind "spec")
+  (#set! hover.spec.summary "throw statement")
+  (#set! hover.spec.description "throws an exception")
+  (#set! hover.spec.reference "14.18"))
 
 ; identifiers
 ([
