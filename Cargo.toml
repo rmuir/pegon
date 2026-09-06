@@ -73,7 +73,7 @@ bstr = "=1.13.1"
 # CLI argument processing
 clap = { version = "=4.6.6", features = ["derive"] }
 # threading support
-crossbeam-channel = "=0.5.16"
+crossbeam-channel = "=0.5.17"
 # LSP data structures
 gen-lsp-types = "=0.11.0"
 # Traversing directories, respecting ignore files
