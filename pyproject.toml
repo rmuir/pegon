@@ -37,23 +37,23 @@ Repository = "https://github.com/rmuir/pegon"
 [dependency-groups]
 dev = [
   # github actions
-  "actionlint-py==1.7.12.24",
+  "actionlint-py==1.7.12.25",
   # yaml schema
-  "check-jsonschema==0.38.0",
+  "check-jsonschema==0.38.2",
   # commits
   "committed==1.1.11",
   # yaml formatting
   "google-yamlfmt==0.21.0",
   # git hooks and repository checks
-  "prek==0.5.3",
+  "prek==0.5.4",
   # markdown
-  "rumdl==0.2.74",
+  "rumdl==0.2.77",
   # bash in github actions
   "shellcheck-py==0.11.0.1",
   # toml
-  "tombi==1.5.5",
+  "tombi==1.5.8",
   # spelling
-  "typos==1.50.2",
+  "typos==1.50.3",
   # this file
   "validate-pyproject[all]==0.26",
   # yaml linting

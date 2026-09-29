@@ -91,7 +91,7 @@ regex = "=1.13.1"
 # indexing files
 regex-automata = "=0.4.18"
 # jimage support
-ristretto_jimage = "=0.33.0"
+ristretto_jimage = "=0.34.0"
 # faster hashing for symbols, etc
 rustc-hash = "=2.1.3"
 # serialization
@@ -103,7 +103,7 @@ similar = { version = "=3.2.0", features = ["bytes"] }
 # Parser framework
 tree-sitter = "=0.27.0"
 # Parser for java language
-tree-sitter-java-orchard = "=0.5.18"
+tree-sitter-java-orchard = "=0.5.22"
 # jar support
 zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2", "deflate-flate2-zlib-rs"] }
 
@@ -113,7 +113,7 @@ indoc = "=2.0.7"
 # Parser framework
 tree-sitter = "=0.27.0"
 # Parser for java language
-tree-sitter-java-orchard = "=0.5.18"
+tree-sitter-java-orchard = "=0.5.22"
 
 [lints]
 workspace = true
