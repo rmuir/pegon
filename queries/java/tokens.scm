@@ -353,8 +353,18 @@
   (#set! token.modifier "definition"))
 
 ; decorators
-("@" @range
+((marker_annotation
+  "@" @range)
   (#set! token.type "decorator"))
+
+((annotation
+  "@" @range)
+  (#set! token.type "decorator"))
+
+; part of the "@interface" keyword
+((annotation_type_declaration
+  "@" @range)
+  (#set! token.type "keyword"))
 
 ((annotation_type_declaration
   name: (identifier) @range)
