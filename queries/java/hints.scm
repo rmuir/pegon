@@ -249,14 +249,12 @@
 
 ; annotation type block start-end
 ((annotation_type_declaration
-  "@" @label
-  "interface" @label
   name: (identifier) @label @location
   body: (annotation_type_body
     "}" @position) @_region)
   (#match? @_region "\n")
   (#eol? @position)
-  (#set! hint.prefix "//")
+  (#set! hint.prefix "// @interface")
   (#set! hint.pad.left true)
   (#set! hint.pad.medial true))
 
