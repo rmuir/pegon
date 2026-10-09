@@ -119,7 +119,7 @@ impl<'scope> Worker<'scope> {
         let zip = ZipArchive::new(file)?;
         // TODO: we ignore static/inners for now...
         for name in zip.file_names() {
-            if let Some(name) = name.strip_suffix(".class")
+            if let Some(name) = name?.strip_suffix(".class")
                 && !name.contains('$')
                 && name != "module-info"
             {

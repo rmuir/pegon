@@ -42,9 +42,9 @@
   "main": "./dist/extension.js",
   "devDependencies": {
     "@types/node": "24.13.6",
-    "@types/vscode": "1.138.0",
+    "@types/vscode": "1.140.0",
     "typescript": "7.0.2",
-    "oxlint": "1.86.0",
+    "oxlint": "1.87.0",
     "oxlint-tsgolint": "7.0.2003"
   },
   "dependencies": {
