@@ -16,8 +16,9 @@ concurrency:
 env:
   # Not updated by dependabot
   MATURIN_VERSION: v1.15.0
+  # check https://github.com/pypa/manylinux/blob/main/docker/build_scripts/static_clang_versions.txt
   MANYLINUX_CLANG_VERSION: 22.1.8.1
-  MACOS_LLVM_VERSION: llvm@22
+  MACOS_LLVM_VERSION: llvm@23
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
