@@ -25,6 +25,7 @@ allow-build-scripts = [
   "crossbeam-epoch",
   "crossbeam-utils",
   "libc",
+  "nix",
   "proc-macro2",
   "quote",
   "rustversion",

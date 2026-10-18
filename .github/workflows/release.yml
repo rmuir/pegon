@@ -104,7 +104,7 @@ jobs:
       - name: Train binary
         run: |
           docker run --rm --user "$(id -u):$(id -g)" --platform "${DOCKER_TARGET}" \
-            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" -w "${GITHUB_WORKSPACE}" python:3.10 \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" -w "${GITHUB_WORKSPACE}" python:3.11 \
             sh -c "make corpus pgo-train TARGET=${TARGET}"
         env:
           DOCKER_TARGET: ${{ matrix.docker_target }}
@@ -135,7 +135,7 @@ jobs:
 
       - name: Smoke-test binary
         run: |
-          docker run --rm --platform "${DOCKER_TARGET}" -v "${GITHUB_WORKSPACE}:/ws" python:3.10 \
+          docker run --rm --platform "${DOCKER_TARGET}" -v "${GITHUB_WORKSPACE}:/ws" python:3.11 \
             "/ws/target/${TARGET}/release/pegon" --help
         env:
           DOCKER_TARGET: ${{ matrix.docker_target }}
