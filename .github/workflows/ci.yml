@@ -10,7 +10,7 @@ env:
   TREE_SITTER_VERSION: "v0.27.0"
   TREE_SITTER_JAVA_ORCHARD_VERSION: "v0.5.22"
   TREE_SITTER_ABI_VERSION: 14
-  NIGHTLY_VERSION: "2026-08-19"
+  NIGHTLY_VERSION: "2026-09-30"
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
 
@@ -40,9 +40,6 @@ jobs:
           - name: Linux arm64
             runner: ubuntu-26.04-arm
             target: aarch64-unknown-linux-gnu
-          - name: MacOS x64
-            runner: macos-26-intel
-            target: x86_64-apple-darwin
           - name: MacOS arm64
             runner: macos-26
             target: aarch64-apple-darwin

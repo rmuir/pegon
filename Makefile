@@ -117,7 +117,7 @@ VSCE := npx @vscode/vsce package --target
 
 .PHONY: vscode-packages
 .NOTPARALLEL: vscode-packages
-vscode-packages: win-x64 win-arm64 linux-x64 linux-arm64 alpine-x64 alpine-arm64 darwin-x64 darwin-arm64
+vscode-packages: win-x64 win-arm64 linux-x64 linux-arm64 alpine-x64 alpine-arm64 darwin-arm64
 
 win-%:
 	rm -rf bin && mkdir bin

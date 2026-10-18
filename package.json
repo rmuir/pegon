@@ -34,7 +34,7 @@
     "treesitter"
   ],
   "engines": {
-    "vscode": "^1.134.0"
+    "vscode": "^1.138.0"
   },
   "activationEvents": [
     "onLanguage:java"
