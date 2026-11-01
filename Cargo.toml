@@ -64,7 +64,7 @@ path = "src/lib.rs"
 # Templates diagnostic errors
 aho-corasick = "=1.1.5"
 # Renders console diagnostics
-annotate-snippets = { version = "=0.12.16", features = ["simd"] }
+annotate-snippets = { version = "=0.12.17", features = ["simd"] }
 # ANSI styling of console output
 anstream = "=1.0.0"
 # Error handling
@@ -102,13 +102,13 @@ serde = "=1.0.229"
 # json serialization
 serde_json = "=1.0.154"
 # diffs
-similar = { version = "=3.2.0", features = ["bytes"] }
+similar = { version = "=3.2.1", features = ["bytes"] }
 # Parser framework
 tree-sitter = "=0.27.1"
 # Parser for java language
 tree-sitter-java-orchard = "=0.5.22"
 # jar support
-zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate2", "deflate-flate2-zlib-rs"] }
+zip = { version = "=9.1.0", default-features = false, features = ["deflate-flate2", "deflate-flate2-zlib-rs"] }
 
 [build-dependencies]
 # indented string literals
