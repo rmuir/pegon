@@ -41,14 +41,14 @@
   ],
   "main": "./dist/extension.js",
   "devDependencies": {
-    "@types/node": "24.13.6",
+    "@types/node": "24.19.2",
     "@types/vscode": "1.140.0",
     "typescript": "7.0.2",
-    "oxlint": "1.88.0",
-    "oxlint-tsgolint": "7.0.2004"
+    "oxlint": "1.89.0",
+    "oxlint-tsgolint": "7.0.2005"
   },
   "dependencies": {
-    "vscode-languageclient": "10.1.2"
+    "vscode-languageclient": "11.0.0"
   },
   "contributes": {
     "semanticTokenScopes": [
