@@ -34,7 +34,7 @@
     "treesitter"
   ],
   "engines": {
-    "vscode": "^1.140.0"
+    "vscode": "^1.145.0"
   },
   "activationEvents": [
     "onLanguage:java"
@@ -42,10 +42,10 @@
   "main": "./dist/extension.js",
   "devDependencies": {
     "@types/node": "24.19.2",
-    "@types/vscode": "1.140.0",
+    "@types/vscode": "1.145.0",
     "typescript": "7.0.2",
-    "oxlint": "1.89.0",
-    "oxlint-tsgolint": "7.0.2005"
+    "oxlint": "1.92.0",
+    "oxlint-tsgolint": "7.0.2006"
   },
   "dependencies": {
     "vscode-languageclient": "11.0.0"
